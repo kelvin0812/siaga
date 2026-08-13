@@ -1,0 +1,11 @@
+# Vercel's @vercel/python builder reads this file, not pyproject.toml.
+# Kept deliberately smaller than the full backend dependency set — the
+# Vercel deployment only ever serves api/index.py (REST API), never the
+# MQTT ingest loop, so aiomqtt isn't needed here. firebase-admin is kept
+# since the API process can still be configured to send FCM directly if
+# ever wired that way; drop it if that never happens.
+fastapi>=0.115
+pydantic-settings>=2.6
+asyncpg>=0.30
+h3>=4.1
+firebase-admin>=6.5

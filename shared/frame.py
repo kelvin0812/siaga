@@ -56,7 +56,7 @@ class UplinkFrame:
 
     @property
     def vbat_volts(self) -> float:
-        return 3.00 + self.vbat_cv / 100.0
+        return vbat_cv_to_volts(self.vbat_cv)
 
     def to_bytes(self) -> bytes:
         return _STRUCT.pack(
@@ -79,6 +79,11 @@ class UplinkFrame:
             raise ValueError(f"expected {FRAME_SIZE} bytes, got {len(raw)}")
         fields = _STRUCT.unpack(raw)
         return cls(*fields)
+
+
+def vbat_cv_to_volts(vbat_cv: int) -> float:
+    """vbat_cv is centivolts above 3.00 V (Section 5.1, offset 10)."""
+    return 3.00 + vbat_cv / 100.0
 
 
 def level_mm_to_height_above_datum(level_mm: int, datum_mm: int) -> float:
