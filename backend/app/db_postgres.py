@@ -15,7 +15,18 @@ class AsyncpgRepository:
 
     @classmethod
     async def connect(cls, dsn: str) -> "AsyncpgRepository":
-        pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
+        # statement_cache_size=0: required when dsn points at Supabase's
+        # PgBouncer connection pooler (the Vercel deployment must use it —
+        # serverless can spin up many concurrent instances, and Postgres
+        # has a hard connection limit a pool of direct connections would
+        # blow through). PgBouncer in transaction mode breaks asyncpg's
+        # default prepared-statement caching ("prepared statement already
+        # exists" errors); disabling it costs a small amount of query
+        # planning overhead per call and buys pooler compatibility
+        # unconditionally, so it's left on even for direct connections.
+        pool = await asyncpg.create_pool(
+            dsn=dsn, min_size=1, max_size=10, statement_cache_size=0
+        )
         return cls(pool)
 
     async def close(self) -> None:
