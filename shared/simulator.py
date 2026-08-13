@@ -17,10 +17,8 @@ import time
 from dataclasses import dataclass
 from typing import Iterator, NamedTuple
 
+from shared.constants import TIP_RESOLUTION_MM as _TIP_RESOLUTION_MM
 from shared.frame import FLAG_LOW_BATTERY, FLAG_TIER1_ANOMALY, UplinkFrame
-
-# Tipping-bucket resolution, mm of rain per tip — a common commodity value.
-_TIP_RESOLUTION_MM = 0.2
 
 
 @dataclass(frozen=True, slots=True)
