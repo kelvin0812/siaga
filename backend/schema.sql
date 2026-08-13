@@ -102,3 +102,17 @@ create table if not exists cell_subscriptions (
     count integer not null default 0,
     updated_at timestamptz not null default now()
 );
+
+-- RLS with zero policies = deny-all for the anon/authenticated roles
+-- PostgREST uses. Correct for this architecture: the backend talks to
+-- Postgres with its own connection string (table owner, bypasses RLS
+-- regardless), and nothing else — the Flutter app talks to the FastAPI
+-- REST API (Section 5.3), never to Supabase directly. Without this,
+-- every table here is world-readable/writable via the project's anon key.
+alter table nodes enable row level security;
+alter table readings enable row level security;
+alter table node_state enable row level security;
+alter table state_transitions enable row level security;
+alter table hazards enable row level security;
+alter table reports enable row level security;
+alter table cell_subscriptions enable row level security;
