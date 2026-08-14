@@ -33,6 +33,12 @@ Future<void> siagaBackgroundMessageHandler(RemoteMessage message) async {
   developer.log('background message: ${message.data}', name: 'siaga.fcm');
 }
 
+/// User-facing notification permission state for the Settings screen.
+/// `unavailable` covers both "Firebase isn't configured on this build"
+/// and "the platform call itself failed" — both read the same to a user
+/// (no push is going to arrive) even though the causes differ.
+enum NotificationPermissionStatus { authorized, denied, notDetermined, unavailable }
+
 /// Wraps Firebase Cloud Messaging. Every method degrades to a logged
 /// no-op rather than throwing if Firebase wasn't initialized (no
 /// google-services.json / GoogleService-Info.plist configured yet) — the
@@ -42,6 +48,46 @@ class FcmService {
   bool _available = false;
 
   bool get isAvailable => _available;
+
+  Future<NotificationPermissionStatus> checkPermissionStatus() async {
+    if (!_available) return NotificationPermissionStatus.unavailable;
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      switch (settings.authorizationStatus) {
+        case AuthorizationStatus.authorized:
+        case AuthorizationStatus.provisional:
+          return NotificationPermissionStatus.authorized;
+        case AuthorizationStatus.denied:
+          return NotificationPermissionStatus.denied;
+        case AuthorizationStatus.notDetermined:
+          return NotificationPermissionStatus.notDetermined;
+      }
+    } catch (e) {
+      debugPrint('checkPermissionStatus failed: $e');
+      return NotificationPermissionStatus.unavailable;
+    }
+  }
+
+  /// Re-prompts for permission (only has an effect if the OS hasn't
+  /// already permanently denied it — same platform limitation any app
+  /// has, nothing SIAGA-specific).
+  Future<NotificationPermissionStatus> requestPermission() async {
+    if (!_available) return NotificationPermissionStatus.unavailable;
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional
+          ? NotificationPermissionStatus.authorized
+          : NotificationPermissionStatus.denied;
+    } catch (e) {
+      debugPrint('requestPermission failed: $e');
+      return NotificationPermissionStatus.unavailable;
+    }
+  }
 
   Stream<AlertMessage> get onForegroundAlert =>
       FirebaseMessaging.onMessage.map(AlertMessage.fromRemoteMessage);

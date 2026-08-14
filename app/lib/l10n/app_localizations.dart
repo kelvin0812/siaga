@@ -337,6 +337,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SIAGA needs notification permission to deliver flood and landslide alerts.'**
   String get permissionNotificationRationale;
+
+  /// No description provided for @myLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get myLocationTitle;
+
+  /// No description provided for @myLocationRiskLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk in your area'**
+  String get myLocationRiskLabel;
+
+  /// No description provided for @myLocationCellLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Area code'**
+  String get myLocationCellLabel;
+
+  /// No description provided for @myLocationUpdatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get myLocationUpdatedLabel;
+
+  /// No description provided for @myLocationPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is shown only to you — your exact location is never sent anywhere.'**
+  String get myLocationPrivacyNote;
+
+  /// No description provided for @myLocationTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see your area\'s status'**
+  String get myLocationTapHint;
+
+  /// No description provided for @reportCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportCategoryLabel;
+
+  /// No description provided for @reportWhereLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Where did you notice this? (optional)'**
+  String get reportWhereLabel;
+
+  /// No description provided for @reportWherePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get reportWherePrefix;
+
+  /// No description provided for @reportWhereHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. near the bridge, behind the market'**
+  String get reportWhereHint;
+
+  /// No description provided for @reportSectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportSectionDetails;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsNotificationsEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get settingsNotificationsEnabled;
+
+  /// No description provided for @settingsNotificationsDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get settingsNotificationsDisabled;
+
+  /// No description provided for @settingsNotificationsUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not requested yet'**
+  String get settingsNotificationsUnknown;
+
+  /// No description provided for @settingsNotificationsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Flood and landslide alerts for your area.'**
+  String get settingsNotificationsDescription;
+
+  /// No description provided for @settingsNotificationsEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get settingsNotificationsEnable;
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// No description provided for @settingsAboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'SIAGA v1.0.0'**
+  String get settingsAboutVersion;
 }
 
 class _AppLocalizationsDelegate

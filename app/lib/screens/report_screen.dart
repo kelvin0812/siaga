@@ -7,6 +7,11 @@ import '../l10n/app_localizations.dart';
 /// Section 6.4: one-tap community hazard report. Submits cell_id (never
 /// coordinates — Section 3.1/5.3), category, and an optional note.
 ///
+/// The "where did you notice this" field is free text the user chooses
+/// to type, not device location — it's folded into the submitted note
+/// (Section 5.3's ReportIn has no separate field for it) so the payload
+/// stays within the fixed API surface rather than inventing a new one.
+///
 /// Photo attachment is NOT implemented here: Section 5.3's ReportIn model
 /// accepts a photo_url on the assumption a photo is uploaded "somewhere"
 /// first, but nothing in the brief specifies an object-storage backend
@@ -25,6 +30,7 @@ enum _ReportCategory { flooding, landslide, other }
 
 class _ReportScreenState extends State<ReportScreen> {
   _ReportCategory _category = _ReportCategory.flooding;
+  final _whereController = TextEditingController();
   final _noteController = TextEditingController();
   bool _submitting = false;
   String? _resultMessage;
@@ -32,6 +38,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   void dispose() {
+    _whereController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -41,6 +48,16 @@ class _ReportScreenState extends State<ReportScreen> {
         _ReportCategory.landslide => 'landslide',
         _ReportCategory.other => 'other',
       };
+
+  String? _combinedNote(AppLocalizations l10n) {
+    final where = _whereController.text.trim();
+    final note = _noteController.text.trim();
+    if (where.isEmpty && note.isEmpty) return null;
+    if (where.isEmpty) return note;
+    final wherePart = '${l10n.reportWherePrefix}: $where';
+    if (note.isEmpty) return wherePart;
+    return '$wherePart\n\n$note';
+  }
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
@@ -63,12 +80,13 @@ class _ReportScreenState extends State<ReportScreen> {
       await appState.api.submitReport(
         cellId: cellId,
         category: _categoryApiValue(_category),
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        note: _combinedNote(l10n),
       );
       if (!mounted) return;
       setState(() {
         _resultMessage = l10n.reportSubmitted;
         _resultIsError = false;
+        _whereController.clear();
         _noteController.clear();
       });
     } on ApiException {
@@ -93,43 +111,83 @@ class _ReportScreenState extends State<ReportScreen> {
           children: [
             Text(l10n.reportTitle, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-            _CategoryOption(
-              label: l10n.reportCategoryFlooding,
-              value: _ReportCategory.flooding,
-              groupValue: _category,
-              onChanged: (v) => setState(() => _category = v),
-            ),
-            _CategoryOption(
-              label: l10n.reportCategoryLandslide,
-              value: _ReportCategory.landslide,
-              groupValue: _category,
-              onChanged: (v) => setState(() => _category = v),
-            ),
-            _CategoryOption(
-              label: l10n.reportCategoryOther,
-              value: _ReportCategory.other,
-              groupValue: _category,
-              onChanged: (v) => setState(() => _category = v),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _noteController,
-              decoration: InputDecoration(
-                labelText: l10n.reportNoteLabel,
-                border: const OutlineInputBorder(),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300),
               ),
-              maxLines: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.reportSectionDetails,
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelLarge
+                          ?.copyWith(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<_ReportCategory>(
+                      initialValue: _category,
+                      decoration: InputDecoration(
+                        labelText: l10n.reportCategoryLabel,
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: _ReportCategory.flooding,
+                          child: Text(l10n.reportCategoryFlooding),
+                        ),
+                        DropdownMenuItem(
+                          value: _ReportCategory.landslide,
+                          child: Text(l10n.reportCategoryLandslide),
+                        ),
+                        DropdownMenuItem(
+                          value: _ReportCategory.other,
+                          child: Text(l10n.reportCategoryOther),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _category = v!),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _whereController,
+                      decoration: InputDecoration(
+                        labelText: l10n.reportWhereLabel,
+                        hintText: l10n.reportWhereHint,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.place_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _noteController,
+                      decoration: InputDecoration(
+                        labelText: l10n.reportNoteLabel,
+                        border: const OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(l10n.reportSubmit),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(l10n.reportSubmit),
+              ),
             ),
             if (_resultMessage != null) ...[
               const SizedBox(height: 12),
@@ -141,33 +199,6 @@ class _ReportScreenState extends State<ReportScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CategoryOption extends StatelessWidget {
-  final String label;
-  final _ReportCategory value;
-  final _ReportCategory groupValue;
-  final ValueChanged<_ReportCategory> onChanged;
-
-  const _CategoryOption({
-    required this.label,
-    required this.value,
-    required this.groupValue,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RadioListTile<_ReportCategory>(
-      title: Text(label),
-      value: value,
-      // ignore: deprecated_member_use
-      groupValue: groupValue,
-      // ignore: deprecated_member_use
-      onChanged: (v) => onChanged(v!),
-      contentPadding: EdgeInsets.zero,
     );
   }
 }

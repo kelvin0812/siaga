@@ -27,6 +27,7 @@ class LocationService {
   Position? _lastKnownPosition;
   StreamSubscription<Position>? _positionSubscription;
   final _cellController = StreamController<String>.broadcast();
+  final _positionController = StreamController<Position>.broadcast();
 
   LocationService({
     required CellComputer h3Service,
@@ -53,6 +54,13 @@ class LocationService {
   Position? get lastKnownPosition => _lastKnownPosition;
 
   Stream<String> get cellChanges => _cellController.stream;
+
+  /// Every position update, not just cell-boundary crossings — for the
+  /// map's "my location" marker, which needs to track smoothly rather
+  /// than jump only when the H3 cell changes. Still device-local only:
+  /// nothing subscribed to this stream may forward a Position anywhere
+  /// off-device (see the class doc comment).
+  Stream<Position> get positionUpdates => _positionController.stream;
 
   Future<LocationPermissionOutcome> requestPermissionAndStart() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
@@ -89,6 +97,7 @@ class LocationService {
 
   Future<void> _onPosition(Position position) async {
     _lastKnownPosition = position;
+    _positionController.add(position);
     final newCellId = _h3.cellForPoint(position.latitude, position.longitude);
     if (newCellId == _currentCellId) {
       return; // still inside the same cell — nothing to do
@@ -109,5 +118,6 @@ class LocationService {
   void dispose() {
     _positionSubscription?.cancel();
     _cellController.close();
+    _positionController.close();
   }
 }

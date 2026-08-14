@@ -133,4 +133,63 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permissionNotificationRationale =>
       'SIAGA needs notification permission to deliver flood and landslide alerts.';
+
+  @override
+  String get myLocationTitle => 'My location';
+
+  @override
+  String get myLocationRiskLabel => 'Risk in your area';
+
+  @override
+  String get myLocationCellLabel => 'Area code';
+
+  @override
+  String get myLocationUpdatedLabel => 'Last updated';
+
+  @override
+  String get myLocationPrivacyNote =>
+      'This is shown only to you — your exact location is never sent anywhere.';
+
+  @override
+  String get myLocationTapHint => 'Tap to see your area\'s status';
+
+  @override
+  String get reportCategoryLabel => 'Category';
+
+  @override
+  String get reportWhereLabel => 'Where did you notice this? (optional)';
+
+  @override
+  String get reportWherePrefix => 'Location';
+
+  @override
+  String get reportWhereHint => 'e.g. near the bridge, behind the market';
+
+  @override
+  String get reportSectionDetails => 'Details';
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String get settingsNotificationsEnabled => 'Enabled';
+
+  @override
+  String get settingsNotificationsDisabled => 'Disabled';
+
+  @override
+  String get settingsNotificationsUnknown => 'Not requested yet';
+
+  @override
+  String get settingsNotificationsDescription =>
+      'Flood and landslide alerts for your area.';
+
+  @override
+  String get settingsNotificationsEnable => 'Enable';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get settingsAboutVersion => 'SIAGA v1.0.0';
 }

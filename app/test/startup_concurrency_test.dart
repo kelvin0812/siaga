@@ -86,6 +86,7 @@ void main() {
             ChangeNotifierProvider.value(value: appState),
             ChangeNotifierProvider(create: (_) => LocaleProvider(prefs)),
             Provider.value(value: demoController),
+            Provider.value(value: fcmService),
           ],
           child: SiagaApp(fcmService: fcmService),
         ),
