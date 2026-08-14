@@ -217,6 +217,17 @@ class _NodeInfoPanel extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.place_outlined, size: 14, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               if (demoReading != null) ...[
                 DemoReadout(reading: demoReading!),

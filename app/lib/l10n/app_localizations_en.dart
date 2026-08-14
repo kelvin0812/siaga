@@ -61,25 +61,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nodeNoReadings => 'No readings yet';
 
   @override
+  String get nodeGpsLabel => 'GPS location';
+
+  @override
   String get demoReadoutTitle => 'Live sensor readout (demo)';
 
   @override
-  String get demoWaterLevel => 'Water level';
+  String get demoWaterLevel => 'Water depth';
+
+  @override
+  String get demoWaterPressure => 'Water pressure';
 
   @override
   String get demoSoilMoisture => 'Soil moisture';
 
   @override
-  String get demoTilt => 'Tilt';
-
-  @override
-  String get demoTemperature => 'Temperature';
-
-  @override
-  String get demoHumidity => 'Humidity';
-
-  @override
-  String get demoRainTips => 'Rain tips';
+  String get demoSoilInertia => 'Soil inertia (IMU)';
 
   @override
   String get offlineBanner => 'No connection — showing last known data';

@@ -200,6 +200,12 @@ abstract class AppLocalizations {
   /// **'No readings yet'**
   String get nodeNoReadings;
 
+  /// No description provided for @nodeGpsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS location'**
+  String get nodeGpsLabel;
+
   /// No description provided for @demoReadoutTitle.
   ///
   /// In en, this message translates to:
@@ -209,8 +215,14 @@ abstract class AppLocalizations {
   /// No description provided for @demoWaterLevel.
   ///
   /// In en, this message translates to:
-  /// **'Water level'**
+  /// **'Water depth'**
   String get demoWaterLevel;
+
+  /// No description provided for @demoWaterPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Water pressure'**
+  String get demoWaterPressure;
 
   /// No description provided for @demoSoilMoisture.
   ///
@@ -218,29 +230,11 @@ abstract class AppLocalizations {
   /// **'Soil moisture'**
   String get demoSoilMoisture;
 
-  /// No description provided for @demoTilt.
+  /// No description provided for @demoSoilInertia.
   ///
   /// In en, this message translates to:
-  /// **'Tilt'**
-  String get demoTilt;
-
-  /// No description provided for @demoTemperature.
-  ///
-  /// In en, this message translates to:
-  /// **'Temperature'**
-  String get demoTemperature;
-
-  /// No description provided for @demoHumidity.
-  ///
-  /// In en, this message translates to:
-  /// **'Humidity'**
-  String get demoHumidity;
-
-  /// No description provided for @demoRainTips.
-  ///
-  /// In en, this message translates to:
-  /// **'Rain tips'**
-  String get demoRainTips;
+  /// **'Soil inertia (IMU)'**
+  String get demoSoilInertia;
 
   /// No description provided for @offlineBanner.
   ///

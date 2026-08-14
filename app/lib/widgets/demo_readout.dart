@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../core/models.dart';
 import '../l10n/app_localizations.dart';
 
-/// Live simulated sensor values for the demo node — the raw numbers
-/// behind the risk badge, so a demo shows actual readings changing
-/// (water level rising, soil saturating) rather than just a colour flip.
-/// No "pressure" field: the real wire frame (Section 5.1) never carries
-/// one either, so this stays honest about what real hardware reports.
+/// Live simulated sensor values for the demo node, scoped to exactly the
+/// sensors the team actually has: capacitive soil moisture, gravity
+/// analog water pressure, radar water depth, and the MPU6050 IMU (tilt /
+/// "soil inertia"). Water pressure is derived from depth via hydrostatic
+/// physics (DemoReading.pressureKpa) rather than independently modeled —
+/// see the class doc comment on why that's still honest and where it
+/// diverges from the real wire frame.
 class DemoReadout extends StatelessWidget {
   final DemoReading reading;
   const DemoReadout({super.key, required this.reading});
@@ -24,34 +26,25 @@ class DemoReadout extends StatelessWidget {
           runSpacing: 8,
           children: [
             _Reading(
-              icon: Icons.water,
-              label: l10n.demoWaterLevel,
-              value: '${reading.heightM.toStringAsFixed(2)} m',
-            ),
-            _Reading(
               icon: Icons.grass,
               label: l10n.demoSoilMoisture,
               value: '${reading.soilPct}%',
             ),
             _Reading(
+              icon: Icons.compress,
+              label: l10n.demoWaterPressure,
+              value: '${reading.pressureKpa.toStringAsFixed(1)} kPa',
+            ),
+            _Reading(
+              icon: Icons.water,
+              label: l10n.demoWaterLevel,
+              value: '${reading.heightM.toStringAsFixed(2)} m',
+            ),
+            _Reading(
               icon: Icons.rotate_right,
-              label: l10n.demoTilt,
-              value: '${reading.tiltX}, ${reading.tiltY}',
-            ),
-            _Reading(
-              icon: Icons.thermostat,
-              label: l10n.demoTemperature,
-              value: '${reading.tempC.toStringAsFixed(1)}°C',
-            ),
-            _Reading(
-              icon: Icons.water_drop_outlined,
-              label: l10n.demoHumidity,
-              value: '${reading.rhPct.toStringAsFixed(0)}%',
-            ),
-            _Reading(
-              icon: Icons.battery_std,
-              label: l10n.nodeBattery,
-              value: '${reading.batteryVolts.toStringAsFixed(2)}V',
+              label: l10n.demoSoilInertia,
+              value:
+                  '${reading.tiltXDeg.toStringAsFixed(1)}°, ${reading.tiltYDeg.toStringAsFixed(1)}°',
             ),
           ],
         ),
