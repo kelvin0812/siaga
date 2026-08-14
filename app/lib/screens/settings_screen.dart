@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/fcm_service.dart';
 import '../core/locale_provider.dart';
+import '../core/models.dart';
 import '../demo/demo_controller.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/risk_badge.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -94,6 +96,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             contentPadding: EdgeInsets.zero,
           ),
+          if (appState.demoMode) ...[
+            const SizedBox(height: 12),
+            Text(l10n.settingsDemoTriggerLabel, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: RiskState.values.map((state) {
+                return OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: riskStateColor(state),
+                    side: BorderSide(color: riskStateColor(state)),
+                  ),
+                  onPressed: () => context.read<DemoController>().jumpTo(state),
+                  child: Text(riskStateLabel(context, state)),
+                );
+              }).toList(),
+            ),
+          ],
           const Divider(height: 32),
           _SectionLabel(l10n.settingsAbout),
           ListTile(

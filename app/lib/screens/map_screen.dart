@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,12 +7,16 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/demo_readout.dart';
+import '../widgets/node_history_chart.dart';
 import '../widgets/risk_badge.dart';
-import 'node_detail_screen.dart';
 
-/// Section 6.4: live map of nodes with state colour-coding and a
-/// tap-through to per-node history charts. Also shows the user's own
-/// device location as a distinct marker (Position values come from
+/// Section 6.4: live map of nodes with state colour-coding and node
+/// detail. Tapping a node opens a draggable panel over the map (not a
+/// separate page via Navigator) so the map and the analysis stay visible
+/// together — drag the handle to expand/minimize it, same idea as a
+/// typical maps app's place card. Also shows the user's own device
+/// location as a distinct marker (Position values come from
 /// LocationService.positionUpdates and are rendered locally only — never
 /// forwarded anywhere; Section 3.1 still applies to this screen).
 class MapScreen extends StatefulWidget {
@@ -23,6 +28,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   Position? _myPosition;
+  int? _selectedNodeId;
 
   @override
   void initState() {
@@ -87,40 +93,142 @@ class _MapScreenState extends State<MapScreen> {
             ? ll.LatLng(nodes.first.lat, nodes.first.lon)
             : const ll.LatLng(4.85, 100.74); // Taiping, Perak — demo default
 
-    return Column(
+    final selectedNode =
+        _selectedNodeId == null ? null : nodes.where((n) => n.id == _selectedNodeId).firstOrNull;
+    // If the selected node vanished (e.g. demo mode turned off), close
+    // the panel instead of showing stale/empty content.
+    if (_selectedNodeId != null && selectedNode == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedNodeId = null);
+      });
+    }
+
+    return Stack(
       children: [
-        if (appState.isOffline) const _OfflineBanner(),
-        Expanded(
-          child: FlutterMap(
-            options: MapOptions(initialCenter: center, initialZoom: 13),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.siaga.siaga_app',
-              ),
-              MarkerLayer(
-                markers: [
-                  ...nodes.map(
-                    (node) => Marker(
-                      point: ll.LatLng(node.lat, node.lon),
-                      width: 40,
-                      height: 40,
-                      child: _NodeMarker(node: node),
-                    ),
+        Column(
+          children: [
+            if (appState.isOffline) const _OfflineBanner(),
+            Expanded(
+              child: FlutterMap(
+                options: MapOptions(initialCenter: center, initialZoom: 13),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.siaga.siaga_app',
                   ),
-                  if (_myPosition != null)
-                    Marker(
-                      point: ll.LatLng(_myPosition!.latitude, _myPosition!.longitude),
-                      width: 54,
-                      height: 54,
-                      child: _MyLocationMarker(onTap: () => _showMyLocationInfo(context)),
-                    ),
+                  MarkerLayer(
+                    markers: [
+                      ...nodes.map(
+                        (node) => Marker(
+                          point: ll.LatLng(node.lat, node.lon),
+                          width: 40,
+                          height: 40,
+                          child: _NodeMarker(
+                            node: node,
+                            onTap: () => setState(() => _selectedNodeId = node.id),
+                          ),
+                        ),
+                      ),
+                      if (_myPosition != null)
+                        Marker(
+                          point: ll.LatLng(_myPosition!.latitude, _myPosition!.longitude),
+                          width: 54,
+                          height: 54,
+                          child: _MyLocationMarker(onTap: () => _showMyLocationInfo(context)),
+                        ),
+                    ],
+                  ),
                 ],
               ),
+            ),
+          ],
+        ),
+        if (selectedNode != null)
+          _NodeInfoPanel(
+            node: selectedNode,
+            demoReading: appState.demoMode ? appState.demoReading : null,
+            onClose: () => setState(() => _selectedNodeId = null),
+          ),
+      ],
+    );
+  }
+}
+
+/// Draggable bottom panel: starts small ("minimized"), can be dragged up
+/// to "maximize" for the chart, closes via the X button. Sits in the same
+/// Stack as the map rather than replacing it.
+class _NodeInfoPanel extends StatelessWidget {
+  final SiagaNode node;
+  final DemoReading? demoReading;
+  final VoidCallback onClose;
+
+  const _NodeInfoPanel({required this.node, required this.demoReading, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return DraggableScrollableSheet(
+      key: ValueKey(node.id),
+      initialChildSize: 0.22,
+      minChildSize: 0.12,
+      maxChildSize: 0.7,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12)],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(node.name, style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: onClose),
+                ],
+              ),
+              Row(
+                children: [
+                  RiskBadge(state: node.state),
+                  const SizedBox(width: 12),
+                  if (node.batteryVolts != null)
+                    Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
+                ],
+              ),
+              if (node.lastSeen != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${l10n.nodeLastSeen}: ${node.lastSeen}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (demoReading != null) ...[
+                DemoReadout(reading: demoReading!),
+              ] else ...[
+                Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                SizedBox(height: 220, child: NodeHistoryChart(nodeId: node.id)),
+              ],
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -223,14 +331,13 @@ class _InfoRow extends StatelessWidget {
 
 class _NodeMarker extends StatelessWidget {
   final SiagaNode node;
-  const _NodeMarker({required this.node});
+  final VoidCallback onTap;
+  const _NodeMarker({required this.node, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => NodeDetailScreen(nodeId: node.id)),
-      ),
+      onTap: onTap,
       child: Tooltip(
         message: node.name,
         child: Container(

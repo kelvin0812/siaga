@@ -49,6 +49,22 @@ class DemoController {
     _timer = null;
   }
 
+  /// Instantly jumps to a representative point for the requested state,
+  /// for live demos where waiting through the full hydrograph isn't
+  /// practical (e.g. showing EVACUATE on demand in front of judges).
+  /// Stops automatic playback — a manual jump is a deliberate override,
+  /// not something the timer should immediately overwrite. Picks a real
+  /// generated point that lands in that state rather than fabricating
+  /// separate sensor values, so the readout stays internally consistent
+  /// with the same hydrograph the automatic run uses.
+  void jumpTo(RiskState target) {
+    stop();
+    final idx = _points.indexWhere((p) => _stateForDepth(p.depthMm) == target);
+    if (idx == -1) return; // shouldn't happen with the default config's full rise+recession
+    _index = idx + 1;
+    _applyPoint(_points[idx]);
+  }
+
   void _tick() {
     if (_index >= _points.length) {
       stop();
@@ -56,7 +72,10 @@ class DemoController {
     }
     final point = _points[_index];
     _index++;
+    _applyPoint(point);
+  }
 
+  void _applyPoint(SimulatedPoint point) {
     final state = _stateForDepth(point.depthMm);
     final node = SiagaNode(
       id: demoNodeId,
@@ -65,7 +84,7 @@ class DemoController {
       lon: demoNodeLon,
       state: state,
       lastSeen: DateTime.now(),
-      batteryVolts: 3.8,
+      batteryVolts: point.vbatVolts,
     );
 
     final hazards = <Hazard>[];
@@ -84,7 +103,18 @@ class DemoController {
       );
     }
 
-    appState.applyDemoState(nodes: [node], hazards: hazards);
+    final reading = DemoReading(
+      heightM: point.depthMm / 1000.0,
+      soilPct: point.soilPct,
+      tiltX: point.tiltX,
+      tiltY: point.tiltY,
+      tempC: point.tempC,
+      rhPct: point.rhPct,
+      batteryVolts: point.vbatVolts,
+      rainTips: point.rainTips,
+    );
+
+    appState.applyDemoState(nodes: [node], hazards: hazards, reading: reading);
   }
 
   RiskState _stateForDepth(double depthMm) {

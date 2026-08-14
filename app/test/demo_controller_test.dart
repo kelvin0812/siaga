@@ -100,4 +100,59 @@ void main() {
       expect(appState.nodes, equals(nodesAfterStop));
     });
   });
+
+  test('_tick populates a DemoReading alongside the node', () {
+    fakeAsync((async) {
+      const cfg = HydrographConfig(timeToPeakS: 300, recessionTauS: 600, totalDurationS: 1800, sampleIntervalS: 60);
+      final controller = DemoController(appState: appState, config: cfg);
+      controller.start(speed: 10000);
+
+      expect(appState.demoReading, isNotNull);
+      expect(appState.demoReading!.heightM, greaterThanOrEqualTo(0));
+      expect(appState.demoReading!.soilPct, inInclusiveRange(0, 100));
+      expect(appState.demoReading!.batteryVolts, greaterThanOrEqualTo(3.0));
+
+      controller.stop();
+    });
+  });
+
+  test('jumpTo(evacuate) immediately reflects EVACUATE without waiting for the timer', () {
+    const cfg = HydrographConfig(timeToPeakS: 300, recessionTauS: 600, totalDurationS: 1800, sampleIntervalS: 60);
+    final controller = DemoController(appState: appState, config: cfg);
+
+    expect(appState.nodes, isEmpty);
+    controller.jumpTo(RiskState.evacuate);
+
+    expect(appState.nodes, isNotEmpty);
+    expect(appState.nodes.first.state, RiskState.evacuate);
+    expect(appState.activeHazards, isNotEmpty);
+    expect(appState.activeHazards.first.state, RiskState.evacuate);
+  });
+
+  test('jumpTo stops automatic playback rather than being overwritten by the next tick', () {
+    fakeAsync((async) {
+      const cfg = HydrographConfig(timeToPeakS: 300, recessionTauS: 600, totalDurationS: 1800, sampleIntervalS: 60);
+      final controller = DemoController(appState: appState, config: cfg);
+      controller.start(speed: 10000);
+      expect(controller.isRunning, isTrue);
+
+      controller.jumpTo(RiskState.watch);
+      expect(controller.isRunning, isFalse);
+      expect(appState.nodes.first.state, RiskState.watch);
+
+      // No timer running — elapsing time must not silently change the
+      // manually-selected state back.
+      async.elapse(const Duration(seconds: 5));
+      expect(appState.nodes.first.state, RiskState.watch);
+    });
+  });
+
+  test('jumpTo covers every risk state with the default config', () {
+    final controller = DemoController(appState: appState);
+    for (final target in RiskState.values) {
+      controller.jumpTo(target);
+      expect(appState.nodes.first.state, target,
+          reason: 'default hydrograph config should reach every RiskState');
+    }
+  });
 }

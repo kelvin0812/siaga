@@ -58,6 +58,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nodeStateLabel => 'State';
 
   @override
+  String get nodeNoReadings => 'No readings yet';
+
+  @override
+  String get demoReadoutTitle => 'Live sensor readout (demo)';
+
+  @override
+  String get demoWaterLevel => 'Water level';
+
+  @override
+  String get demoSoilMoisture => 'Soil moisture';
+
+  @override
+  String get demoTilt => 'Tilt';
+
+  @override
+  String get demoTemperature => 'Temperature';
+
+  @override
+  String get demoHumidity => 'Humidity';
+
+  @override
+  String get demoRainTips => 'Rain tips';
+
+  @override
   String get offlineBanner => 'No connection — showing last known data';
 
   @override
@@ -109,6 +133,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsDemoModeDescription =>
       'Drive the app from a simulated rising flood, for demonstration without live hardware.';
+
+  @override
+  String get settingsDemoTriggerLabel => 'Jump to state';
 
   @override
   String get evacuateHeadline => 'EVACUATE NOW';

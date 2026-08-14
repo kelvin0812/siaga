@@ -194,6 +194,54 @@ abstract class AppLocalizations {
   /// **'State'**
   String get nodeStateLabel;
 
+  /// No description provided for @nodeNoReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'No readings yet'**
+  String get nodeNoReadings;
+
+  /// No description provided for @demoReadoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sensor readout (demo)'**
+  String get demoReadoutTitle;
+
+  /// No description provided for @demoWaterLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Water level'**
+  String get demoWaterLevel;
+
+  /// No description provided for @demoSoilMoisture.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil moisture'**
+  String get demoSoilMoisture;
+
+  /// No description provided for @demoTilt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tilt'**
+  String get demoTilt;
+
+  /// No description provided for @demoTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get demoTemperature;
+
+  /// No description provided for @demoHumidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Humidity'**
+  String get demoHumidity;
+
+  /// No description provided for @demoRainTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain tips'**
+  String get demoRainTips;
+
   /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:
@@ -295,6 +343,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drive the app from a simulated rising flood, for demonstration without live hardware.'**
   String get settingsDemoModeDescription;
+
+  /// No description provided for @settingsDemoTriggerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to state'**
+  String get settingsDemoTriggerLabel;
 
   /// No description provided for @evacuateHeadline.
   ///

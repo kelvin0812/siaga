@@ -157,3 +157,32 @@ class Hazard {
         'message_ms': messageMs,
       };
 }
+
+/// Live simulated sensor values for demo mode's readout (Section 6.4's
+/// demo mode, made concrete with actual numbers rather than just a risk
+/// badge). Fields mirror what the real node transmits (Section 5.1) —
+/// deliberately no "pressure" field, since the wire frame doesn't carry
+/// one either (BME280 can sense it, but only temp_c and rh_pct are ever
+/// transmitted), so this stays honest about what the real hardware
+/// actually reports.
+class DemoReading {
+  final double heightM;
+  final int soilPct;
+  final int tiltX;
+  final int tiltY;
+  final double tempC;
+  final double rhPct;
+  final double batteryVolts;
+  final int rainTips;
+
+  const DemoReading({
+    required this.heightM,
+    required this.soilPct,
+    required this.tiltX,
+    required this.tiltY,
+    required this.tempC,
+    required this.rhPct,
+    required this.batteryVolts,
+    required this.rainTips,
+  });
+}
