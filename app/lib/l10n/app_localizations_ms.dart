@@ -61,25 +61,22 @@ class AppLocalizationsMs extends AppLocalizations {
   String get nodeNoReadings => 'Belum ada bacaan';
 
   @override
+  String get nodeGpsLabel => 'Lokasi GPS';
+
+  @override
   String get demoReadoutTitle => 'Bacaan sensor langsung (demo)';
 
   @override
-  String get demoWaterLevel => 'Paras air';
+  String get demoWaterLevel => 'Kedalaman air';
+
+  @override
+  String get demoWaterPressure => 'Tekanan air';
 
   @override
   String get demoSoilMoisture => 'Kelembapan tanah';
 
   @override
-  String get demoTilt => 'Kecondongan';
-
-  @override
-  String get demoTemperature => 'Suhu';
-
-  @override
-  String get demoHumidity => 'Kelembapan udara';
-
-  @override
-  String get demoRainTips => 'Ketukan hujan';
+  String get demoSoilInertia => 'Inersia tanah (IMU)';
 
   @override
   String get offlineBanner =>

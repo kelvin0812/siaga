@@ -160,11 +160,15 @@ class Hazard {
 
 /// Live simulated sensor values for demo mode's readout (Section 6.4's
 /// demo mode, made concrete with actual numbers rather than just a risk
-/// badge). Fields mirror what the real node transmits (Section 5.1) —
-/// deliberately no "pressure" field, since the wire frame doesn't carry
-/// one either (BME280 can sense it, but only temp_c and rh_pct are ever
-/// transmitted), so this stays honest about what the real hardware
-/// actually reports.
+/// badge). tempC/rhPct/rainTips/batteryVolts mirror the real node's wire
+/// frame (Section 5.1); pressureKpa does not exist in that frame at all
+/// (JSN-SR04T ultrasonic + BME280 have no pressure-transducer field) —
+/// it's derived here purely from depth via hydrostatic pressure (kPa =
+/// depth_m * 9.81), for a team demo built around a physical gravity
+/// analog water pressure sensor instead. If that sensor becomes part of
+/// the real BOM, the wire frame and backend need this reconciled too;
+/// this getter only makes the demo UI honest, it doesn't change Section
+/// 5.1's actual contract.
 class DemoReading {
   final double heightM;
   final int soilPct;
@@ -185,4 +189,13 @@ class DemoReading {
     required this.batteryVolts,
     required this.rainTips,
   });
+
+  static const double _kgPerM3TimesG = 9.81; // kPa per metre of water column
+
+  double get pressureKpa => heightM * _kgPerM3TimesG;
+
+  /// Tilt in degrees rather than raw 0.1°/LSB units — matches what the
+  /// IMU6050 conceptually reports for slope/ground movement.
+  double get tiltXDeg => tiltX * 0.1;
+  double get tiltYDeg => tiltY * 0.1;
 }

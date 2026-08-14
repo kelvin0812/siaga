@@ -119,6 +119,7 @@ class _SiagaAppState extends State<SiagaApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'SIAGA',
+      debugShowCheckedModeBanner: false,
       locale: localeOverride,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
