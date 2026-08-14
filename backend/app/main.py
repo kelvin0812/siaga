@@ -26,6 +26,7 @@ from contextlib import asynccontextmanager
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api import router
 from backend.app.config import settings
@@ -45,6 +46,19 @@ def create_app(
     if repo is None and repo_factory is None:
         raise ValueError("create_app requires either repo or repo_factory")
     app = FastAPI(title="SIAGA backend", version="1")
+    # No auth model exists anywhere in this system (Section 11: no user
+    # accounts by design) and every endpoint here is either public safety
+    # data or an anonymous write (reports, subscription pings), so a
+    # wildcard origin carries no session/cookie exposure risk — unlike a
+    # typical authenticated API, there's nothing origin-restriction would
+    # protect. Needed for any browser-based client (e.g. local dev
+    # preview of the Flutter web target) to call this API at all.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.state.repo = repo
     app.state.repo_factory = repo_factory
     app.include_router(router)
