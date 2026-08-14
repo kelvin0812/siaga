@@ -34,6 +34,10 @@ class SimulatedPoint {
   final int soilPct;
   final int tiltX;
   final int tiltY;
+  final double tempC;
+  final double rhPct;
+  final double vbatVolts;
+  final int rainTips;
 
   const SimulatedPoint({
     required this.tS,
@@ -41,6 +45,10 @@ class SimulatedPoint {
     required this.soilPct,
     required this.tiltX,
     required this.tiltY,
+    required this.tempC,
+    required this.rhPct,
+    required this.vbatVolts,
+    required this.rainTips,
   });
 }
 
@@ -56,6 +64,12 @@ double _depthShape(double t, HydrographConfig cfg) {
   return exp(-(t - tPeak) / cfg.recessionTauS);
 }
 
+// Tipping-bucket resolution, mm of rain per tip — matches
+// shared/constants.py's TIP_RESOLUTION_MM. Duplicated rather than shared
+// across languages; kept as a named constant so the two don't drift by
+// accident if either changes.
+const double _tipResolutionMm = 0.2;
+
 /// Generates the full point sequence for one hydrograph run. Kept as a
 /// plain list rather than a lazy iterator/stream — a demo run is short
 /// (a few hundred points at most) and the caller (DemoController) needs
@@ -64,16 +78,36 @@ List<SimulatedPoint> generateHydrograph(HydrographConfig cfg) {
   final points = <SimulatedPoint>[];
   var t = 0.0;
   var cumulativeRainProxy = 0.0;
+  var tipResidualMm = 0.0;
   const soilBaselinePct = 35.0;
   const soilGainPerShapeUnit = 50.0; // simplified vs. the Python version's rain-driven model
+  const ambientTempC = 27.0;
+  const ambientRhPct = 75.0;
+  const rainPeakMmPerH = 45.0;
+  const startVbatVolts = 3.80;
+  const dischargeVoltsPerH = 0.004;
 
   while (t <= cfg.totalDurationS) {
     final shape = _depthShape(t, cfg);
     final depthMm = cfg.baselineDepthMm + (cfg.peakDepthMm - cfg.baselineDepthMm) * shape;
 
+    // Rain intensity uses the same envelope as the rise/recession shape —
+    // a simplification of shared/simulator.py's separately-leading rain
+    // curve, good enough for a demo readout rather than model training.
+    final rainIntensityMmPerH = rainPeakMmPerH * shape;
+    final intervalRainMm = rainIntensityMmPerH * (cfg.sampleIntervalS / 3600.0);
     cumulativeRainProxy += shape * (cfg.sampleIntervalS / 3600.0);
+    tipResidualMm += intervalRainMm;
+    final rainTips = (tipResidualMm / _tipResolutionMm).floor().clamp(0, 255);
+    tipResidualMm -= rainTips * _tipResolutionMm;
+
     final soilPct = min(100.0, soilBaselinePct + soilGainPerShapeUnit * cumulativeRainProxy);
     final tiltDrift = (soilPct - soilBaselinePct) * 0.08;
+
+    final diurnal = (t / 3600.0) % 24.0;
+    final tempC = ambientTempC - 3.0 * sin(diurnal / 24.0 * 2 * pi);
+    final rhPct = (ambientRhPct + min(20.0, rainIntensityMmPerH * 0.3)).clamp(0.0, 100.0);
+    final vbatVolts = max(3.00, startVbatVolts - dischargeVoltsPerH * (t / 3600.0));
 
     points.add(
       SimulatedPoint(
@@ -82,6 +116,10 @@ List<SimulatedPoint> generateHydrograph(HydrographConfig cfg) {
         soilPct: soilPct.round().clamp(0, 100),
         tiltX: tiltDrift.round().clamp(-128, 127),
         tiltY: (tiltDrift * 0.4).round().clamp(-128, 127),
+        tempC: tempC,
+        rhPct: rhPct,
+        vbatVolts: vbatVolts,
+        rainTips: rainTips,
       ),
     );
     t += cfg.sampleIntervalS;

@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   List<Hazard> activeHazards = [];
   bool isOffline = false;
   bool demoMode = false;
+  DemoReading? demoReading;
 
   AppState({
     required this.api,
@@ -78,6 +79,7 @@ class AppState extends ChangeNotifier {
   void setDemoMode(bool value) {
     demoMode = value;
     if (!value) {
+      demoReading = null;
       unawaited(refresh());
     }
     notifyListeners();
@@ -85,9 +87,14 @@ class AppState extends ChangeNotifier {
 
   /// Demo mode (Section 6.4) pushes state directly rather than going
   /// through refresh()'s network path.
-  void applyDemoState({required List<SiagaNode> nodes, required List<Hazard> hazards}) {
+  void applyDemoState({
+    required List<SiagaNode> nodes,
+    required List<Hazard> hazards,
+    DemoReading? reading,
+  }) {
     this.nodes = nodes;
     activeHazards = hazards;
+    demoReading = reading;
     isOffline = false;
     notifyListeners();
   }

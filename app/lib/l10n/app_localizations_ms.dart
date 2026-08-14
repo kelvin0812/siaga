@@ -58,6 +58,30 @@ class AppLocalizationsMs extends AppLocalizations {
   String get nodeStateLabel => 'Status';
 
   @override
+  String get nodeNoReadings => 'Belum ada bacaan';
+
+  @override
+  String get demoReadoutTitle => 'Bacaan sensor langsung (demo)';
+
+  @override
+  String get demoWaterLevel => 'Paras air';
+
+  @override
+  String get demoSoilMoisture => 'Kelembapan tanah';
+
+  @override
+  String get demoTilt => 'Kecondongan';
+
+  @override
+  String get demoTemperature => 'Suhu';
+
+  @override
+  String get demoHumidity => 'Kelembapan udara';
+
+  @override
+  String get demoRainTips => 'Ketukan hujan';
+
+  @override
   String get offlineBanner =>
       'Tiada sambungan — memaparkan data terkini yang diketahui';
 
@@ -110,6 +134,9 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get settingsDemoModeDescription =>
       'Jalankan aplikasi menggunakan simulasi banjir untuk demonstrasi tanpa perkakasan sebenar.';
+
+  @override
+  String get settingsDemoTriggerLabel => 'Lompat ke status';
 
   @override
   String get evacuateHeadline => 'BERPINDAH SEKARANG';
