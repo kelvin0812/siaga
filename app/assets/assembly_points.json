@@ -1,0 +1,26 @@
+{
+  "_comment": "Placeholder assembly-point data bundled with the app. Section 5.3's REST API has no endpoint for evacuation routes or assembly points, even though Section 6.4 requires caching them offline — flagged in docs/nexus-log.md. Bundling as a static asset satisfies 'useful with no connection' for the prototype/demo; a real deployment needs an authority-managed data source and a backend endpoint to serve it.",
+  "assemblyPoints": [
+    {
+      "id": "ap-1",
+      "nameEn": "Taiping District Community Hall",
+      "nameMs": "Dewan Komuniti Daerah Taiping",
+      "lat": 4.8515,
+      "lon": 100.7382
+    },
+    {
+      "id": "ap-2",
+      "nameEn": "SK Taiping Primary School Field",
+      "nameMs": "Padang SK Taiping",
+      "lat": 4.8562,
+      "lon": 100.7419
+    },
+    {
+      "id": "ap-3",
+      "nameEn": "Taiping Municipal Council Grounds",
+      "nameMs": "Kawasan Majlis Perbandaran Taiping",
+      "lat": 4.8479,
+      "lon": 100.7355
+    }
+  ]
+}
