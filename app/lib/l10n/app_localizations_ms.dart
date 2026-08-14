@@ -134,4 +134,63 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get permissionNotificationRationale =>
       'SIAGA memerlukan kebenaran notifikasi untuk menghantar amaran banjir dan tanah runtuh.';
+
+  @override
+  String get myLocationTitle => 'Lokasi saya';
+
+  @override
+  String get myLocationRiskLabel => 'Risiko di kawasan anda';
+
+  @override
+  String get myLocationCellLabel => 'Kod kawasan';
+
+  @override
+  String get myLocationUpdatedLabel => 'Kemas kini terakhir';
+
+  @override
+  String get myLocationPrivacyNote =>
+      'Ini hanya dipaparkan kepada anda — lokasi tepat anda tidak pernah dihantar ke mana-mana.';
+
+  @override
+  String get myLocationTapHint => 'Ketik untuk lihat status kawasan anda';
+
+  @override
+  String get reportCategoryLabel => 'Kategori';
+
+  @override
+  String get reportWhereLabel => 'Di mana anda perasan perkara ini? (pilihan)';
+
+  @override
+  String get reportWherePrefix => 'Lokasi';
+
+  @override
+  String get reportWhereHint => 'cth. berhampiran jambatan, belakang pasar';
+
+  @override
+  String get reportSectionDetails => 'Butiran';
+
+  @override
+  String get settingsNotifications => 'Notifikasi';
+
+  @override
+  String get settingsNotificationsEnabled => 'Diaktifkan';
+
+  @override
+  String get settingsNotificationsDisabled => 'Dilumpuhkan';
+
+  @override
+  String get settingsNotificationsUnknown => 'Belum diminta';
+
+  @override
+  String get settingsNotificationsDescription =>
+      'Amaran banjir dan tanah runtuh untuk kawasan anda.';
+
+  @override
+  String get settingsNotificationsEnable => 'Aktifkan';
+
+  @override
+  String get settingsAbout => 'Tentang';
+
+  @override
+  String get settingsAboutVersion => 'SIAGA v1.0.0';
 }

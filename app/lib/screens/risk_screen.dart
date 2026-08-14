@@ -17,13 +17,22 @@ class RiskScreen extends StatelessWidget {
     final appState = context.watch<AppState>();
     final cellId = appState.currentCellId;
     final riskState = appState.myRiskState;
+    // Demo mode has no real GPS-derived cell to key off (see
+    // AppState.myRiskState) — treat it as "known" here too, otherwise
+    // the badge stays hidden behind myRiskNoCell throughout a demo.
+    final hasKnownArea = appState.demoMode || cellId != null;
 
-    final relevantHazard = appState.activeHazards
-        .where((h) => cellId != null && h.cells.contains(cellId))
-        .fold<Hazard?>(null, (best, h) {
-      if (best == null || h.state.index > best.state.index) return h;
-      return best;
-    });
+    final relevantHazard = appState.demoMode
+        ? appState.activeHazards.fold<Hazard?>(null, (best, h) {
+            if (best == null || h.state.index > best.state.index) return h;
+            return best;
+          })
+        : appState.activeHazards
+            .where((h) => cellId != null && h.cells.contains(cellId))
+            .fold<Hazard?>(null, (best, h) {
+            if (best == null || h.state.index > best.state.index) return h;
+            return best;
+          });
 
     final locale = Localizations.localeOf(context).languageCode;
 
@@ -36,7 +45,7 @@ class RiskScreen extends StatelessWidget {
             children: [
               Text(l10n.myRiskTitle, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 24),
-              if (cellId == null)
+              if (!hasKnownArea)
                 Text(l10n.myRiskNoCell)
               else
                 RiskBadge(state: riskState, large: true),

@@ -38,6 +38,16 @@ Hazard hazard({required RiskState state, required List<String> cells}) => Hazard
       messageMs: 'ms',
     );
 
+SiagaNode demoNode(RiskState state) => SiagaNode(
+      id: 999,
+      name: 'Demo Node',
+      lat: 4.85,
+      lon: 100.74,
+      state: state,
+      lastSeen: DateTime.now(),
+      batteryVolts: 3.8,
+    );
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late SharedPreferences prefs;
@@ -98,5 +108,31 @@ void main() {
       hazard(state: RiskState.warning, cells: ['cellA']),
     ];
     expect(state.myRiskState, RiskState.evacuate);
+  });
+
+  test('demo mode reflects the demo node state directly with no GPS fix', () {
+    final state = buildState('cellA');
+    expect(state.currentCellId, isNull, reason: 'no position reported — no real cell known');
+    state.demoMode = true;
+    state.nodes = [demoNode(RiskState.evacuate)];
+    // Without the demo-mode branch this would stay NORMAL forever, since
+    // hazard-cell matching depends on a currentCellId that demo mode
+    // (deliberately, for booth use with no GPS) never provides.
+    expect(state.myRiskState, RiskState.evacuate);
+  });
+
+  test('demo mode is normal before the first demo tick populates a node', () {
+    final state = buildState('cellA');
+    state.demoMode = true;
+    expect(state.nodes, isEmpty);
+    expect(state.myRiskState, RiskState.normal);
+  });
+
+  test('non-demo mode is unaffected by a stale demo node left in state', () {
+    final state = buildState('cellA');
+    state.nodes = [demoNode(RiskState.evacuate)];
+    state.demoMode = false;
+    // real-mode logic must still key off hazard/cell matching, not nodes
+    expect(state.myRiskState, RiskState.normal);
   });
 }

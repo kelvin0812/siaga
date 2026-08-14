@@ -34,7 +34,18 @@ class AppState extends ChangeNotifier {
   /// The highest-severity active hazard whose cell list includes the
   /// user's current cell — NORMAL if none do, matching how the backend's
   /// state machine treats "nothing corroborated" (state_machine.py).
+  ///
+  /// In demo mode this instead reflects the demo node's state directly.
+  /// The demo is meant to work at a booth with no real GPS fix — tying it
+  /// to a real currentCellId meant demo hazards had an empty cells list
+  /// whenever location permission wasn't granted, so this indicator
+  /// silently never left NORMAL during a demo. There's exactly one demo
+  /// node, standing in for "your area," so using its state directly is
+  /// the correct fix, not a workaround.
   RiskState get myRiskState {
+    if (demoMode) {
+      return nodes.isEmpty ? RiskState.normal : nodes.first.state;
+    }
     final cellId = currentCellId;
     if (cellId == null) return RiskState.normal;
     var highest = RiskState.normal;
