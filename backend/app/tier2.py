@@ -1,17 +1,18 @@
 """
 Tier 2 inference interface (build brief Section 6.3 / 7). The real model
 is LightGBM, trained on historical public rainfall/water-level records
-plus synthetic hydrographs (Section 7) — that training pipeline is
-separate future work and out of scope for wiring the backend together.
+plus synthetic hydrographs (Section 7) — see ml/train.py and
+docs/nexus-log.md for the training pipeline and what it actually found.
 
 `HeuristicTier2Stub` exists only so the guardrail and state machine have
-something to run against before that model exists. It is NOT calibrated
-against real flood data and must not be used to evaluate acceptance
-criterion O3 (recall >= 0.90 @ FPR <= 0.10) — that requires the trained
-model described in Section 7.1.
+something to run against without a trained model present (e.g. a fresh
+clone before `ml/train.py` has been run) — same resilience philosophy as
+the rest of the backend (Section 2: degrade visibly, don't crash).
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Protocol
 
 
@@ -41,17 +42,43 @@ class HeuristicTier2Stub:
 
 class LightGBMTier2Model:
     """
-    Loads the persisted model + feature list + metrics that Section 7.1
-    requires be kept together. Not implemented yet — no trained model
-    exists until the Section 7 ML step runs. Constructing this before
-    then is a programming error, not a runtime fallback path.
+    Loads the persisted model + feature list that Section 7.1 requires be
+    kept together (ml/train.py writes model.txt + feature_names.json +
+    metrics.json into the same directory). The feature list is checked
+    against backend.app.features.FEATURE_NAMES at load time — if they've
+    drifted apart, that's a train/serve skew bug, and failing loudly here
+    beats silently feeding the model columns in the wrong order.
     """
 
-    def __init__(self, model_path: str) -> None:
-        raise NotImplementedError(
-            "no trained Tier 2 model yet — see build brief Section 7; "
-            "use HeuristicTier2Stub until docs/ has a persisted model + metrics"
-        )
+    def __init__(self, model_dir: str) -> None:
+        import lightgbm as lgb
+
+        from backend.app.features import FEATURE_NAMES
+
+        model_path = Path(model_dir)
+        feature_names_path = model_path / "feature_names.json"
+        model_file = model_path / "model.txt"
+
+        if not model_file.exists():
+            raise FileNotFoundError(
+                f"no trained Tier 2 model at {model_file} — run `python -m ml.train` "
+                "first, or use HeuristicTier2Stub until then"
+            )
+
+        persisted_features = json.loads(feature_names_path.read_text(encoding="utf-8"))
+        if persisted_features != list(FEATURE_NAMES):
+            raise ValueError(
+                "persisted Tier 2 model's feature list does not match "
+                "backend.app.features.FEATURE_NAMES — the model needs "
+                "retraining (features.py changed after this model was "
+                "trained). Refusing to load a model that would silently "
+                "receive features in the wrong order/shape."
+            )
+
+        self._feature_names = persisted_features
+        self._booster = lgb.Booster(model_file=str(model_file))
 
     def predict(self, features: dict[str, float]) -> float:
-        raise NotImplementedError
+        row = [[features[name] for name in self._feature_names]]
+        prob = self._booster.predict(row)[0]
+        return max(0.0, min(1.0, float(prob)))

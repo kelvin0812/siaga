@@ -130,9 +130,9 @@ class TestTier2Stub:
         p = stub.predict({"level_d1_m_per_min": -0.5, "antecedent_soil_moisture_pct": 90.0})
         assert p == pytest.approx(0.0)
 
-    def test_lightgbm_model_not_yet_implemented(self):
-        with pytest.raises(NotImplementedError):
-            LightGBMTier2Model("nonexistent/path.txt")
+    def test_lightgbm_model_missing_file_raises_filenotfounderror(self):
+        with pytest.raises(FileNotFoundError):
+            LightGBMTier2Model("nonexistent/path")
 
 
 class TestGuardrail:

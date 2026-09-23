@@ -1,0 +1,20 @@
+[
+  "level_lag_5m",
+  "level_lag_15m",
+  "level_lag_30m",
+  "level_lag_60m",
+  "level_d1_m_per_min",
+  "level_d2_m_per_min2",
+  "rain_cum_1h_mm",
+  "rain_cum_3h_mm",
+  "rain_cum_6h_mm",
+  "rain_cum_24h_mm",
+  "antecedent_soil_moisture_pct",
+  "tilt_x_lsb",
+  "tilt_y_lsb",
+  "tilt_magnitude_lsb",
+  "time_of_day_sin",
+  "time_of_day_cos",
+  "season_sin",
+  "season_cos"
+]
