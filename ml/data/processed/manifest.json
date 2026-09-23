@@ -1,0 +1,120 @@
+{
+  "real_stations": [
+    {
+      "station_id": "5207403_",
+      "name": "Sg. Selama di Kg. Gua Petai",
+      "alert_m": 13.5,
+      "raw_readings": 15390,
+      "labeled_rows": 15269,
+      "positive_rows": 0,
+      "date_range": [
+        "2026-05-12T09:30:00",
+        "2026-09-23T06:45:00"
+      ]
+    },
+    {
+      "station_id": "25789",
+      "name": "Sg. Ijok di Titi Ijok Perak (RHN)",
+      "alert_m": 10.5,
+      "raw_readings": 26116,
+      "labeled_rows": 26052,
+      "positive_rows": 356,
+      "date_range": [
+        "2026-05-04T21:40:00",
+        "2026-09-23T17:15:00"
+      ]
+    },
+    {
+      "station_id": "4907020_",
+      "name": "Sg. Kurau di Bt. 14 Batu Kurau",
+      "alert_m": 24.0,
+      "raw_readings": 29905,
+      "labeled_rows": 29876,
+      "positive_rows": 0,
+      "date_range": [
+        "2025-10-01T00:00:00",
+        "2026-09-23T18:00:00"
+      ]
+    },
+    {
+      "station_id": "5007020_",
+      "name": "Sg. Kurau di Pondok Tanjung",
+      "alert_m": 13.5,
+      "raw_readings": 14155,
+      "labeled_rows": 14129,
+      "positive_rows": 0,
+      "date_range": [
+        "2026-04-22T11:00:00",
+        "2026-09-23T17:45:00"
+      ]
+    },
+    {
+      "station_id": "25969",
+      "name": "Sg. Kampar di Kg. Baru Kuala Dipang (RHN)",
+      "alert_m": 22.0,
+      "raw_readings": 78932,
+      "labeled_rows": 78887,
+      "positive_rows": 3184,
+      "date_range": [
+        "2025-10-01T00:00:00",
+        "2026-09-23T17:45:00"
+      ]
+    },
+    {
+      "station_id": "27181",
+      "name": "Emp. Ulu Kinta (RHN)",
+      "alert_m": 246.5,
+      "raw_readings": 40561,
+      "labeled_rows": 40390,
+      "positive_rows": 6949,
+      "date_range": [
+        "2025-10-10T04:50:00",
+        "2026-09-23T13:15:00"
+      ]
+    },
+    {
+      "station_id": "25968",
+      "name": "Sg. Chemor di Kg. Cik Zainal (RHN)",
+      "alert_m": 74.2,
+      "raw_readings": 79057,
+      "labeled_rows": 79014,
+      "positive_rows": 843,
+      "date_range": [
+        "2025-10-14T12:30:00",
+        "2026-09-23T17:45:00"
+      ]
+    },
+    {
+      "station_id": "25786",
+      "name": "Sg. Perak di Pekan Manong (RHN)",
+      "alert_m": 25.0,
+      "raw_readings": 80710,
+      "labeled_rows": 80625,
+      "positive_rows": 0,
+      "date_range": [
+        "2025-10-01T00:00:00",
+        "2026-09-23T17:45:00"
+      ]
+    },
+    {
+      "station_id": "5108005_",
+      "name": "Sg. Ijok di Bekalan Ijok",
+      "alert_m": 35.0,
+      "raw_readings": 28908,
+      "labeled_rows": 28793,
+      "positive_rows": 1330,
+      "date_range": [
+        "2025-10-01T18:30:00",
+        "2026-09-23T18:00:00"
+      ]
+    }
+  ],
+  "synthetic_runs": 200,
+  "total_rows": 429618,
+  "positive_rows": 37565,
+  "positive_rate": 0.0874381427221392,
+  "train_rows": 322131,
+  "test_rows": 107487,
+  "train_positive_rate": 0.10083164923586987,
+  "test_positive_rate": 0.04729874310381721
+}

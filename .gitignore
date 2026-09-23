@@ -8,3 +8,14 @@ __pycache__/
 *.sqlite3
 .vercel/
 *.egg-info/
+
+# Raw scraped JPS telemetry (~200MB+) and the processed train/test CSVs
+# built from it (~90MB) — both regeneratable via `python -m ml.fetch_data`
+# then `python -m ml.build_dataset`, and neither is what Section 7.1 asks
+# to be persisted for reproducibility (that's the model + feature list +
+# metrics in backend/models/, which are small and ARE committed).
+# manifest.json (composition/counts/date ranges, not the row data itself)
+# is kept, not ignored — see the !-negation below.
+ml/data/raw/
+ml/data/processed/*.csv
+

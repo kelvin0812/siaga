@@ -33,7 +33,7 @@ from backend.app.config import settings
 from backend.app.fcm import FCMClient, FirebaseFCMClient, NullFCMClient
 from backend.app.repository import InMemoryRepository, Repository
 from backend.app.state_machine import StateMachine
-from backend.app.tier2 import HeuristicTier2Stub
+from backend.app.tier2 import HeuristicTier2Stub, LightGBMTier2Model, Tier2Model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("siaga.main")
@@ -81,6 +81,23 @@ def build_fcm_client() -> FCMClient:
     return FirebaseFCMClient(settings.firebase_credentials_path)
 
 
+def build_tier2_model() -> Tier2Model:
+    if not settings.tier2_model_dir:
+        logger.warning("no tier2_model_dir configured — using HeuristicTier2Stub")
+        return HeuristicTier2Stub()
+    try:
+        return LightGBMTier2Model(settings.tier2_model_dir)
+    except (FileNotFoundError, ImportError, ValueError) as e:
+        # FileNotFoundError: no model trained yet. ImportError: lightgbm
+        # isn't installed in this environment (it's a training-only dep
+        # per ml/requirements.txt, not guaranteed everywhere the
+        # persistent process might run). ValueError: persisted feature
+        # list doesn't match features.py anymore. All three should
+        # degrade to the stub, not crash the process (Section 2).
+        logger.warning("falling back to HeuristicTier2Stub: %s", e)
+        return HeuristicTier2Stub()
+
+
 async def run_full_process() -> None:
     import uvicorn
 
@@ -89,7 +106,7 @@ async def run_full_process() -> None:
     repo = await build_repository()
     fcm_client = build_fcm_client()
     state_machine = StateMachine()
-    tier2_model = HeuristicTier2Stub()
+    tier2_model = build_tier2_model()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

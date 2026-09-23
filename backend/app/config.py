@@ -25,5 +25,9 @@ class Settings(BaseSettings):
     density_min_subscribers: int = 10
     alert_buffer_rings: int = 2
 
+    # Directory containing model.txt + feature_names.json + metrics.json
+    # (ml/train.py's output, Section 7.1). Empty/missing -> HeuristicTier2Stub.
+    tier2_model_dir: str = "backend/models/tier2_lightgbm"
+
 
 settings = Settings()
