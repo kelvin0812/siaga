@@ -12,10 +12,16 @@ dependencies = [
     "h3>=4.1",
     "firebase-admin>=6.5",
     "httpx>=0.27",
+    # Runtime dep of backend/app/tier2.py's LightGBMTier2Model, not just
+    # a training-time tool — the persistent process (Dockerfile does a
+    # plain `pip install -e .`, no [dev] extras) needs this to actually
+    # load and serve the trained model rather than silently falling back
+    # to HeuristicTier2Stub via the ImportError catch in main.py.
+    "lightgbm>=4.5",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9", "pytest-asyncio>=0.24", "lightgbm>=4.5"]
+dev = ["pytest>=9", "pytest-asyncio>=0.24"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
