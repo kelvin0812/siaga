@@ -241,7 +241,14 @@ class _FloatingNavBar extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.62),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.surfaceRaised.withValues(alpha: 0.70),
+                    AppColors.surface.withValues(alpha: 0.55),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 border: Border.all(color: AppColors.hairline),
               ),

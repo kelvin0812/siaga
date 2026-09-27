@@ -12,7 +12,7 @@ class AppColors {
   static const bgBottom = Color(0xFF050810);
   static const surface = Color(0xFF121A2E);
   static const surfaceRaised = Color(0xFF1A2338);
-  static const hairline = Color(0x1FFFFFFF); // white @ 12%
+  static const hairline = Color(0x1AFFFFFF); // white @ 10% — soft "frosted glass" edge, not a hard line
   static const textPrimary = Color(0xFFF3F5FA);
   static const textSecondary = Color(0xFF97A2B8);
   static const textMuted = Color(0xFF616E85);
@@ -43,14 +43,21 @@ class AppRadius {
   static const pill = 999.0;
 }
 
-/// Command-center typography: a condensed technical sans for headings and
-/// labels (Rajdhani — reads like radar/telemetry UI chrome), and a
-/// monospace face for anything that's actually a number — risk levels,
-/// readings, timestamps — so those values look measured rather than
-/// decorative. Kept as explicit helpers rather than folded into the global
-/// textTheme so existing Theme.of(context).textTheme.* call sites (body
-/// copy, hazard messages) aren't silently pulled into a condensed display
-/// face where they'd hurt readability.
+/// Command-center typography: exactly two families, each with one job.
+///
+/// Plus Jakarta Sans is the ONLY sans in the app — every header, label,
+/// button, hazard message and settings row uses it (via the global
+/// textTheme below, or AppFonts.heading() for display-weight text). It
+/// replaces an earlier mix of Manrope (body) and Rajdhani (headings),
+/// which was two typefaces doing the same job and reading as inconsistent
+/// rather than deliberate.
+///
+/// JetBrains Mono is reserved *strictly* for live telemetry: sensor
+/// readings, coordinates, and timestamps — the numbers a district officer
+/// would actually verify against the raw feed. It must never be used for
+/// a proper noun, a category label, or prose (a node's name or a unit
+/// caption like "tips since last tx" is not telemetry, and setting it in
+/// monospace reads as a mistake, not a style choice).
 class AppFonts {
   AppFonts._();
 
@@ -58,14 +65,14 @@ class AppFonts {
     double fontSize = 20,
     FontWeight fontWeight = FontWeight.w700,
     Color color = AppColors.textPrimary,
-    double letterSpacing = 0.4,
+    double letterSpacing = 0.1,
   }) =>
-      GoogleFonts.rajdhani(
+      GoogleFonts.plusJakartaSans(
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
         letterSpacing: letterSpacing,
-        height: 1.0,
+        height: 1.15,
       );
 
   static TextStyle mono({
@@ -108,7 +115,7 @@ class SiagaTheme {
       ),
     );
 
-    final textTheme = GoogleFonts.manropeTextTheme(base.textTheme).apply(
+    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
@@ -137,10 +144,10 @@ class SiagaTheme {
         indicatorColor: AppColors.accent.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.rajdhani(
-            fontSize: 12,
+          return GoogleFonts.plusJakartaSans(
+            fontSize: 11.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-            letterSpacing: 0.6,
+            letterSpacing: 0.2,
             color: selected ? AppColors.accent : AppColors.textSecondary,
           );
         }),
@@ -174,7 +181,7 @@ class SiagaTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 16),
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
       switchTheme: SwitchThemeData(

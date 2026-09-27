@@ -68,6 +68,21 @@ class _RiskGaugeState extends State<RiskGauge> with SingleTickerProviderStateMix
                     decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.25)),
                   ),
                 ),
+              // The dial's own "lit instrument face" — a soft radial wash
+              // in the current state colour, sitting between the tick
+              // ring and the centre readout. Reads as backlit glass
+              // rather than a flat disc.
+              Container(
+                width: 224,
+                height: 224,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [color.withValues(alpha: 0.10), Colors.transparent],
+                    stops: const [0.0, 0.85],
+                  ),
+                ),
+              ),
               CustomPaint(
                 size: const Size(280, 280),
                 painter: _GaugePainter(state: widget.state, pulse: urgent ? t : 0.0),
@@ -77,7 +92,7 @@ class _RiskGaugeState extends State<RiskGauge> with SingleTickerProviderStateMix
                 children: [
                   Icon(_icon, color: color, size: 34),
                   const SizedBox(height: 10),
-                  Text(label.toUpperCase(), style: AppFonts.mono(fontSize: 24, fontWeight: FontWeight.w700, color: color)),
+                  Text(label.toUpperCase(), style: AppFonts.heading(fontSize: 25, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.6)),
                   const SizedBox(height: 6),
                   Text(
                     'LVL ${widget.state.index + 1}/4',
