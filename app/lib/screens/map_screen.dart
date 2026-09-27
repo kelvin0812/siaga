@@ -54,7 +54,7 @@ class _MapScreenState extends State<MapScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.my_location, color: Color(0xFF1565C0)),
+                const Icon(Icons.my_location, color: Color(0xFF3D8BFF)),
                 const SizedBox(width: 8),
                 Text(l10n.myLocationTitle, style: Theme.of(context).textTheme.titleLarge),
               ],
@@ -74,7 +74,7 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(height: 12),
             Text(
               l10n.myLocationPrivacyNote,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              style: const TextStyle(color: Color(0xFF97A2B8), fontSize: 12),
             ),
           ],
         ),
@@ -189,7 +189,7 @@ class _NodeInfoPanel extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
+                    color: Colors.white.withValues(alpha: 0.24),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -220,7 +220,7 @@ class _NodeInfoPanel extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.place_outlined, size: 14, color: Colors.grey.shade600),
+                  Icon(Icons.place_outlined, size: 14, color: const Color(0xFF97A2B8)),
                   const SizedBox(width: 4),
                   Text(
                     '${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}',
@@ -294,7 +294,7 @@ class _MyLocationMarkerState extends State<_MyLocationMarker>
                     width: 24 + pulse * 30,
                     height: 24 + pulse * 30,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1565C0).withValues(alpha: 0.35),
+                      color: const Color(0xFF3D8BFF).withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -307,7 +307,7 @@ class _MyLocationMarkerState extends State<_MyLocationMarker>
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF1565C0),
+              color: const Color(0xFF3D8BFF),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
               boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 6)],
@@ -373,7 +373,7 @@ class _OfflineBanner extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
-      color: Colors.grey.shade800,
+      color: const Color(0xFF1A2338),
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
         l10n.offlineBanner,
