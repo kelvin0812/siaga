@@ -16,6 +16,8 @@ class GlassCard extends StatelessWidget {
   final double radius;
   final Color? glowColor;
   final List<Color>? borderGradient;
+  final double glowAlpha;
+  final double glowBlur;
 
   const GlassCard({
     super.key,
@@ -24,10 +26,20 @@ class GlassCard extends StatelessWidget {
     this.radius = AppRadius.lg,
     this.glowColor,
     this.borderGradient,
+    this.glowAlpha = 0.22,
+    this.glowBlur = 32,
   });
 
   @override
   Widget build(BuildContext context) {
+    // The glass wash itself picks up a whisper of the card's own glow
+    // colour in its top-left corner (falling back to plain white when
+    // there isn't one) rather than staying neutral grey — this is what
+    // ties "this card glows red" through to "this card's glass is warm"
+    // instead of the glow being a shadow bolted on top of an unrelated
+    // panel. Kept under 10% alpha so it reads as tinted glass, not a
+    // colour fill.
+    final washTint = glowColor ?? Colors.white;
     final glass = ClipRRect(
       borderRadius: BorderRadius.circular(borderGradient == null ? radius : radius - 1),
       child: BackdropFilter(
@@ -41,7 +53,7 @@ class GlassCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withValues(alpha: 0.07),
+                washTint.withValues(alpha: glowColor != null ? 0.09 : 0.07),
                 Colors.white.withValues(alpha: 0.02),
               ],
             ),
@@ -58,7 +70,7 @@ class GlassCard extends StatelessWidget {
         gradient: borderGradient == null
             ? null
             : LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: borderGradient!),
-        boxShadow: glowColor != null ? appGlow(glowColor!, alpha: 0.22, blur: 32) : null,
+        boxShadow: glowColor != null ? appGlow(glowColor!, alpha: glowAlpha, blur: glowBlur) : null,
       ),
       child: glass,
     );
