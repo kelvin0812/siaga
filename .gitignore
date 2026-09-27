@@ -19,3 +19,6 @@ __pycache__/
 ml/data/raw/
 ml/data/processed/*.csv
 
+
+.vercel
+.env*
