@@ -79,6 +79,14 @@ class Repository(Protocol):
         self, node_id: int, from_state: str, to_state: str, occurred_at: datetime, reason: dict
     ) -> None: ...
 
+    # Updated on every processed reading (unlike append_transition, which
+    # only fires when the discrete state changes) — this is the Tier 2
+    # guardrail's raw probability output, surfaced to the app as a
+    # percentage alongside the NORMAL/WATCH/WARNING/EVACUATE state rather
+    # than only ever being visible inside a transition's logged reason.
+    async def update_risk_probability(self, node_id: int, probability: float) -> None: ...
+    async def get_risk_probability(self, node_id: int) -> float | None: ...
+
     async def create_hazard(
         self, state: str, cells: list[str], message_en: str, message_ms: str
     ) -> HazardRecord: ...
@@ -105,6 +113,7 @@ class InMemoryRepository:
         self._reports: list[dict] = []
         self._next_report_id = 1
         self._subscriptions: dict[str, int] = {}
+        self._probabilities: dict[int, float] = {}
 
     async def upsert_node(
         self,
@@ -206,3 +215,9 @@ class InMemoryRepository:
 
     async def get_density(self, min_count: int) -> dict[str, int]:
         return {cell: count for cell, count in self._subscriptions.items() if count >= min_count}
+
+    async def update_risk_probability(self, node_id: int, probability: float) -> None:
+        self._probabilities[node_id] = probability
+
+    async def get_risk_probability(self, node_id: int) -> float | None:
+        return self._probabilities.get(node_id)

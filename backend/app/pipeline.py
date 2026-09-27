@@ -85,6 +85,10 @@ async def process_reading(
     guardrail_inputs = evaluate_guardrail(
         reading, features, tier2_model, critical_height_m=node.critical_height_m
     )
+    # Every reading, not just ones that cause a transition -- state only
+    # moves when dwell conditions are met (Section 5.4), but the raw
+    # probability behind it is worth surfacing continuously.
+    await repo.update_risk_probability(node.id, guardrail_inputs.tier2_p)
 
     transition = state_machine.evaluate(node.id, reading.received_at, guardrail_inputs)
     if transition is None:

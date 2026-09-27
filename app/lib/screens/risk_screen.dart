@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,11 @@ class _RiskScreenState extends State<RiskScreen> {
             ),
           )
         else
-          RiskGauge(state: riskState),
+          RiskGauge(
+            state: riskState,
+            probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : nearest?.riskProbability,
+            probabilityLabel: appState.demoMode ? 'Simulated severity' : 'Tier 2 probability',
+          ),
         const SizedBox(height: 24),
         if (hasKnownArea) _ThreatStepper(current: riskState),
       ],

@@ -50,7 +50,12 @@ create index if not exists readings_node_time_idx on readings (node_id, received
 create table if not exists node_state (
     node_id smallint primary key references nodes(id),
     state text not null,
-    updated_at timestamptz not null default now()
+    updated_at timestamptz not null default now(),
+    -- Tier 2 guardrail's raw probability (0.0-1.0) as of the last
+    -- processed reading. Updated on every reading, unlike `state` itself,
+    -- which only moves on a state-machine transition -- so this is the
+    -- one place a "live percentage" actually exists to show in the app.
+    risk_probability double precision
 );
 
 -- Every state change, with the inputs that caused it, so any alert can be

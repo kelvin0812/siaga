@@ -17,7 +17,15 @@ import 'risk_badge.dart';
 /// to look like an instrument reading, not a headline.
 class RiskGauge extends StatefulWidget {
   final RiskState state;
-  const RiskGauge({super.key, required this.state});
+  // 0.0-1.0. In live mode this is the Tier 2 guardrail's actual model
+  // output (backend/app/guardrail.py); in demo mode it's the synthetic
+  // hydrograph's own position between baseline and peak — the same ratio
+  // that already decides the demo's state, not a fabricated number. Null
+  // until the backend has processed at least one reading for this node.
+  final double? probability;
+  final String? probabilityLabel;
+
+  const RiskGauge({super.key, required this.state, this.probability, this.probabilityLabel});
 
   @override
   State<RiskGauge> createState() => _RiskGaugeState();
@@ -94,6 +102,18 @@ class _RiskGaugeState extends State<RiskGauge> with SingleTickerProviderStateMix
                   const SizedBox(height: 10),
                   Text(label.toUpperCase(), style: AppFonts.heading(fontSize: 25, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.6)),
                   const SizedBox(height: 6),
+                  if (widget.probability != null) ...[
+                    Text(
+                      '${(widget.probability! * 100).round()}%',
+                      style: AppFonts.mono(fontSize: 20, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.4),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      (widget.probabilityLabel ?? 'RISK PROBABILITY').toUpperCase(),
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 8.5, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
                     'LVL ${widget.state.index + 1}/4',
                     style: AppFonts.mono(fontSize: 12, color: AppColors.textMuted, letterSpacing: 1.2),

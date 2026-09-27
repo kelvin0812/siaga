@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart' as ll;
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
+import '../core/offline_cache.dart';
+import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/demo_readout.dart';
 import '../widgets/node_history_chart.dart';
@@ -29,15 +31,49 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   Position? _myPosition;
   int? _selectedNodeId;
+  List<AssemblyPoint> _assemblyPoints = const [];
+  bool _showEvacRoute = false;
 
   @override
   void initState() {
     super.initState();
-    final locationService = context.read<AppState>().locationService;
+    final appState = context.read<AppState>();
+    final locationService = appState.locationService;
     _myPosition = locationService.lastKnownPosition;
     locationService.positionUpdates.listen((position) {
       if (mounted) setState(() => _myPosition = position);
     });
+    appState.cache.loadAssemblyPoints().then((points) {
+      if (mounted) setState(() => _assemblyPoints = points);
+    });
+  }
+
+  /// Where to route FROM: the device's own position when known, else — in
+  /// demo mode, where there's no real GPS fix to rely on — the simulated
+  /// node's own location, since that's the point the demo is illustrating
+  /// as "at risk." Returns null (no route to draw) rather than guessing
+  /// when neither is available.
+  ll.LatLng? _evacuationOrigin(AppState appState) {
+    if (_myPosition != null) return ll.LatLng(_myPosition!.latitude, _myPosition!.longitude);
+    if (appState.demoMode && appState.nodes.isNotEmpty) {
+      final node = appState.nodes.first;
+      return ll.LatLng(node.lat, node.lon);
+    }
+    return null;
+  }
+
+  AssemblyPoint? _nearestAssemblyPoint(ll.LatLng from) {
+    if (_assemblyPoints.isEmpty) return null;
+    AssemblyPoint nearest = _assemblyPoints.first;
+    var bestDistance = double.infinity;
+    for (final point in _assemblyPoints) {
+      final distance = Geolocator.distanceBetween(from.latitude, from.longitude, point.lat, point.lon);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        nearest = point;
+      }
+    }
+    return nearest;
   }
 
   void _showMyLocationInfo(BuildContext context) {
@@ -103,6 +139,10 @@ class _MapScreenState extends State<MapScreen> {
       });
     }
 
+    final origin = _evacuationOrigin(appState);
+    final nearestAssembly = origin != null ? _nearestAssemblyPoint(origin) : null;
+    final routeActive = _showEvacRoute && origin != null && nearestAssembly != null;
+
     return Stack(
       children: [
         Column(
@@ -116,6 +156,17 @@ class _MapScreenState extends State<MapScreen> {
                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.siaga.siaga_app',
                   ),
+                  if (routeActive)
+                    PolylineLayer(
+                      polylines: [
+                        Polyline(
+                          points: [origin, ll.LatLng(nearestAssembly.lat, nearestAssembly.lon)],
+                          color: AppColors.accent,
+                          strokeWidth: 4,
+                          pattern: const StrokePattern.dotted(),
+                        ),
+                      ],
+                    ),
                   MarkerLayer(
                     markers: [
                       ...nodes.map(
@@ -126,6 +177,17 @@ class _MapScreenState extends State<MapScreen> {
                           child: _NodeMarker(
                             node: node,
                             onTap: () => setState(() => _selectedNodeId = node.id),
+                          ),
+                        ),
+                      ),
+                      ..._assemblyPoints.map(
+                        (point) => Marker(
+                          point: ll.LatLng(point.lat, point.lon),
+                          width: 34,
+                          height: 34,
+                          child: _AssemblyPointMarker(
+                            point: point,
+                            highlighted: routeActive && point.id == nearestAssembly.id,
                           ),
                         ),
                       ),
@@ -143,6 +205,28 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ],
         ),
+        if (origin != null && _assemblyPoints.isNotEmpty)
+          Positioned(
+            top: appState.isOffline ? 44 : 12,
+            right: 12,
+            child: _EvacRouteToggle(
+              active: _showEvacRoute,
+              onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
+            ),
+          ),
+        if (routeActive)
+          Positioned(
+            left: 12,
+            right: 12,
+            // Clears the floating nav dock (68px tall + its own 12px
+            // bottom margin, see main.dart's _FloatingNavBar) rather than
+            // sitting directly above the screen edge, where it would end
+            // up underneath the dock instead of visible above it.
+            bottom: 92,
+            child: _EvacRouteSummary(assemblyPoint: nearestAssembly, distanceM: Geolocator.distanceBetween(
+              origin.latitude, origin.longitude, nearestAssembly.lat, nearestAssembly.lon,
+            )),
+          ),
         if (selectedNode != null)
           _NodeInfoPanel(
             node: selectedNode,
@@ -150,6 +234,117 @@ class _MapScreenState extends State<MapScreen> {
             onClose: () => setState(() => _selectedNodeId = null),
           ),
       ],
+    );
+  }
+}
+
+/// Floating pill toggle for the evacuation-route overlay — deliberately
+/// off by default so the map isn't cluttered with a route line when
+/// nothing is wrong; Section 6.4 asks for cached routes to be available,
+/// not necessarily always drawn.
+class _EvacRouteToggle extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+  const _EvacRouteToggle({required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? AppColors.accent : Colors.black.withValues(alpha: 0.68),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: active ? appGlow(AppColors.accent, alpha: 0.4, blur: 14) : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(active ? Icons.directions_run : Icons.directions_outlined, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                l10n.evacuateViewRoute,
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom summary strip shown while the route overlay is active — the
+/// straight-line distance/direction to the nearest assembly point. Not
+/// turn-by-turn navigation (no routing API is in scope — see
+/// EvacuateScreen's _RouteInfo docstring), but enough to point someone
+/// the right way and let them pre-plan before a real evacuation.
+class _EvacRouteSummary extends StatelessWidget {
+  final AssemblyPoint assemblyPoint;
+  final double distanceM;
+  const _EvacRouteSummary({required this.assemblyPoint, required this.distanceM});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    final distanceLabel = distanceM >= 1000 ? '${(distanceM / 1000).toStringAsFixed(1)} km' : '${distanceM.round()} m';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.shield_outlined, color: AppColors.accent, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.assemblyPointsTitle.toUpperCase(),
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                ),
+                const SizedBox(height: 2),
+                Text(assemblyPoint.nameFor(locale), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          Text(distanceLabel, style: AppFonts.mono(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssemblyPointMarker extends StatelessWidget {
+  final AssemblyPoint point;
+  final bool highlighted;
+  const _AssemblyPointMarker({required this.point, required this.highlighted});
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final color = highlighted ? AppColors.accent : AppColors.normal;
+    return Tooltip(
+      message: point.nameFor(locale),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: highlighted ? appGlow(color, alpha: 0.6, blur: 12) : const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+        ),
+        child: const Icon(Icons.shield, color: Colors.white, size: 16),
+      ),
     );
   }
 }
@@ -205,6 +400,16 @@ class _NodeInfoPanel extends StatelessWidget {
               Row(
                 children: [
                   RiskBadge(state: node.state),
+                  if (node.riskProbability != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '${(node.riskProbability! * 100).round()}%',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w700, color: riskStateColor(node.state)),
+                    ),
+                  ],
                   const SizedBox(width: 12),
                   if (node.batteryVolts != null)
                     Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
