@@ -40,6 +40,12 @@ class SiagaNode {
   final RiskState state;
   final DateTime? lastSeen;
   final double? batteryVolts;
+  // Tier 2 guardrail's raw probability (0.0-1.0) as of the node's last
+  // processed reading — null until the backend has processed at least one
+  // reading for this node. This is real model output, not derived from
+  // `state` client-side (see risk_gauge.dart for why: state and
+  // probability can legitimately disagree while a dwell timer is pending).
+  final double? riskProbability;
 
   const SiagaNode({
     required this.id,
@@ -49,6 +55,7 @@ class SiagaNode {
     required this.state,
     required this.lastSeen,
     required this.batteryVolts,
+    this.riskProbability,
   });
 
   factory SiagaNode.fromJson(Map<String, dynamic> json) => SiagaNode(
@@ -61,6 +68,7 @@ class SiagaNode {
             ? null
             : DateTime.parse(json['last_seen'] as String),
         batteryVolts: (json['battery'] as num?)?.toDouble(),
+        riskProbability: (json['risk_probability'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -71,6 +79,7 @@ class SiagaNode {
         'state': state.toApi(),
         'last_seen': lastSeen?.toIso8601String(),
         'battery': batteryVolts,
+        'risk_probability': riskProbability,
       };
 }
 

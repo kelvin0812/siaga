@@ -54,6 +54,11 @@ class NodeOut(BaseModel):
     state: str
     last_seen: datetime | None
     battery: float | None
+    # Tier 2 guardrail's raw probability as of the last processed reading
+    # (Section 7's "per-node probability of threshold exceedance within 60
+    # minutes"). Null until at least one reading has gone through the
+    # pipeline for this node -- never fabricated to avoid a blank field.
+    risk_probability: float | None
 
 
 class ReadingOut(BaseModel):
@@ -124,6 +129,7 @@ async def list_nodes(request: Request):
     for node in nodes:
         state = await repo.get_node_state(node.id)
         last_reading = await repo.get_last_reading(node.id)
+        risk_probability = await repo.get_risk_probability(node.id)
         out.append(
             NodeOut(
                 id=node.id,
@@ -133,6 +139,7 @@ async def list_nodes(request: Request):
                 state=state,
                 last_seen=last_reading.received_at if last_reading else None,
                 battery=vbat_cv_to_volts(last_reading.vbat_cv) if last_reading else None,
+                risk_probability=risk_probability,
             )
         )
     return out

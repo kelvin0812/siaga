@@ -268,3 +268,27 @@ class AsyncpgRepository:
                 "select cell_id, count from cell_subscriptions where count >= $1", min_count
             )
         return {r["cell_id"]: r["count"] for r in rows}
+
+    async def update_risk_probability(self, node_id: int, probability: float) -> None:
+        async with self._pool.acquire() as conn:
+            # Runs on every processed reading, not just on a state
+            # transition, so this can't reuse append_transition's upsert.
+            # Omitting `state` from the SET clause on conflict leaves an
+            # existing row's state untouched -- only the probability moves.
+            await conn.execute(
+                """
+                insert into node_state (node_id, state, risk_probability, updated_at)
+                values ($1, 'NORMAL', $2, now())
+                on conflict (node_id) do update
+                    set risk_probability = excluded.risk_probability, updated_at = excluded.updated_at
+                """,
+                node_id,
+                probability,
+            )
+
+    async def get_risk_probability(self, node_id: int) -> float | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "select risk_probability from node_state where node_id = $1", node_id
+            )
+        return row["risk_probability"] if row else None

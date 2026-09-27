@@ -25,9 +25,13 @@ class DemoController {
     required this.appState,
     this.config = const HydrographConfig(),
     this.demoNodeId = 999,
-    this.demoNodeName = 'Demo Node',
-    this.demoNodeLat = 4.8500,
-    this.demoNodeLon = 100.7400,
+    // Real river fix (Sungai Larut, Kampung Pak Darus, Taiping — verified
+    // against OpenStreetMap's waterway data) rather than an arbitrary town-
+    // centre point; every node in this system is a water-level/slope gauge
+    // and should visibly sit on the watercourse it's monitoring.
+    this.demoNodeName = 'Sungai Larut Demo Node',
+    this.demoNodeLat = 4.8189,
+    this.demoNodeLon = 100.7289,
   }) {
     _points = generateHydrograph(config);
   }
@@ -76,7 +80,8 @@ class DemoController {
   }
 
   void _applyPoint(SimulatedPoint point) {
-    final state = _stateForDepth(point.depthMm);
+    final ratio = _ratioForDepth(point.depthMm);
+    final state = _stateForRatio(ratio);
     final node = SiagaNode(
       id: demoNodeId,
       name: demoNodeName,
@@ -85,6 +90,12 @@ class DemoController {
       state: state,
       lastSeen: DateTime.now(),
       batteryVolts: point.vbatVolts,
+      // Demo mode has no live Tier 2 model to query, so this is honestly
+      // labelled in the UI as the simulated hydrograph's own position
+      // between baseline and peak (the same ratio _stateForRatio uses to
+      // pick a state) rather than presented as if it were real model
+      // output — see RiskGauge's use of this field.
+      riskProbability: ratio,
     );
 
     final hazards = <Hazard>[];
@@ -117,14 +128,19 @@ class DemoController {
     appState.applyDemoState(nodes: [node], hazards: hazards, reading: reading);
   }
 
-  RiskState _stateForDepth(double depthMm) {
-    final ratio =
-        (depthMm - config.baselineDepthMm) / (config.peakDepthMm - config.baselineDepthMm);
+  double _ratioForDepth(double depthMm) {
+    final raw = (depthMm - config.baselineDepthMm) / (config.peakDepthMm - config.baselineDepthMm);
+    return raw.clamp(0.0, 1.0);
+  }
+
+  RiskState _stateForRatio(double ratio) {
     if (ratio >= 0.85) return RiskState.evacuate;
     if (ratio >= 0.55) return RiskState.warning;
     if (ratio >= 0.25) return RiskState.watch;
     return RiskState.normal;
   }
+
+  RiskState _stateForDepth(double depthMm) => _stateForRatio(_ratioForDepth(depthMm));
 
   /// Mirrors backend/app/fcm.py's alert templates, kept in sync by hand
   /// — the demo has no network path to the real backend to fetch these.
