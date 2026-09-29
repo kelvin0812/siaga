@@ -3,13 +3,17 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/offline_cache.dart';
+import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 
 /// Section 6.4: "full-screen high-priority presentation for EVACUATE" —
 /// the closest a Flutter app foreground route can get to a native alarm
 /// takeover. Pushed with a full-screen dialog route so it covers
 /// everything, including the bottom nav, and can't be dismissed by the
-/// back gesture alone (must tap acknowledge).
+/// back gesture alone (must tap acknowledge). Solid evacuate-red rather
+/// than the rest of the app's dark glass theme is deliberate here — this
+/// is the one screen where maximum contrast and zero ambiguity matter
+/// more than visual consistency.
 class EvacuateScreen extends StatefulWidget {
   final String messageEn;
   final String messageMs;
@@ -20,14 +24,25 @@ class EvacuateScreen extends StatefulWidget {
   State<EvacuateScreen> createState() => _EvacuateScreenState();
 }
 
-class _EvacuateScreenState extends State<EvacuateScreen> {
+class _EvacuateScreenState extends State<EvacuateScreen> with SingleTickerProviderStateMixin {
   List<AssemblyPoint> _assemblyPoints = const [];
   bool _showRoute = false;
+
+  late final AnimationController _beacon = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
 
   @override
   void initState() {
     super.initState();
     _loadAssemblyPoints();
+  }
+
+  @override
+  void dispose() {
+    _beacon.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAssemblyPoints() async {
@@ -45,54 +60,101 @@ class _EvacuateScreenState extends State<EvacuateScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: const Color(0xFFC62828),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                const SizedBox(height: 32),
-                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 80),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.evacuateHeadline,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+        backgroundColor: const Color(0xFF3A0A0A),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.4),
+              radius: 1.3,
+              colors: [Color(0xFFB01F1F), Color(0xFF3A0A0A)],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  AnimatedBuilder(
+                    animation: _beacon,
+                    builder: (context, _) {
+                      final t = _beacon.value;
+                      return SizedBox(
+                        width: 110,
+                        height: 110,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Opacity(
+                              opacity: (1 - t) * 0.6,
+                              child: Container(
+                                width: 80 + t * 30,
+                                height: 80 + t * 30,
+                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white24),
+                              ),
+                            ),
+                            Container(
+                              width: 90,
+                              height: 90,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.12),
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 52),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message.isNotEmpty ? message : l10n.evacuateBody,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                const Spacer(),
-                if (_showRoute) _RouteInfo(assemblyPoints: _assemblyPoints),
-                const SizedBox(height: 16),
-                if (!_showRoute)
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white),
-                      minimumSize: const Size(double.infinity, 48),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.evacuateHeadline,
+                    textAlign: TextAlign.center,
+                    style: AppFonts.heading(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.2),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    message.isNotEmpty ? message : l10n.evacuateBody,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
+                  ),
+                  const Spacer(),
+                  if (_showRoute) _RouteInfo(assemblyPoints: _assemblyPoints),
+                  const SizedBox(height: 16),
+                  if (!_showRoute)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white, width: 1.4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                        ),
+                        onPressed: () => setState(() => _showRoute = true),
+                        icon: const Icon(Icons.directions_run, size: 20),
+                        label: Text(l10n.evacuateViewRoute, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      ),
                     ),
-                    onPressed: () => setState(() => _showRoute = true),
-                    child: Text(l10n.evacuateViewRoute),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFFB01F1F),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(l10n.evacuateAcknowledge),
+                    ),
                   ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFC62828),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.evacuateAcknowledge),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -141,24 +203,36 @@ class _RouteInfo extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            l10n.assemblyPointsTitle,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          const Icon(Icons.shield_outlined, color: Colors.white, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.assemblyPointsTitle.toUpperCase(),
+                  style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  nearest.nameFor(locale),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(nearest.nameFor(locale), style: const TextStyle(color: Colors.white)),
           if (nearestDistanceM != null)
             Text(
               '${(nearestDistanceM / 1000).toStringAsFixed(1)} km',
-              style: const TextStyle(color: Colors.white70),
+              style: AppFonts.mono(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
             ),
         ],
       ),
