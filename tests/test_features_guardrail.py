@@ -51,8 +51,11 @@ class TestBuildFeatures:
     def test_lag_features_fall_back_to_current_height_with_no_history(self):
         readings = [reading(0, height_m=1.5)]
         features = build_features(T0, readings)
-        assert features["level_lag_5m"] == pytest.approx(1.5)
-        assert features["level_lag_60m"] == pytest.approx(1.5)
+        # Only one reading -- it's both the baseline and "current", so
+        # every lag ratio is 1.0 (no history yet reads as "no change",
+        # not a guess -- same philosophy as the old absolute fallback).
+        assert features["level_ratio_lag_5m"] == pytest.approx(1.0)
+        assert features["level_ratio_lag_60m"] == pytest.approx(1.0)
 
     def test_lag_features_pick_nearest_reading_at_or_before_target(self):
         readings = [
@@ -61,10 +64,11 @@ class TestBuildFeatures:
             reading(0, height_m=2.0),
         ]
         features = build_features(T0, readings)
-        # 15 min ago: nearest at-or-before is the 20-min-ago reading (1.0)
-        assert features["level_lag_15m"] == pytest.approx(1.0)
-        # 5 min ago: nearest at-or-before is the 10-min-ago reading (1.5)
-        assert features["level_lag_5m"] == pytest.approx(1.5)
+        # baseline = oldest reading in the window = 1.0
+        # 15 min ago: nearest at-or-before is the 20-min-ago reading (1.0/1.0)
+        assert features["level_ratio_lag_15m"] == pytest.approx(1.0)
+        # 5 min ago: nearest at-or-before is the 10-min-ago reading (1.5/1.0)
+        assert features["level_ratio_lag_5m"] == pytest.approx(1.5)
 
     def test_first_derivative_positive_when_rising(self):
         readings = [reading(2, height_m=1.0), reading(0, height_m=1.2)]

@@ -1,26 +1,26 @@
 {
-  "trained_at": "2026-09-23T10:42:48.545035+00:00",
-  "pr_auc": 0.9281043152929243,
+  "trained_at": "2026-09-29T11:58:42.965576+00:00",
+  "pr_auc": 0.9582105816678769,
   "test_rows": 107487,
   "test_positive_rows": 5084,
   "test_positive_rate": 0.04729874310381721,
-  "best_iteration": 39,
+  "best_iteration": 118,
   "acceptance_criterion_O3": {
     "target": "recall >= 0.90 at FPR <= 0.10",
     "operating_point_found": {
-      "threshold": 0.7,
-      "recall": 0.9049960660896932,
-      "fpr": 0.008593498237356327,
-      "precision": 0.839445356686736
+      "threshold": 0.795,
+      "recall": 0.9016522423288749,
+      "fpr": 0.005146333603507709,
+      "precision": 0.8968890628057131
     },
     "meets_target": true,
     "note": "Trained primarily on synthetic hydrographs augmenting real JPS station data (Section 7's own design \u2014 no real labelled flood events exist for this catchment scale). Whether this meets O3 in production depends on how representative the synthetic event distribution is of real flash floods; this number should be re-evaluated once real event data exists."
   },
   "feature_names": [
-    "level_lag_5m",
-    "level_lag_15m",
-    "level_lag_30m",
-    "level_lag_60m",
+    "level_ratio_lag_5m",
+    "level_ratio_lag_15m",
+    "level_ratio_lag_30m",
+    "level_ratio_lag_60m",
     "level_d1_m_per_min",
     "level_d2_m_per_min2",
     "rain_cum_1h_mm",

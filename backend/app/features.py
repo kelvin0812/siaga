@@ -1,5 +1,7 @@
 """
-Feature builder (build brief Section 6.3): lagged level, first/second
+Feature builder (build brief Section 6.3): lagged level expressed as a
+scale-invariant ratio to this node's own baseline (not absolute metres —
+see the comment above the ratio calculation for why), first/second
 derivatives, cumulative rainfall over multiple windows, an antecedent
 soil-moisture index, tilt delta, and cyclical time encodings — the input
 vector for Tier 2 inference (tier2.py).
@@ -38,12 +40,28 @@ def build_features(now: datetime, readings: list[ReadingRecord]) -> dict[str, fl
 
     features: dict[str, float] = {}
 
+    # Lagged level, expressed as a ratio to this node's own baseline rather
+    # than an absolute height in metres. Found via a post-training
+    # simulation (docs/nexus-log.md): with absolute level_lag_* features,
+    # the trained model used raw height_m as a strong signal, but the real
+    # JPS training stations span wildly different absolute datums (10.5m to
+    # 246.5m alert thresholds), so "what height looks risky" partly encoded
+    # *which station a row came from* rather than real risk — a flat, dry,
+    # zero-rain reading swung from 2% to 85% purely from absolute height
+    # alone. Adding a ratio feature *alongside* the absolute ones did not
+    # fix this: on a flat history the ratio is always 1.0 regardless of
+    # scale, giving the model no reason to stop leaning on the absolute
+    # features it had already learned to (mis)use. Replacing them outright
+    # closes that escape hatch. Floored at 5cm (a physically sensible noise
+    # floor) so a near-zero baseline can't blow the ratio up.
+    baseline_height_m = max(readings[0].height_m, 0.05)
     for lag_min in LAG_MINUTES:
         target = now - timedelta(minutes=lag_min)
         lagged = _nearest_at_or_before(readings, target)
         # No history that far back yet: fall back to the current height —
         # treats "no data" as "no change" rather than fabricating a trend.
-        features[f"level_lag_{lag_min}m"] = (lagged or current).height_m
+        lagged_height_m = (lagged or current).height_m
+        features[f"level_ratio_lag_{lag_min}m"] = lagged_height_m / baseline_height_m
 
     if len(readings) >= 2:
         prev = readings[-2]
@@ -89,7 +107,7 @@ def build_features(now: datetime, readings: list[ReadingRecord]) -> dict[str, fl
 
 
 FEATURE_NAMES = tuple(
-    [f"level_lag_{m}m" for m in LAG_MINUTES]
+    [f"level_ratio_lag_{m}m" for m in LAG_MINUTES]
     + ["level_d1_m_per_min", "level_d2_m_per_min2"]
     + [f"rain_cum_{h}h_mm" for h in RAIN_WINDOWS_HOURS]
     + [
