@@ -1,8 +1,8 @@
 [
-  "level_lag_5m",
-  "level_lag_15m",
-  "level_lag_30m",
-  "level_lag_60m",
+  "level_ratio_lag_5m",
+  "level_ratio_lag_15m",
+  "level_ratio_lag_30m",
+  "level_ratio_lag_60m",
   "level_d1_m_per_min",
   "level_d2_m_per_min2",
   "rain_cum_1h_mm",

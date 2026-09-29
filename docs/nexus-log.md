@@ -133,3 +133,41 @@ The one source that turned out to have exactly what Section 7 asks for is JPS's 
 **Wired into the backend properly, not left as a training artifact sitting in a folder.** `backend/app/tier2.py`'s `LightGBMTier2Model` now actually loads and predicts (previously `NotImplementedError` by design, since no model existed). It checks the persisted feature list against `backend.app.features.FEATURE_NAMES` at load time and refuses to load a mismatched model rather than silently feeding a booster columns in the wrong order — a real train/serve-skew guard, not a formality. `backend/app/main.py`'s `build_tier2_model()` picks it automatically when `backend/models/tier2_lightgbm/` exists, falling back to `HeuristicTier2Stub` (with a logged reason) if the model directory, the file, or even the `lightgbm` package itself is missing — same resilience posture as every other optional dependency in this system (Section 2: degrade visibly, don't crash). Regression-tested: loads-and-predicts-in-bounds, missing-file, and feature-list-mismatch are all covered in `tests/test_tier2_lightgbm.py`.
 
 **A bug caught by running the trainer, not by reading it.** The first training run completed successfully — PR-AUC computed, O3's bar met, model.txt and feature_names.json written — then crashed on the very last line writing `metrics.json`, because `numpy.bool_`/`numpy.float64` values (from pandas/sklearn comparisons) aren't JSON-serializable even though they print identically to native Python types. Fixed by casting every value in `find_operating_threshold`'s returned dict to native `float` explicitly. Left here as a small but real example of the class of bug this log is supposed to record: correct logic, still crashes, only visible by actually executing it.
+
+## 2026-09-29 — A real model bug, found by simulating scenarios, not by reading metrics
+
+**What triggered this.** Ahead of a mentor check-in, the team asked for a demonstration of "what data triggers what percentage" — a set of representative sensor scenarios run through the actual trained model, not a hypothetical table. Built as `simulate_scenarios.py`, calling `backend.app.features.build_features`, the real persisted LightGBM booster, `backend.app.guardrail.evaluate_guardrail`, and `backend.app.state_machine.desired_state` directly — the same production code, not a re-implementation, matching how every other tool in `ml/` is built.
+
+**A row that should have been unremarkable exposed a real problem.** A flat, dry, zero-rain, zero-tilt reading — the most boring input possible — produced **67.4%** (WARNING territory) from the deployed model. Isolated with a direct sweep of the same calm reading at different absolute heights, holding every other feature fixed:
+
+```
+height=  1.2m  flat/dry  ->  tier2_p= 67.4%
+height=  5.0m  flat/dry  ->  tier2_p= 50.4%
+height= 10.0m  flat/dry  ->  tier2_p= 15.4%
+height= 20.0m  flat/dry  ->  tier2_p=  2.1%   <- lowest
+height= 50.0m  flat/dry  ->  tier2_p=  2.1%
+height=100.0m  flat/dry  ->  tier2_p= 85.4%   <- high again
+height=200.0m  flat/dry  ->  tier2_p= 85.4%
+```
+
+Same reading in every sense that matters — only the absolute `height_m` value changed — and the probability swung from 2% to 85%. Root cause: the 9 real JPS training stations sit at wildly different absolute gauge datums (10.5m to 246.5m alert thresholds — see the station table above), so the model's `level_lag_{5,15,30,60}m` features partly encoded *which station a row came from* rather than real risk. A SIAGA hardware node reports height relative to its own small local datum (~1-3m, per `nodes.datum_mm`'s default of 3000mm), which sits in the single noisiest part of that range.
+
+**First fix attempt didn't work, and that's worth recording too.** Adding a new scale-invariant `level_ratio_to_baseline` feature *alongside* the existing absolute ones improved the aggregate PR-AUC (0.928 → 0.972) but did not fix the actual bug — re-running the same height sweep still showed the same wild swing (52%-96%). Cause: on a flat history the new ratio feature is always exactly 1.0 regardless of absolute scale, so it carries zero information to distinguish the test cases, leaving the model free to keep using the absolute features it had already learned were (spuriously) predictive on the training distribution. A redundant honest feature doesn't override a dishonest one already in the tree splits — it has to be removed, not just outnumbered.
+
+**Actual fix:** replaced `level_lag_{5,15,30,60}m` (absolute metres) with `level_ratio_lag_{5,15,30,60}m` (each lagged height divided by the earliest reading in the up-to-24h lookback window, floored at 5cm to avoid a near-zero baseline blowing the ratio up) in `backend/app/features.py`. Same feature *count*, same *shape* of information (how has the level moved over these four lag windows), just expressed as a ratio instead of an absolute. No other file needed to change — `ml/build_dataset.py` and `ml/train.py` are both parameterized off `FEATURE_NAMES`, so retraining picked the new shape up automatically; this is the train/serve-parity architecture actually paying for itself.
+
+**Retrained result — better on every axis, not just "fixed":**
+
+| | Original (absolute height) | Retrained (ratio-only) |
+|---|---|---|
+| PR-AUC | 0.9281 | **0.9582** |
+| Recall @ O3 threshold | 0.905 | 0.902 |
+| FPR @ O3 threshold | 0.0086 | **0.0047** |
+| Precision @ O3 threshold | 0.839 | **0.897** |
+| Flat/dry reading at any height | 2%-85% (scale-dependent) | **9.5% everywhere** (matches the dataset's 8.7% base rate) |
+
+Re-running the height sweep against the retrained model: `9.5%` at every one of 1.2m, 5m, 10m, 20m, 50m, 100m, 200m — genuinely scale-invariant now, not just less bad. The O3 acceptance bar (recall ≥ 0.90 at FPR ≤ 0.10) is still met, with a materially tighter false-positive rate and higher precision than the original run.
+
+**Why this didn't matter to the guardrail even before the fix.** Re-running the full scenario table (see `simulate_scenarios.py`) shows the multi-channel guardrail (Section 3.2) doing exactly the job it's there for: a "slope-only" scenario — flat water, high tilt, wet soil — gets a *low* Tier 2 probability (9.4%, correctly reading "no flood signal in the water channel") but still escalates to WARNING, because two independent channels (tilt magnitude, soil saturation) corroborate regardless of what the water-level model says. No single reading from Tier 2 alone was ever capable of reaching WARNING or EVACUATE on its own during this whole investigation — the guardrail's corroboration requirement was already the safety net this exact class of model miscalibration needed, which is the argument for that architecture, made concrete rather than theoretical.
+
+**Divergence from the original concept:** none in shape — Section 7's feature-engineering approach (lag/rate features feeding LightGBM) is unchanged. The lag features' *units* changed from absolute metres to a baseline-relative ratio, which is a refinement the brief doesn't specify either way; recorded here since it's a real, deliberate departure from the first implementation, made in response to a bug that implementation had.
