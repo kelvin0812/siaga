@@ -34,6 +34,11 @@ class _MapScreenState extends State<MapScreen> {
   List<AssemblyPoint> _assemblyPoints = const [];
   bool _showEvacRoute = false;
 
+  final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +51,53 @@ class _MapScreenState extends State<MapScreen> {
     appState.cache.loadAssemblyPoints().then((points) {
       if (mounted) setState(() => _assemblyPoints = points);
     });
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  /// Nodes and assembly points that match the search box, as a single
+  /// ranked list — mentor feedback asked for one place to find "a nearby
+  /// node or assembly point" rather than two separate searches.
+  List<_SearchResult> _searchResults() {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final appState = context.read<AppState>();
+    final results = <_SearchResult>[
+      ...appState.nodes.where((n) => n.name.toLowerCase().contains(q)).map(
+            (n) => _SearchResult(
+              label: n.name,
+              point: ll.LatLng(n.lat, n.lon),
+              isNode: true,
+              nodeId: n.id,
+            ),
+          ),
+      ..._assemblyPoints
+          .where((p) => p.nameEn.toLowerCase().contains(q) || p.nameMs.toLowerCase().contains(q))
+          .map(
+            (p) => _SearchResult(
+              label: p.nameFor(Localizations.localeOf(context).languageCode),
+              point: ll.LatLng(p.lat, p.lon),
+              isNode: false,
+              nodeId: null,
+            ),
+          ),
+    ];
+    return results;
+  }
+
+  void _selectSearchResult(_SearchResult result) {
+    _mapController.move(result.point, 15);
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    setState(() => _selectedNodeId = result.nodeId);
   }
 
   /// Where to route FROM: the device's own position when known, else — in
@@ -143,13 +195,24 @@ class _MapScreenState extends State<MapScreen> {
     final nearestAssembly = origin != null ? _nearestAssemblyPoint(origin) : null;
     final routeActive = _showEvacRoute && origin != null && nearestAssembly != null;
 
+    final searchResults = _searchResults();
+
     return Stack(
       children: [
         Column(
           children: [
             if (appState.isOffline) const _OfflineBanner(),
             Expanded(
-              child: FlutterMap(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.hairline, width: 1.5),
+                  ),
+                  child: FlutterMap(
+                mapController: _mapController,
                 options: MapOptions(initialCenter: center, initialZoom: 13),
                 children: [
                   TileLayer(
@@ -201,14 +264,27 @@ class _MapScreenState extends State<MapScreen> {
                     ],
                   ),
                 ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
+        Positioned(
+          top: (appState.isOffline ? 44 : 12) + 10,
+          left: 22,
+          right: 22,
+          child: _MapSearchBar(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            results: searchResults,
+            onResultTap: _selectSearchResult,
+          ),
+        ),
         if (origin != null && _assemblyPoints.isNotEmpty)
           Positioned(
-            top: appState.isOffline ? 44 : 12,
-            right: 12,
+            top: (appState.isOffline ? 44 : 12) + 68,
+            right: 22,
             child: _EvacRouteToggle(
               active: _showEvacRoute,
               onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
@@ -232,7 +308,119 @@ class _MapScreenState extends State<MapScreen> {
             node: selectedNode,
             demoReading: appState.demoMode ? appState.demoReading : null,
             onClose: () => setState(() => _selectedNodeId = null),
+            locked: appState.lockedNodeId == selectedNode.id,
+            onToggleLock: () => appState.setLockedNode(
+              appState.lockedNodeId == selectedNode.id ? null : selectedNode.id,
+            ),
           ),
+      ],
+    );
+  }
+}
+
+class _SearchResult {
+  final String label;
+  final ll.LatLng point;
+  final bool isNode;
+  final int? nodeId;
+  const _SearchResult({required this.label, required this.point, required this.isNode, required this.nodeId});
+}
+
+/// Floating search field over the map (mentor feedback: let a resident find
+/// a nearby node or assembly point without hunting across the map by eye).
+/// Results render as a dropdown directly beneath the field; tapping one
+/// pans the map there and, for a node, opens its info panel.
+class _MapSearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final List<_SearchResult> results;
+  final ValueChanged<_SearchResult> onResultTap;
+
+  const _MapSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.results,
+    required this.onResultTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Gated on text alone, not focus: focus is lost on pointer-DOWN when a
+    // result is tapped, which — if this were gated on hasFocus — removes
+    // the list from the tree before the tap's onTap ever fires, so the tap
+    // silently does nothing. Clearing the controller in _selectSearchResult
+    // is what actually dismisses the list after a real selection.
+    final showDropdown = controller.text.trim().isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: AppColors.hairline),
+            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              hintText: l10n.mapSearchHint,
+              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+              suffixIcon: controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textMuted, size: 18),
+                      onPressed: () => controller.clear(),
+                    ),
+            ),
+          ),
+        ),
+        if (showDropdown) ...[
+          const SizedBox(height: 6),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 240),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.hairline),
+              boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
+            ),
+            child: results.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Text(l10n.mapSearchNoResults, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: results.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.hairline),
+                    itemBuilder: (context, i) {
+                      final r = results[i];
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(
+                          r.isNode ? Icons.sensors : Icons.shield_outlined,
+                          color: r.isNode ? AppColors.accent : AppColors.normal,
+                          size: 18,
+                        ),
+                        title: Text(r.label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                        onTap: () => onResultTap(r),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ],
     );
   }
@@ -356,8 +544,16 @@ class _NodeInfoPanel extends StatelessWidget {
   final SiagaNode node;
   final DemoReading? demoReading;
   final VoidCallback onClose;
+  final bool locked;
+  final VoidCallback onToggleLock;
 
-  const _NodeInfoPanel({required this.node, required this.demoReading, required this.onClose});
+  const _NodeInfoPanel({
+    required this.node,
+    required this.demoReading,
+    required this.onClose,
+    required this.locked,
+    required this.onToggleLock,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +618,31 @@ class _NodeInfoPanel extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onToggleLock,
+                    icon: Icon(locked ? Icons.lock : Icons.lock_open_outlined, size: 16),
+                    label: Text(locked ? l10n.mapUnlockNode : l10n.mapLockNode),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: locked ? AppColors.accent : AppColors.textSecondary,
+                      backgroundColor: locked ? AppColors.accent.withValues(alpha: 0.14) : null,
+                      side: BorderSide(color: locked ? AppColors.accent : AppColors.hairline),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
+                    ),
+                  ),
+                  if (locked) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.mapLockedHint,
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 4),
               Row(
                 children: [

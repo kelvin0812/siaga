@@ -66,5 +66,17 @@
   "settingsNotificationsDescription": "Amaran banjir dan tanah runtuh untuk kawasan anda.",
   "settingsNotificationsEnable": "Aktifkan",
   "settingsAbout": "Tentang",
-  "settingsAboutVersion": "SIAGA v1.0.0"
+  "settingsAboutVersion": "SIAGA v1.0.0",
+  "mapSearchHint": "Cari nod atau titik perhimpunan",
+  "mapSearchNoResults": "Tiada padanan",
+  "mapLockNode": "Kunci sebagai kawasan saya",
+  "mapUnlockNode": "Buka kunci",
+  "mapLockedHint": "Risiko Saya akan mengikut nod ini",
+  "riskSelectorLabel": "Memaparkan",
+  "riskSelectorAuto": "Automatik (terdekat dengan saya)",
+  "reportLocationLabel": "Lokasi",
+  "reportLocationCurrent": "Lokasi semasa saya",
+  "reportPhotoRemove": "Buang foto",
+  "reportPhotoUploading": "Memuat naik foto…",
+  "reportPhotoUploadFailed": "Muat naik foto gagal. Cuba lagi atau buang foto."
 }

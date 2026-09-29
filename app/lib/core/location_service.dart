@@ -55,6 +55,13 @@ class LocationService {
 
   Stream<String> get cellChanges => _cellController.stream;
 
+  /// Cell for a KNOWN, already-public coordinate (a node's fixed location,
+  /// not the device's own position) — used by the report screen's
+  /// "location" dropdown so a report can be pinned to a monitored node's
+  /// area without reviving the device's own GPS/H3 boundary. Section 3.1
+  /// still holds: this never touches lastKnownPosition or currentCellId.
+  String cellForCoordinates(double lat, double lon) => _h3.cellForPoint(lat, lon);
+
   /// Every position update, not just cell-boundary crossings — for the
   /// map's "my location" marker, which needs to track smoothly rather
   /// than jump only when the H3 cell changes. Still device-local only:

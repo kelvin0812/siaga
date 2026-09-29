@@ -108,6 +108,39 @@ create table if not exists cell_subscriptions (
     updated_at timestamptz not null default now()
 );
 
+-- Bench-test ingestion table for a WiFi ESP32 + Pico rig that posts
+-- straight to Supabase's PostgREST API (yoooo.ino), bypassing the LoRa/
+-- gateway/MQTT pipeline entirely -- kept separate from `readings` on
+-- purpose, so opening it to a direct anon insert doesn't touch that
+-- table's deny-all RLS policy below. Flagged in docs/nexus-log.md:
+-- anything landing here never reaches Tier 1/Tier 2/the guardrail, so
+-- it's bench data, not a real node until backfilled into `readings`.
+create table if not exists sensor_table (
+    id bigserial primary key,
+    node_id smallint,
+    seq smallint,
+    level_mm integer,
+    tilt_x smallint,
+    tilt_y smallint,
+    soil_pct smallint,
+    rain_tips smallint,
+    temp_c smallint,
+    rh_pct smallint,
+    vbat_cv smallint,
+    flags smallint,
+    created_at timestamptz not null default now()
+);
+create index if not exists sensor_table_created_idx on sensor_table (created_at desc);
+alter table sensor_table enable row level security;
+-- Anon may insert (the ESP32's own anon-key POST) and read back (so the
+-- rig's data is visible without a Table Editor login) -- no update/delete.
+-- Postgres has no "create policy if not exists", so drop first for an
+-- idempotent re-run of this script.
+drop policy if exists "sensor_table anon insert" on sensor_table;
+create policy "sensor_table anon insert" on sensor_table for insert to anon with check (true);
+drop policy if exists "sensor_table anon read" on sensor_table;
+create policy "sensor_table anon read" on sensor_table for select to anon using (true);
+
 -- RLS with zero policies = deny-all for the anon/authenticated roles
 -- PostgREST uses. Correct for this architecture: the backend talks to
 -- Postgres with its own connection string (table owner, bypasses RLS

@@ -217,4 +217,41 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get settingsAboutVersion => 'SIAGA v1.0.0';
+
+  @override
+  String get mapSearchHint => 'Cari nod atau titik perhimpunan';
+
+  @override
+  String get mapSearchNoResults => 'Tiada padanan';
+
+  @override
+  String get mapLockNode => 'Kunci sebagai kawasan saya';
+
+  @override
+  String get mapUnlockNode => 'Buka kunci';
+
+  @override
+  String get mapLockedHint => 'Risiko Saya akan mengikut nod ini';
+
+  @override
+  String get riskSelectorLabel => 'Memaparkan';
+
+  @override
+  String get riskSelectorAuto => 'Automatik (terdekat dengan saya)';
+
+  @override
+  String get reportLocationLabel => 'Lokasi';
+
+  @override
+  String get reportLocationCurrent => 'Lokasi semasa saya';
+
+  @override
+  String get reportPhotoRemove => 'Buang foto';
+
+  @override
+  String get reportPhotoUploading => 'Memuat naik foto…';
+
+  @override
+  String get reportPhotoUploadFailed =>
+      'Muat naik foto gagal. Cuba lagi atau buang foto.';
 }

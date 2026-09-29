@@ -499,6 +499,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SIAGA v1.0.0'**
   String get settingsAboutVersion;
+
+  /// No description provided for @mapSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search nodes or assembly points'**
+  String get mapSearchHint;
+
+  /// No description provided for @mapSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get mapSearchNoResults;
+
+  /// No description provided for @mapLockNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock as my area'**
+  String get mapLockNode;
+
+  /// No description provided for @mapUnlockNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get mapUnlockNode;
+
+  /// No description provided for @mapLockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'My Risk will follow this node'**
+  String get mapLockedHint;
+
+  /// No description provided for @riskSelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing'**
+  String get riskSelectorLabel;
+
+  /// No description provided for @riskSelectorAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto (nearest to me)'**
+  String get riskSelectorAuto;
+
+  /// No description provided for @reportLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get reportLocationLabel;
+
+  /// No description provided for @reportLocationCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'My current location'**
+  String get reportLocationCurrent;
+
+  /// No description provided for @reportPhotoRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get reportPhotoRemove;
+
+  /// No description provided for @reportPhotoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get reportPhotoUploading;
+
+  /// No description provided for @reportPhotoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo upload failed. Try again or remove the photo.'**
+  String get reportPhotoUploadFailed;
 }
 
 class _AppLocalizationsDelegate
