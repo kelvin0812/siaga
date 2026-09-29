@@ -228,25 +228,29 @@ class _NotificationTile extends StatelessWidget {
         statusColor = AppColors.textMuted;
     }
 
-    return ListTile(
+    // Matches Settings' Demo mode row: a draggable Switch, not a plain
+    // "Enable" text link — mentor feedback was that the old link read as
+    // a throwaway hint rather than a real control. There's no OS API to
+    // revoke notification permission from inside the app, so dragging the
+    // switch off is a no-op; it only ever drives the same onEnable()
+    // permission request the old button did, and the switch's own value
+    // stays tied to the actual OS-reported status either way.
+    return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
+      secondary: Icon(
         enabled ? Icons.notifications_active : Icons.notifications_off_outlined,
         color: enabled ? AppColors.accent : AppColors.textMuted,
       ),
       title: Text(l10n.settingsNotificationsDescription, style: const TextStyle(color: AppColors.textPrimary)),
       subtitle: loading
-          ? null
-          : Text(statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.w600)),
-      trailing: loading
           ? const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : enabled
-              ? null
-              : TextButton(onPressed: onEnable, child: Text(l10n.settingsNotificationsEnable)),
+          : Text(statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.w600)),
+      value: enabled,
+      onChanged: loading ? null : (v) { if (v && !enabled) onEnable(); },
     );
   }
 }

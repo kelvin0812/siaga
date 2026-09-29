@@ -170,7 +170,7 @@ class _RiskScreenState extends State<RiskScreen> {
                                   const SizedBox(height: 16),
                                   _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
                                   const SizedBox(height: 16),
-                                  _Attribution(l10n: l10n, offline: appState.isOffline),
+                                  _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null),
                                 ],
                               ),
                             ),
@@ -184,7 +184,7 @@ class _RiskScreenState extends State<RiskScreen> {
                             const SizedBox(height: 16),
                             _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
                             const SizedBox(height: 16),
-                            _Attribution(l10n: l10n, offline: appState.isOffline),
+                            _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null),
                           ],
                         ),
                 ),
@@ -445,19 +445,26 @@ class _ThreatOrAllClear extends StatelessWidget {
 class _Attribution extends StatelessWidget {
   final AppLocalizations l10n;
   final bool offline;
-  const _Attribution({required this.l10n, required this.offline});
+  // False when ActiveThreatBanner is already showing (mentor feedback:
+  // its message already ends with this exact sourceAttribution string —
+  // see fcm.py's templates / demo_controller.dart's _alertCopyFor — so
+  // repeating it here in faint muted text right underneath was a
+  // duplicate, not a second piece of information, and read as clutter).
+  final bool showSourceLine;
+  const _Attribution({required this.l10n, required this.offline, required this.showSourceLine});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          l10n.sourceAttribution,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
-        ),
+        if (showSourceLine)
+          Text(
+            l10n.sourceAttribution,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+          ),
         if (offline) ...[
-          const SizedBox(height: 12),
+          if (showSourceLine) const SizedBox(height: 12),
           _OfflinePill(text: l10n.offlineBanner),
         ],
       ],
