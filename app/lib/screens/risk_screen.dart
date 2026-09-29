@@ -41,11 +41,34 @@ class _RiskScreenState extends State<RiskScreen> {
     final l10n = AppLocalizations.of(context)!;
     final appState = context.watch<AppState>();
     final cellId = appState.currentCellId;
-    final riskState = appState.myRiskState;
-    // Demo mode has no real GPS-derived cell to key off (see
-    // AppState.myRiskState) — treat it as "known" here too, otherwise
-    // the gauge stays hidden behind myRiskNoCell throughout a demo.
-    final hasKnownArea = appState.demoMode || cellId != null;
+
+    // Mentor feedback: the risk indicator should be tied to a specific
+    // node, not only an automatic "nearest to my GPS" guess — resolved
+    // via AppState.lockedNodeId, settable here (dropdown) or from the map
+    // screen's "lock to this node" button; both write the same field.
+    // Falls back to nearest-by-GPS when nothing is locked (unchanged
+    // default), and auto-clears a lock whose node vanished from the last
+    // /nodes fetch rather than showing stale data.
+    final nearestByGps = _nearestNode(appState);
+    if (!appState.demoMode && appState.lockedNodeId != null &&
+        appState.nodes.every((n) => n.id != appState.lockedNodeId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) appState.setLockedNode(null);
+      });
+    }
+    final focusedNode = appState.demoMode
+        ? null
+        : (appState.lockedNodeId != null
+            ? appState.nodes.where((n) => n.id == appState.lockedNodeId).firstOrNull
+            : null) ??
+            nearestByGps;
+
+    // Demo mode still drives the gauge from the demo hydrograph directly
+    // (its own well-defined single-node flow via Settings' state buttons);
+    // real mode now reads a node's own state/probability straight from the
+    // backend rather than the more fragile GPS-cell/hazard-polygon match.
+    final riskState = appState.demoMode ? appState.myRiskState : (focusedNode?.state ?? RiskState.normal);
+    final hasKnownArea = appState.demoMode || focusedNode != null;
 
     final relevantHazard = appState.demoMode
         ? appState.activeHazards.fold<Hazard?>(null, (best, h) {
@@ -62,15 +85,14 @@ class _RiskScreenState extends State<RiskScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     final glowColor = hasKnownArea ? riskStateColor(riskState) : AppColors.accent;
 
-    final nearest = _nearestNode(appState);
-    if (!appState.demoMode && nearest != null && nearest.id != _fetchedForNodeId) {
-      _fetchedForNodeId = nearest.id;
-      unawaited(_fetchLatestReading(appState.api, nearest.id));
+    if (!appState.demoMode && focusedNode != null && focusedNode.id != _fetchedForNodeId) {
+      _fetchedForNodeId = focusedNode.id;
+      unawaited(_fetchLatestReading(appState.api, focusedNode.id));
     }
 
     final metrics = _MetricsPanel(
       appState: appState,
-      nearest: nearest,
+      nearest: focusedNode,
       liveReading: appState.demoMode ? null : _liveReading,
       l10n: l10n,
     );
@@ -82,6 +104,23 @@ class _RiskScreenState extends State<RiskScreen> {
           l10n.myRiskTitle.toUpperCase(),
           style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
         ),
+        if (!appState.demoMode && appState.nodes.length > 1) ...[
+          const SizedBox(height: 14),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${l10n.riskSelectorLabel}: ',
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+              _NodeSelector(
+                nodes: appState.nodes,
+                selectedNodeId: appState.lockedNodeId,
+                onChanged: appState.setLockedNode,
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 24),
         if (!hasKnownArea)
           GlassCard(
@@ -97,7 +136,7 @@ class _RiskScreenState extends State<RiskScreen> {
         else
           RiskGauge(
             state: riskState,
-            probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : nearest?.riskProbability,
+            probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability,
             probabilityLabel: appState.demoMode ? 'Simulated severity' : 'Tier 2 probability',
           ),
         const SizedBox(height: 24),
@@ -182,6 +221,67 @@ class _RiskScreenState extends State<RiskScreen> {
       // Leave _liveReading as whatever it was — metrics degrade to "—"
       // rather than the screen crashing (Section 2: degrade visibly).
     }
+  }
+}
+
+/// Dropdown letting the resident explicitly pick which node's risk level
+/// to view — the same underlying selection as the map screen's "lock to
+/// this node" button (AppState.lockedNodeId). Null stays "Auto," the
+/// original nearest-by-GPS behaviour.
+class _NodeSelector extends StatelessWidget {
+  final List<SiagaNode> nodes;
+  final int? selectedNodeId;
+  final ValueChanged<int?> onChanged;
+
+  const _NodeSelector({required this.nodes, required this.selectedNodeId, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: selectedNodeId != null && nodes.any((n) => n.id == selectedNodeId) ? selectedNodeId : null,
+          isDense: true,
+          icon: const Icon(Icons.expand_more, color: AppColors.textSecondary, size: 18),
+          dropdownColor: AppColors.surfaceRaised,
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+          items: [
+            DropdownMenuItem<int?>(
+              value: null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.my_location, size: 14, color: AppColors.accent),
+                  const SizedBox(width: 6),
+                  Text(l10n.riskSelectorAuto),
+                ],
+              ),
+            ),
+            ...nodes.map(
+              (n) => DropdownMenuItem<int?>(
+                value: n.id,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock, size: 13, color: riskStateColor(n.state)),
+                    const SizedBox(width: 6),
+                    Text(n.name, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
   }
 }
 

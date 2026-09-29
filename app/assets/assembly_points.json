@@ -1,5 +1,5 @@
 {
-  "_comment": "Placeholder assembly-point data bundled with the app. Section 5.3's REST API has no endpoint for evacuation routes or assembly points, even though Section 6.4 requires caching them offline — flagged in docs/nexus-log.md. Bundling as a static asset satisfies 'useful with no connection' for the prototype/demo; a real deployment needs an authority-managed data source and a backend endpoint to serve it.",
+  "_comment": "Placeholder assembly-point data bundled with the app. Section 5.3's REST API has no endpoint for evacuation routes or assembly points, even though Section 6.4 requires caching them offline — flagged in docs/nexus-log.md. Bundling as a static asset satisfies 'useful with no connection' for the prototype/demo; a real deployment needs an authority-managed data source and a backend endpoint to serve it. ap-4/ap-5/ap-6 were added because the original three (all in central Taiping) sat 3.3-6.4km from the actual river nodes -- too far for a fast-onset flood evacuation. Each of these three is a real, OSM-verified school or place of worship within ~0.4-1.5km of one node, chosen as smaller, nearer fallbacks; the original three stay as larger-capacity, further-out options. map_screen._nearestAssemblyPoint() always picks whichever point (of all six) is closest to the person's actual position, so this list doesn't need to be node-specific in code -- it just needs enough close options to choose from.",
   "assemblyPoints": [
     {
       "id": "ap-1",
@@ -21,6 +21,27 @@
       "nameMs": "Kawasan Majlis Perbandaran Taiping",
       "lat": 4.8479,
       "lon": 100.7355
+    },
+    {
+      "id": "ap-4",
+      "nameEn": "SK Changkat Larut (near Sungai Larut Downstream Node)",
+      "nameMs": "SK Changkat Larut (berhampiran Nod Hiliran Sungai Larut)",
+      "lat": 4.8046,
+      "lon": 100.7420
+    },
+    {
+      "id": "ap-5",
+      "nameEn": "Masjid Jamek Bukit Jana (near Sungai Jana Node)",
+      "nameMs": "Masjid Jamek Bukit Jana (berhampiran Nod Sungai Jana)",
+      "lat": 4.8949,
+      "lon": 100.7411
+    },
+    {
+      "id": "ap-6",
+      "nameEn": "Surau Al Ersyad (near Sungai Mas Node)",
+      "nameMs": "Surau Al Ersyad (berhampiran Nod Sungai Mas)",
+      "lat": 4.8133,
+      "lon": 100.7286
     }
   ]
 }

@@ -66,5 +66,17 @@
   "settingsNotificationsDescription": "Flood and landslide alerts for your area.",
   "settingsNotificationsEnable": "Enable",
   "settingsAbout": "About",
-  "settingsAboutVersion": "SIAGA v1.0.0"
+  "settingsAboutVersion": "SIAGA v1.0.0",
+  "mapSearchHint": "Search nodes or assembly points",
+  "mapSearchNoResults": "No matches",
+  "mapLockNode": "Lock as my area",
+  "mapUnlockNode": "Unlock",
+  "mapLockedHint": "My Risk will follow this node",
+  "riskSelectorLabel": "Showing",
+  "riskSelectorAuto": "Auto (nearest to me)",
+  "reportLocationLabel": "Location",
+  "reportLocationCurrent": "My current location",
+  "reportPhotoRemove": "Remove photo",
+  "reportPhotoUploading": "Uploading photo…",
+  "reportPhotoUploadFailed": "Photo upload failed. Try again or remove the photo."
 }

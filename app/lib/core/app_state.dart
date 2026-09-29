@@ -20,6 +20,16 @@ class AppState extends ChangeNotifier {
   bool demoMode = false;
   DemoReading? demoReading;
 
+  /// Set from the map screen's "lock to this node" action, or the My Risk
+  /// screen's own dropdown (the two are the same underlying selection —
+  /// per the mentor-review feedback that risk level should be tied to a
+  /// specific node rather than only an automatic nearest-node guess, with
+  /// an explicit choice always overriding the guess). Null means
+  /// "auto-follow the nearest node to my GPS position," the prior
+  /// behaviour. Cleared automatically if the locked node's id disappears
+  /// from a later /nodes fetch, by whichever screen notices it.
+  int? lockedNodeId;
+
   AppState({
     required this.api,
     required this.cache,
@@ -73,6 +83,11 @@ class AppState extends ChangeNotifier {
       // keep showing whatever's already in nodes/activeHazards (cached
       // or previously fetched) rather than clearing to empty
     }
+    notifyListeners();
+  }
+
+  void setLockedNode(int? nodeId) {
+    lockedNodeId = nodeId;
     notifyListeners();
   }
 

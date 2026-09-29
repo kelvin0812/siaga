@@ -216,4 +216,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutVersion => 'SIAGA v1.0.0';
+
+  @override
+  String get mapSearchHint => 'Search nodes or assembly points';
+
+  @override
+  String get mapSearchNoResults => 'No matches';
+
+  @override
+  String get mapLockNode => 'Lock as my area';
+
+  @override
+  String get mapUnlockNode => 'Unlock';
+
+  @override
+  String get mapLockedHint => 'My Risk will follow this node';
+
+  @override
+  String get riskSelectorLabel => 'Showing';
+
+  @override
+  String get riskSelectorAuto => 'Auto (nearest to me)';
+
+  @override
+  String get reportLocationLabel => 'Location';
+
+  @override
+  String get reportLocationCurrent => 'My current location';
+
+  @override
+  String get reportPhotoRemove => 'Remove photo';
+
+  @override
+  String get reportPhotoUploading => 'Uploading photo…';
+
+  @override
+  String get reportPhotoUploadFailed =>
+      'Photo upload failed. Try again or remove the photo.';
 }

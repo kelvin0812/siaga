@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/api_client.dart';
 import '../core/app_state.dart';
+import '../core/photo_upload_service.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/command_background.dart';
@@ -10,18 +14,17 @@ import '../widgets/glass_card.dart';
 /// Section 6.4: one-tap community hazard report. Submits cell_id (never
 /// coordinates — Section 3.1/5.3), category, and an optional note.
 ///
-/// The "where did you notice this" field is free text the user chooses
-/// to type, not device location — it's folded into the submitted note
-/// (Section 5.3's ReportIn has no separate field for it) so the payload
-/// stays within the fixed API surface rather than inventing a new one.
+/// Mentor-review redesign: category and location are now dropdown boxes
+/// rather than a chip row + free-text field, and a photo can be attached.
+/// "Location" picks between the reporter's own GPS-derived cell (default,
+/// same privacy path as before) or a specific monitored node's cell — a
+/// report is about a hazard sighting, not necessarily standing exactly at
+/// the reporter's own position, and either way the payload only ever
+/// carries an H3 cell id, never coordinates.
 ///
-/// Photo attachment is NOT implemented here: Section 5.3's ReportIn model
-/// accepts a photo_url on the assumption a photo is uploaded "somewhere"
-/// first, but nothing in the brief specifies an object-storage backend
-/// for it, and none exists yet in this project (no Supabase Storage
-/// bucket, no upload endpoint). Building a picker with nowhere to send
-/// the file would be a half-finished feature; deferred and flagged in
-/// docs/nexus-log.md pending that decision.
+/// The photo is uploaded directly from the device to Supabase Storage
+/// (see photo_upload_service.dart) before submitReport() is called with
+/// the resulting URL — this API stays a small JSON body per Section 5.3.
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
@@ -33,17 +36,45 @@ enum _ReportCategory { flooding, landslide, other }
 
 class _ReportScreenState extends State<ReportScreen> {
   _ReportCategory _category = _ReportCategory.flooding;
-  final _whereController = TextEditingController();
+  int? _locationNodeId; // null = reporter's own current location
   final _noteController = TextEditingController();
   bool _submitting = false;
+  bool _uploadingPhoto = false;
   String? _resultMessage;
   bool _resultIsError = false;
 
+  final _photoUploader = PhotoUploadService();
+  final _imagePicker = ImagePicker();
+  Uint8List? _photoBytes;
+  String? _photoContentType;
+
   @override
   void dispose() {
-    _whereController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await _imagePicker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final ext = file.name.toLowerCase();
+    final contentType = ext.endsWith('.png')
+        ? 'image/png'
+        : ext.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg';
+    setState(() {
+      _photoBytes = bytes;
+      _photoContentType = contentType;
+    });
+  }
+
+  void _removePhoto() {
+    setState(() {
+      _photoBytes = null;
+      _photoContentType = null;
+    });
   }
 
   String _categoryApiValue(_ReportCategory c) => switch (c) {
@@ -52,20 +83,28 @@ class _ReportScreenState extends State<ReportScreen> {
         _ReportCategory.other => 'other',
       };
 
-  String? _combinedNote(AppLocalizations l10n) {
-    final where = _whereController.text.trim();
+  String? _combinedNote() {
     final note = _noteController.text.trim();
-    if (where.isEmpty && note.isEmpty) return null;
-    if (where.isEmpty) return note;
-    final wherePart = '${l10n.reportWherePrefix}: $where';
-    if (note.isEmpty) return wherePart;
-    return '$wherePart\n\n$note';
+    return note.isEmpty ? null : note;
+  }
+
+  /// Resolves the report's cell_id: either the reporter's own GPS-derived
+  /// cell (default), or — if a specific node was picked from the location
+  /// dropdown — that node's own fixed-position cell, computed the same way
+  /// LocationService computes the device's own (Section 3.1: an H3 cell
+  /// derived from a known public node position isn't a privacy concern the
+  /// way raw device coordinates would be).
+  String? _resolveCellId(AppState appState) {
+    if (_locationNodeId == null) return appState.currentCellId;
+    final node = appState.nodes.where((n) => n.id == _locationNodeId).firstOrNull;
+    if (node == null) return appState.currentCellId;
+    return appState.locationService.cellForCoordinates(node.lat, node.lon);
   }
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     final appState = context.read<AppState>();
-    final cellId = appState.currentCellId;
+    final cellId = _resolveCellId(appState);
     if (cellId == null) {
       setState(() {
         _resultMessage = l10n.myRiskNoCell;
@@ -80,17 +119,38 @@ class _ReportScreenState extends State<ReportScreen> {
     });
 
     try {
+      String? photoUrl;
+      if (_photoBytes != null) {
+        setState(() => _uploadingPhoto = true);
+        try {
+          photoUrl = await _photoUploader.upload(_photoBytes!, contentType: _photoContentType ?? 'image/jpeg');
+        } on PhotoUploadException {
+          if (!mounted) return;
+          setState(() {
+            _resultMessage = l10n.reportPhotoUploadFailed;
+            _resultIsError = true;
+            _uploadingPhoto = false;
+            _submitting = false;
+          });
+          return;
+        }
+        if (mounted) setState(() => _uploadingPhoto = false);
+      }
+
       await appState.api.submitReport(
         cellId: cellId,
         category: _categoryApiValue(_category),
-        note: _combinedNote(l10n),
+        note: _combinedNote(),
+        photoUrl: photoUrl,
       );
       if (!mounted) return;
       setState(() {
         _resultMessage = l10n.reportSubmitted;
         _resultIsError = false;
-        _whereController.clear();
         _noteController.clear();
+        _photoBytes = null;
+        _photoContentType = null;
+        _locationNodeId = null;
       });
     } on ApiException {
       if (!mounted) return;
@@ -118,6 +178,7 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final appState = context.watch<AppState>();
     return CommandBackground(
       child: SafeArea(
         child: Center(
@@ -149,29 +210,71 @@ class _ReportScreenState extends State<ReportScreen> {
                           style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: _ReportCategory.values.map((c) {
-                            final selected = c == _category;
-                            return _CategoryChip(
-                              icon: _categoryIcon(c),
-                              label: _categoryLabel(l10n, c),
-                              selected: selected,
-                              onTap: () => setState(() => _category = c),
-                            );
-                          }).toList(),
+                        _GlowField(
+                          child: DropdownButtonFormField<_ReportCategory>(
+                            initialValue: _category,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+                            dropdownColor: AppColors.surfaceRaised,
+                            decoration: const InputDecoration(prefixIcon: Icon(Icons.category_outlined)),
+                            items: _ReportCategory.values
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(_categoryIcon(c), size: 18, color: AppColors.accent),
+                                        const SizedBox(width: 10),
+                                        Text(_categoryLabel(l10n, c)),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (c) {
+                              if (c != null) setState(() => _category = c);
+                            },
+                          ),
                         ),
                         const SizedBox(height: 18),
+                        Text(
+                          l10n.reportLocationLabel,
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
                         _GlowField(
-                          child: TextField(
-                            controller: _whereController,
-                            style: const TextStyle(color: AppColors.textPrimary),
-                            decoration: InputDecoration(
-                              labelText: l10n.reportWhereLabel,
-                              hintText: l10n.reportWhereHint,
-                              prefixIcon: const Icon(Icons.place_outlined),
-                            ),
+                          child: DropdownButtonFormField<int?>(
+                            initialValue: _locationNodeId,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+                            dropdownColor: AppColors.surfaceRaised,
+                            decoration: const InputDecoration(prefixIcon: Icon(Icons.place_outlined)),
+                            items: [
+                              DropdownMenuItem<int?>(
+                                value: null,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.my_location, size: 16, color: AppColors.accent),
+                                    const SizedBox(width: 10),
+                                    Text(l10n.reportLocationCurrent),
+                                  ],
+                                ),
+                              ),
+                              ...appState.nodes.map(
+                                (n) => DropdownMenuItem<int?>(
+                                  value: n.id,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.sensors, size: 16, color: AppColors.textSecondary),
+                                      const SizedBox(width: 10),
+                                      Flexible(child: Text(n.name, overflow: TextOverflow.ellipsis)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (id) => setState(() => _locationNodeId = id),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -182,6 +285,20 @@ class _ReportScreenState extends State<ReportScreen> {
                             decoration: InputDecoration(labelText: l10n.reportNoteLabel),
                             maxLines: 3,
                           ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          l10n.reportAddPhoto,
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        _PhotoPicker(
+                          bytes: _photoBytes,
+                          uploading: _uploadingPhoto,
+                          onPick: _pickPhoto,
+                          onRemove: _removePhoto,
+                          addLabel: l10n.reportAddPhoto,
+                          removeLabel: l10n.reportPhotoRemove,
                         ),
                       ],
                     ),
@@ -250,61 +367,79 @@ class _GlowFieldState extends State<_GlowField> {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+/// Pick/preview/remove a single report photo. Uploading happens later, at
+/// submit time (_ReportScreenState._submit) — this widget only ever holds
+/// local bytes, never a URL, so there's nothing to clean up if the user
+/// removes the photo before submitting.
+class _PhotoPicker extends StatelessWidget {
+  final Uint8List? bytes;
+  final bool uploading;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+  final String addLabel;
+  final String removeLabel;
 
-  const _CategoryChip({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
+  const _PhotoPicker({
+    required this.bytes,
+    required this.uploading,
+    required this.onPick,
+    required this.onRemove,
+    required this.addLabel,
+    required this.removeLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final inner = AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      padding: EdgeInsets.symmetric(horizontal: selected ? 15 : 16, vertical: selected ? 9 : 10),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.accent.withValues(alpha: 0.16) : Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(999),
-        border: selected ? null : Border.all(color: AppColors.hairline),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    if (bytes == null) {
+      return InkWell(
+        onTap: onPick,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.hairline, style: BorderStyle.solid),
+            color: Colors.white.withValues(alpha: 0.03),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.add_a_photo_outlined, color: AppColors.textSecondary, size: 22),
+              const SizedBox(height: 8),
+              Text(addLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Stack(
         children: [
-          Icon(icon, size: 16, color: selected ? AppColors.accent : AppColors.textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: selected ? AppColors.accent : AppColors.textSecondary,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              fontSize: 13,
+          Image.memory(bytes!, width: double.infinity, height: 160, fit: BoxFit.cover),
+          if (uploading)
+            Container(
+              width: double.infinity,
+              height: 160,
+              color: Colors.black.withValues(alpha: 0.55),
+              child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.6),
+              shape: const CircleBorder(),
+              child: IconButton(
+                tooltip: removeLabel,
+                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                onPressed: uploading ? null : onRemove,
+              ),
             ),
           ),
         ],
       ),
-    );
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: selected
-          ? AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: const LinearGradient(colors: [AppColors.accent, Color(0xFF6D5DF6)]),
-                boxShadow: appGlow(AppColors.accent, alpha: 0.4, blur: 14),
-              ),
-              child: inner,
-            )
-          : inner,
     );
   }
 }
