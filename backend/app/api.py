@@ -1,15 +1,21 @@
 """
-REST API (build brief Section 5.3). Depends only on Repository — never on
-the state machine, Tier 2 model, or FCM client directly, since those only
-run inside the ingest pipeline (pipeline.py), which this router doesn't
-need and which can't run on a serverless deployment anyway (see
-deploy/README.md for the Vercel/persistent-process split).
+REST API (build brief Section 5.3). Depends only on Repository for every
+endpoint in Section 5.3's own table — never on the state machine, Tier 2
+model, or FCM client directly, since those normally only run inside the
+ingest pipeline (pipeline.py), which this router doesn't need and which
+can't run on a serverless deployment anyway (see deploy/README.md for the
+Vercel/persistent-process split).
 
-POST /api/v1/subscriptions/ping is NOT in Section 5.3's table. It exists
-because Firebase Cloud Messaging has no API to read topic subscriber
-counts, so nothing would ever populate /api/v1/density otherwise — see
-docs/nexus-log.md for the full reasoning. Flagging it here too since
-Section 5.3 calls its table "fixed interfaces."
+Two endpoints below are deliberate, documented exceptions to Section
+5.3's fixed table, both flagged in docs/nexus-log.md:
+
+- POST /api/v1/subscriptions/ping exists because Firebase Cloud Messaging
+  has no API to read topic subscriber counts, so nothing would ever
+  populate /api/v1/density otherwise.
+- POST /api/v1/bench/evaluate is the one endpoint that does touch the
+  Tier 2 model directly (via _tier2() below) -- it lets the bench-rig
+  live panel in the app run a real reading through the real trained
+  model + guardrail + state machine, without a second ingest pipeline.
 """
 from __future__ import annotations
 
@@ -19,10 +25,14 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.app.bench_eval import BenchEvalError, BenchOverrides, bench_reading_to_record, fetch_latest_bench_reading
 from backend.app.config import settings
+from backend.app.features import build_features
+from backend.app.guardrail import evaluate_guardrail
 from backend.app.heartbeat import is_node_silent
 from backend.app.repository import Repository
-from backend.app.state_machine import RiskState
+from backend.app.state_machine import RiskState, desired_state
+from backend.app.tier2 import Tier2Model
 from shared.frame import vbat_cv_to_volts
 
 router = APIRouter(prefix="/api/v1")
@@ -44,6 +54,24 @@ async def _repo(request: Request) -> Repository:
         if state.repo is None:
             state.repo = await state.repo_factory()
     return state.repo
+
+
+def _tier2(request: Request) -> Tier2Model:
+    """
+    Lazily builds and caches the Tier 2 model on app.state, the same
+    pattern _repo() uses and for the same reason (no heavy work at module
+    import time on a serverless cold start). This is a deliberate,
+    documented exception to this module's usual "REST API never touches
+    Tier 2" rule (see the module docstring) -- /bench/evaluate is the one
+    endpoint that legitimately needs it, to let a resident see what the
+    real trained model says about real bench-rig sensor data.
+    """
+    state = request.app.state
+    if not hasattr(state, "tier2_model") or state.tier2_model is None:
+        from backend.app.main import build_tier2_model
+
+        state.tier2_model = build_tier2_model()
+    return state.tier2_model
 
 
 class NodeOut(BaseModel):
@@ -239,4 +267,73 @@ async def health(request: Request):
         last_model_run=None,
         silent_node_ids=silent_ids,
         total_nodes=len(nodes),
+    )
+
+
+class BenchEvaluateIn(BaseModel):
+    """See bench_eval.BenchOverrides for what each field represents and
+    why it's the resident's choice rather than a computed value."""
+
+    rain_mm_1h: float = Field(0.0, ge=0, le=200)
+    height_m_override: float | None = Field(None, ge=0, le=20)
+    soil_pct_override: float | None = Field(None, ge=0, le=100)
+
+
+class BenchEvaluateOut(BaseModel):
+    tier2_probability: float
+    corroborating_channels: int
+    physical_breach: bool
+    state: str
+    reading_used: dict
+    """The exact ReadingRecord fields fed to the model, so the app can
+    show its work rather than presenting a bare percentage — Section 7's
+    explainability requirement applies here just as much as to training."""
+    bench_reading_at: datetime | None
+    """When the underlying sensor_table row was captured -- null if no
+    bench reading exists yet and the frame fell back to defaults."""
+
+
+@router.post("/bench/evaluate", response_model=BenchEvaluateOut)
+async def bench_evaluate(body: BenchEvaluateIn, request: Request):
+    """
+    Runs the LATEST bench-rig reading (Supabase sensor_table) plus the
+    resident's explicit overrides through the real, already-trained Tier 2
+    model, guardrail, and state machine -- see bench_eval.py's module
+    docstring for why this is a live evaluation against real code, not a
+    retrain and not a second hand-rolled scoring path.
+    """
+    try:
+        row = await fetch_latest_bench_reading()
+    except BenchEvalError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    overrides = BenchOverrides(
+        rain_mm_1h=body.rain_mm_1h,
+        height_m_override=body.height_m_override,
+        soil_pct_override=body.soil_pct_override,
+    )
+    # No bench reading yet: still evaluate against the overrides alone (a
+    # row of defaults, honestly labelled via bench_reading_at=None) rather
+    # than 502ing the whole endpoint -- lets someone try the sliders before
+    # any hardware has posted anything.
+    reading = bench_reading_to_record(row or {}, overrides)
+
+    features = build_features(datetime.now(timezone.utc), [reading])
+    tier2_model = _tier2(request)
+    inputs = evaluate_guardrail(reading, features, tier2_model, critical_height_m=None)
+    state = desired_state(inputs)
+
+    return BenchEvaluateOut(
+        tier2_probability=inputs.tier2_p,
+        corroborating_channels=inputs.corroborating_channels,
+        physical_breach=inputs.physical_breach,
+        state=state.name,
+        reading_used={
+            "height_m": reading.height_m,
+            "tilt_x": reading.tilt_x,
+            "tilt_y": reading.tilt_y,
+            "soil_pct": reading.soil_pct,
+            "rain_tips": reading.rain_tips,
+        },
+        bench_reading_at=row.get("created_at") if row else None,
     )
