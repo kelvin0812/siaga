@@ -111,7 +111,7 @@ class _RiskScreenState extends State<RiskScreen> {
             children: [
               Text(
                 '${l10n.riskSelectorLabel}: ',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
               ),
               _NodeSelector(
                 nodes: appState.nodes,
@@ -318,9 +318,9 @@ class _ThreatStepper extends StatelessWidget {
                   riskStateLabel(context, state),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
-                    color: isCurrent ? color : AppColors.textMuted,
+                    fontSize: 12,
+                    fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                    color: isCurrent ? color : AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -461,7 +461,7 @@ class _Attribution extends StatelessWidget {
           Text(
             l10n.sourceAttribution,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45, fontWeight: FontWeight.w500),
           ),
         if (offline) ...[
           if (showSourceLine) const SizedBox(height: 12),
@@ -488,9 +488,9 @@ class _OfflinePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off, size: 14, color: AppColors.textMuted),
+          const Icon(Icons.cloud_off, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          Text(text, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );

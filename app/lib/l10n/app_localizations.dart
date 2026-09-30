@@ -571,6 +571,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo upload failed. Try again or remove the photo.'**
   String get reportPhotoUploadFailed;
+
+  /// No description provided for @benchSensorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bench Sensor Rig (Live)'**
+  String get benchSensorTitle;
+
+  /// No description provided for @benchSensorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.'**
+  String get benchSensorDescription;
+
+  /// No description provided for @benchSensorWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a reading...'**
+  String get benchSensorWaiting;
+
+  /// No description provided for @benchSensorError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach Supabase.'**
+  String get benchSensorError;
+
+  /// No description provided for @benchSensorUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get benchSensorUpdated;
 }
 
 class _AppLocalizationsDelegate

@@ -114,20 +114,27 @@ create table if not exists cell_subscriptions (
 -- purpose, so opening it to a direct anon insert doesn't touch that
 -- table's deny-all RLS policy below. Flagged in docs/nexus-log.md:
 -- anything landing here never reaches Tier 1/Tier 2/the guardrail, so
--- it's bench data, not a real node until backfilled into `readings`.
+-- it's bench data, not a real node.
+--
+-- Columns match the Pico's ACTUAL JSON payload (confirmed from Serial
+-- Monitor output, see docs/nexus-log.md) -- an earlier version of this
+-- table guessed at the SIAGA 12-byte frame's field names instead and
+-- every insert 400'd, since PostgREST requires an exact column match.
+-- This rig's sensor set (raw soil + ultrasonic distance + flow + 6-axis
+-- accel/gyro) is a different physical setup from the node firmware's
+-- tilt-delta/rain-tip sensors, not a drop-in replacement for it -- see
+-- the Nexus Log entry on why this data isn't wired into Tier 2 as-is.
 create table if not exists sensor_table (
     id bigserial primary key,
-    node_id smallint,
-    seq smallint,
-    level_mm integer,
-    tilt_x smallint,
-    tilt_y smallint,
-    soil_pct smallint,
-    rain_tips smallint,
-    temp_c smallint,
-    rh_pct smallint,
-    vbat_cv smallint,
-    flags smallint,
+    soil integer,
+    dist double precision,
+    flow integer,
+    accel_x double precision,
+    accel_y double precision,
+    accel_z double precision,
+    gyro_x double precision,
+    gyro_y double precision,
+    gyro_z double precision,
     created_at timestamptz not null default now()
 );
 create index if not exists sensor_table_created_idx on sensor_table (created_at desc);

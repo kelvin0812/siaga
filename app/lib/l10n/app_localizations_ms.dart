@@ -254,4 +254,20 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get reportPhotoUploadFailed =>
       'Muat naik foto gagal. Cuba lagi atau buang foto.';
+
+  @override
+  String get benchSensorTitle => 'Rig Sensor Bangku (Langsung)';
+
+  @override
+  String get benchSensorDescription =>
+      'Bacaan langsung daripada rig ujian ESP32/Pico melalui Supabase — berasingan daripada nod sungai yang dipantau di atas.';
+
+  @override
+  String get benchSensorWaiting => 'Menunggu bacaan...';
+
+  @override
+  String get benchSensorError => 'Tidak dapat menghubungi Supabase.';
+
+  @override
+  String get benchSensorUpdated => 'Dikemas kini';
 }

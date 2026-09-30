@@ -78,5 +78,10 @@
   "reportLocationCurrent": "My current location",
   "reportPhotoRemove": "Remove photo",
   "reportPhotoUploading": "Uploading photo…",
-  "reportPhotoUploadFailed": "Photo upload failed. Try again or remove the photo."
+  "reportPhotoUploadFailed": "Photo upload failed. Try again or remove the photo.",
+  "benchSensorTitle": "Bench Sensor Rig (Live)",
+  "benchSensorDescription": "Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.",
+  "benchSensorWaiting": "Waiting for a reading...",
+  "benchSensorError": "Could not reach Supabase.",
+  "benchSensorUpdated": "Updated"
 }
