@@ -9,3 +9,14 @@ pydantic-settings>=2.6
 asyncpg>=0.30
 h3>=4.1
 firebase-admin>=6.5
+# Added 2026-09-30: both were missing here despite being genuinely needed
+# by this Vercel deployment specifically, not just local/training use --
+# a real pre-existing gap, not new to this feature. Without lightgbm,
+# LightGBMTier2Model.__init__ raises ImportError, which build_tier2_model()
+# catches and silently downgrades to HeuristicTier2Stub -- meaning the
+# deployed REST API most likely never ran the real trained model at all
+# until this was added, for anything that touches Tier 2 here (currently
+# just POST /bench/evaluate). httpx is bench_eval.py's own new dependency
+# (it reads sensor_table straight from Supabase's REST API).
+lightgbm>=4.5
+httpx>=0.27
