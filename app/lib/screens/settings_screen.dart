@@ -489,6 +489,27 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
                 RiskBadge(state: _result!.state),
               ],
             ),
+            if (!_result!.isRealModel) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.watch.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: AppColors.watch.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.watch, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(l10n.benchEvalStubWarning, style: const TextStyle(color: AppColors.watch, fontSize: 11.5, height: 1.35)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Wrap(
               spacing: 10,

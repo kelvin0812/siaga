@@ -308,4 +308,8 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get benchEvalReadingUsedLabel => 'Bacaan yang dihantar ke model';
+
+  @override
+  String get benchEvalStubWarning =>
+      'Ini dijalankan pada model ganti heuristik, bukan model terlatih sebenar — pelayan bahagian belakang tidak dapat memuatkannya kali ini. Nombor di atas hanya untuk ilustrasi.';
 }

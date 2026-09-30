@@ -291,6 +291,12 @@ class BenchEvaluateOut(BaseModel):
     bench_reading_at: datetime | None
     """When the underlying sensor_table row was captured -- null if no
     bench reading exists yet and the frame fell back to defaults."""
+    model_type: str
+    """Which Tier2Model implementation actually produced tier2_probability
+    -- "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
+    (a placeholder — see tier2.py). Reported explicitly so a stub answer
+    is never presented as if it were the real model's, e.g. on a runtime
+    where the trained model can't load (docs/nexus-log.md, 2026-09-30)."""
 
 
 @router.post("/bench/evaluate", response_model=BenchEvaluateOut)
@@ -302,45 +308,39 @@ async def bench_evaluate(body: BenchEvaluateIn, request: Request):
     docstring for why this is a live evaluation against real code, not a
     retrain and not a second hand-rolled scoring path.
     """
-    # TEMP-DEBUG-HACK: Vercel's runtime-logs API is 403ing for this
-    # project/plan, so this is the only way to see the actual traceback
-    # behind a 500 here. Remove before this is considered done.
-    import traceback
-
     try:
         row = await fetch_latest_bench_reading()
-
-        overrides = BenchOverrides(
-            rain_mm_1h=body.rain_mm_1h,
-            height_m_override=body.height_m_override,
-            soil_pct_override=body.soil_pct_override,
-        )
-        # No bench reading yet: still evaluate against the overrides alone
-        # (a row of defaults, honestly labelled via bench_reading_at=None)
-        # rather than 502ing the whole endpoint -- lets someone try the
-        # sliders before any hardware has posted anything.
-        reading = bench_reading_to_record(row or {}, overrides)
-
-        features = build_features(datetime.now(timezone.utc), [reading])
-        tier2_model = _tier2(request)
-        inputs = evaluate_guardrail(reading, features, tier2_model, critical_height_m=None)
-        state = desired_state(inputs)
-
-        return BenchEvaluateOut(
-            tier2_probability=inputs.tier2_p,
-            corroborating_channels=inputs.corroborating_channels,
-            physical_breach=inputs.physical_breach,
-            state=state.name,
-            reading_used={
-                "height_m": reading.height_m,
-                "tilt_x": reading.tilt_x,
-                "tilt_y": reading.tilt_y,
-                "soil_pct": reading.soil_pct,
-                "rain_tips": reading.rain_tips,
-            },
-            bench_reading_at=row.get("created_at") if row else None,
-        )
     except BenchEvalError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
-    except Exception as e:  # noqa: BLE001 -- TEMP-DEBUG-HACK only
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}\n{traceback.format_exc()}") from e
+
+    overrides = BenchOverrides(
+        rain_mm_1h=body.rain_mm_1h,
+        height_m_override=body.height_m_override,
+        soil_pct_override=body.soil_pct_override,
+    )
+    # No bench reading yet: still evaluate against the overrides alone (a
+    # row of defaults, honestly labelled via bench_reading_at=None) rather
+    # than 502ing the whole endpoint -- lets someone try the sliders before
+    # any hardware has posted anything.
+    reading = bench_reading_to_record(row or {}, overrides)
+
+    features = build_features(datetime.now(timezone.utc), [reading])
+    tier2_model = _tier2(request)
+    inputs = evaluate_guardrail(reading, features, tier2_model, critical_height_m=None)
+    state = desired_state(inputs)
+
+    return BenchEvaluateOut(
+        tier2_probability=inputs.tier2_p,
+        corroborating_channels=inputs.corroborating_channels,
+        physical_breach=inputs.physical_breach,
+        state=state.name,
+        reading_used={
+            "height_m": reading.height_m,
+            "tilt_x": reading.tilt_x,
+            "tilt_y": reading.tilt_y,
+            "soil_pct": reading.soil_pct,
+            "rain_tips": reading.rain_tips,
+        },
+        bench_reading_at=row.get("created_at") if row else None,
+        model_type=type(tier2_model).__name__,
+    )

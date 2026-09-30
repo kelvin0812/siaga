@@ -9,14 +9,23 @@ pydantic-settings>=2.6
 asyncpg>=0.30
 h3>=4.1
 firebase-admin>=6.5
-# Added 2026-09-30: both were missing here despite being genuinely needed
-# by this Vercel deployment specifically, not just local/training use --
-# a real pre-existing gap, not new to this feature. Without lightgbm,
-# LightGBMTier2Model.__init__ raises ImportError, which build_tier2_model()
-# catches and silently downgrades to HeuristicTier2Stub -- meaning the
-# deployed REST API most likely never ran the real trained model at all
-# until this was added, for anything that touches Tier 2 here (currently
-# just POST /bench/evaluate). httpx is bench_eval.py's own new dependency
-# (it reads sensor_table straight from Supabase's REST API).
-lightgbm>=4.5
+# httpx: bench_eval.py's dependency, reads sensor_table straight from
+# Supabase's REST API.
 httpx>=0.27
+#
+# lightgbm is deliberately NOT listed here, even though LightGBMTier2Model
+# is what POST /bench/evaluate wants to run. Confirmed live on this exact
+# deployment (docs/nexus-log.md, 2026-09-30): it fails to import with
+# `OSError: libgomp.so.1: cannot open shared object file` -- Vercel's
+# Python serverless runtime is a minimal container with no OpenMP runtime,
+# and there's no apt-get available to add one. This isn't a "missing pip
+# package" problem more lightgbm-installing can fix; the compiled
+# extension cannot load here, full stop. build_tier2_model() catches this
+# (now including OSError, not just ImportError) and falls back to
+# HeuristicTier2Stub, so the endpoint stays up -- but that means Tier 2
+# predictions made THROUGH THIS VERCEL DEPLOYMENT are the heuristic stub,
+# never the real trained model, until the API runs somewhere with a real
+# OS underneath it (a VM, container, or the persistent process main.py
+# already supports) instead of this serverless runtime. The app surfaces
+# which one actually answered via BenchEvaluateOut.model_type rather than
+# presenting a stub number as if it were the real model's.
