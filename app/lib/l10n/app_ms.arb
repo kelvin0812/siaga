@@ -83,5 +83,17 @@
   "benchSensorDescription": "Bacaan langsung daripada rig ujian ESP32/Pico melalui Supabase — berasingan daripada nod sungai yang dipantau di atas.",
   "benchSensorWaiting": "Menunggu bacaan...",
   "benchSensorError": "Tidak dapat menghubungi Supabase.",
-  "benchSensorUpdated": "Dikemas kini"
+  "benchSensorUpdated": "Dikemas kini",
+  "benchEvalTitle": "Penilaian Model Risiko (Data Bangku)",
+  "benchEvalDescription": "Menjalankan bacaan sensor sebenar rig bangku melalui model terlatih sebenar. Isikan apa yang rig tidak dapat kesan, kemudian jalankan — ini adalah inferens langsung terhadap model sebenar, bukan latihan semula.",
+  "benchEvalRainLabel": "Hujan simulasi, sejam lepas (mm)",
+  "benchEvalHeightLabel": "Ganti paras air",
+  "benchEvalSoilLabel": "Ganti kelembapan tanah",
+  "benchEvalRunButton": "Jalankan penilaian",
+  "benchEvalRunning": "Menjalankan…",
+  "benchEvalErrorMsg": "Tidak dapat menjalankan penilaian. Semak sambungan anda dan cuba lagi.",
+  "benchEvalResultTitle": "Keputusan",
+  "benchEvalProbabilityLabel": "Kebarangkalian Tier 2",
+  "benchEvalCorroborationLabel": "Saluran pengesahan",
+  "benchEvalReadingUsedLabel": "Bacaan yang dihantar ke model"
 }

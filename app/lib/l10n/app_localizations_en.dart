@@ -269,4 +269,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get benchSensorUpdated => 'Updated';
+
+  @override
+  String get benchEvalTitle => 'Risk Model Evaluation (Bench Data)';
+
+  @override
+  String get benchEvalDescription =>
+      'Runs the bench rig\'s real sensor readings through the actual trained model. Fill in what the rig can\'t sense, then run it — this is live inference against the real model, not a retrain.';
+
+  @override
+  String get benchEvalRainLabel => 'Simulated rainfall, last hour (mm)';
+
+  @override
+  String get benchEvalHeightLabel => 'Override water level';
+
+  @override
+  String get benchEvalSoilLabel => 'Override soil moisture';
+
+  @override
+  String get benchEvalRunButton => 'Run evaluation';
+
+  @override
+  String get benchEvalRunning => 'Running…';
+
+  @override
+  String get benchEvalErrorMsg =>
+      'Could not run evaluation. Check your connection and try again.';
+
+  @override
+  String get benchEvalResultTitle => 'Result';
+
+  @override
+  String get benchEvalProbabilityLabel => 'Tier 2 probability';
+
+  @override
+  String get benchEvalCorroborationLabel => 'Corroborating channels';
+
+  @override
+  String get benchEvalReadingUsedLabel => 'Reading fed to the model';
 }

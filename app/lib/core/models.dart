@@ -208,3 +208,33 @@ class DemoReading {
   double get tiltXDeg => tiltX * 0.1;
   double get tiltYDeg => tiltY * 0.1;
 }
+
+/// Result of POST /bench/evaluate — the real trained Tier 2 model's
+/// output for a bench-rig reading plus the resident's overrides. Field
+/// names mirror backend/app/api.py's BenchEvaluateOut.
+class BenchEvalResult {
+  final double tier2Probability;
+  final int corroboratingChannels;
+  final bool physicalBreach;
+  final RiskState state;
+  final Map<String, dynamic> readingUsed;
+  final DateTime? benchReadingAt;
+
+  const BenchEvalResult({
+    required this.tier2Probability,
+    required this.corroboratingChannels,
+    required this.physicalBreach,
+    required this.state,
+    required this.readingUsed,
+    required this.benchReadingAt,
+  });
+
+  factory BenchEvalResult.fromJson(Map<String, dynamic> json) => BenchEvalResult(
+        tier2Probability: (json['tier2_probability'] as num).toDouble(),
+        corroboratingChannels: json['corroborating_channels'] as int,
+        physicalBreach: json['physical_breach'] as bool,
+        state: RiskState.fromApi(json['state'] as String),
+        readingUsed: json['reading_used'] as Map<String, dynamic>,
+        benchReadingAt: json['bench_reading_at'] != null ? DateTime.parse(json['bench_reading_at'] as String) : null,
+      );
+}

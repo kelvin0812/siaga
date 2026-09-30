@@ -77,6 +77,31 @@ class ApiClient {
       throw ApiException('POST /subscriptions/ping failed: ${res.statusCode}');
     }
   }
+
+  /// Runs the latest bench-rig reading (Supabase sensor_table) plus the
+  /// given overrides through the REAL trained Tier 2 model + guardrail +
+  /// state machine — see backend/app/bench_eval.py. Not a retrain, not a
+  /// second scoring path client-side: this hits the same production code
+  /// every real node reading goes through.
+  Future<BenchEvalResult> evaluateBench({
+    double rainMm1h = 0,
+    double? heightMOverride,
+    double? soilPctOverride,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/bench/evaluate'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'rain_mm_1h': rainMm1h,
+        if (heightMOverride != null) 'height_m_override': heightMOverride,
+        if (soilPctOverride != null) 'soil_pct_override': soilPctOverride,
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw ApiException('POST /bench/evaluate failed: ${res.statusCode}');
+    }
+    return BenchEvalResult.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
 }
 
 class ApiException implements Exception {

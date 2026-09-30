@@ -83,5 +83,17 @@
   "benchSensorDescription": "Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.",
   "benchSensorWaiting": "Waiting for a reading...",
   "benchSensorError": "Could not reach Supabase.",
-  "benchSensorUpdated": "Updated"
+  "benchSensorUpdated": "Updated",
+  "benchEvalTitle": "Risk Model Evaluation (Bench Data)",
+  "benchEvalDescription": "Runs the bench rig's real sensor readings through the actual trained model. Fill in what the rig can't sense, then run it — this is live inference against the real model, not a retrain.",
+  "benchEvalRainLabel": "Simulated rainfall, last hour (mm)",
+  "benchEvalHeightLabel": "Override water level",
+  "benchEvalSoilLabel": "Override soil moisture",
+  "benchEvalRunButton": "Run evaluation",
+  "benchEvalRunning": "Running…",
+  "benchEvalErrorMsg": "Could not run evaluation. Check your connection and try again.",
+  "benchEvalResultTitle": "Result",
+  "benchEvalProbabilityLabel": "Tier 2 probability",
+  "benchEvalCorroborationLabel": "Corroborating channels",
+  "benchEvalReadingUsedLabel": "Reading fed to the model"
 }

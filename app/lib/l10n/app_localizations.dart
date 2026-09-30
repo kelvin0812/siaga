@@ -601,6 +601,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updated'**
   String get benchSensorUpdated;
+
+  /// No description provided for @benchEvalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk Model Evaluation (Bench Data)'**
+  String get benchEvalTitle;
+
+  /// No description provided for @benchEvalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the bench rig\'s real sensor readings through the actual trained model. Fill in what the rig can\'t sense, then run it — this is live inference against the real model, not a retrain.'**
+  String get benchEvalDescription;
+
+  /// No description provided for @benchEvalRainLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated rainfall, last hour (mm)'**
+  String get benchEvalRainLabel;
+
+  /// No description provided for @benchEvalHeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Override water level'**
+  String get benchEvalHeightLabel;
+
+  /// No description provided for @benchEvalSoilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Override soil moisture'**
+  String get benchEvalSoilLabel;
+
+  /// No description provided for @benchEvalRunButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run evaluation'**
+  String get benchEvalRunButton;
+
+  /// No description provided for @benchEvalRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running…'**
+  String get benchEvalRunning;
+
+  /// No description provided for @benchEvalErrorMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not run evaluation. Check your connection and try again.'**
+  String get benchEvalErrorMsg;
+
+  /// No description provided for @benchEvalResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get benchEvalResultTitle;
+
+  /// No description provided for @benchEvalProbabilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tier 2 probability'**
+  String get benchEvalProbabilityLabel;
+
+  /// No description provided for @benchEvalCorroborationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Corroborating channels'**
+  String get benchEvalCorroborationLabel;
+
+  /// No description provided for @benchEvalReadingUsedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading fed to the model'**
+  String get benchEvalReadingUsedLabel;
 }
 
 class _AppLocalizationsDelegate

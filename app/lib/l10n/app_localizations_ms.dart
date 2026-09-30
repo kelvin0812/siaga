@@ -270,4 +270,42 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get benchSensorUpdated => 'Dikemas kini';
+
+  @override
+  String get benchEvalTitle => 'Penilaian Model Risiko (Data Bangku)';
+
+  @override
+  String get benchEvalDescription =>
+      'Menjalankan bacaan sensor sebenar rig bangku melalui model terlatih sebenar. Isikan apa yang rig tidak dapat kesan, kemudian jalankan — ini adalah inferens langsung terhadap model sebenar, bukan latihan semula.';
+
+  @override
+  String get benchEvalRainLabel => 'Hujan simulasi, sejam lepas (mm)';
+
+  @override
+  String get benchEvalHeightLabel => 'Ganti paras air';
+
+  @override
+  String get benchEvalSoilLabel => 'Ganti kelembapan tanah';
+
+  @override
+  String get benchEvalRunButton => 'Jalankan penilaian';
+
+  @override
+  String get benchEvalRunning => 'Menjalankan…';
+
+  @override
+  String get benchEvalErrorMsg =>
+      'Tidak dapat menjalankan penilaian. Semak sambungan anda dan cuba lagi.';
+
+  @override
+  String get benchEvalResultTitle => 'Keputusan';
+
+  @override
+  String get benchEvalProbabilityLabel => 'Kebarangkalian Tier 2';
+
+  @override
+  String get benchEvalCorroborationLabel => 'Saluran pengesahan';
+
+  @override
+  String get benchEvalReadingUsedLabel => 'Bacaan yang dihantar ke model';
 }

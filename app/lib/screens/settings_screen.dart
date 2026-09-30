@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/api_client.dart';
 import '../core/app_state.dart';
 import '../core/bench_sensor_service.dart';
 import '../core/fcm_service.dart';
@@ -167,6 +168,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _SectionLabel(l10n.benchSensorTitle),
             const SizedBox(height: 8),
             GlassCard(child: const _BenchSensorPanel()),
+            const SizedBox(height: 24),
+            _SectionLabel(l10n.benchEvalTitle),
+            const SizedBox(height: 8),
+            GlassCard(child: const _BenchEvalPanel()),
             const SizedBox(height: 24),
             _SectionLabel(l10n.settingsAbout),
             const SizedBox(height: 8),
@@ -342,6 +347,166 @@ class _BenchStat extends StatelessWidget {
           Text(label.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
           const SizedBox(height: 3),
           Text(value, style: AppFonts.mono(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lets a resident run the bench rig's latest real reading through the
+/// ACTUAL trained Tier 2 model (backend POST /bench/evaluate — see
+/// bench_eval.py), filling in only the signals the rig genuinely can't
+/// sense (rainfall) or hasn't been calibrated for (water level, soil).
+/// Deliberately a manual "Run" button rather than live-updating on every
+/// slider drag -- this hits a real model inference on the backend each
+/// time, not a free client-side computation.
+class _BenchEvalPanel extends StatefulWidget {
+  const _BenchEvalPanel();
+
+  @override
+  State<_BenchEvalPanel> createState() => _BenchEvalPanelState();
+}
+
+class _BenchEvalPanelState extends State<_BenchEvalPanel> {
+  double _rainMm = 0;
+  bool _overrideHeight = false;
+  double _heightM = 1.2;
+  bool _overrideSoil = false;
+  double _soilPct = 40;
+
+  bool _running = false;
+  BenchEvalResult? _result;
+  bool _errored = false;
+
+  Future<void> _run() async {
+    final appState = context.read<AppState>();
+    setState(() {
+      _running = true;
+      _errored = false;
+    });
+    try {
+      final result = await appState.api.evaluateBench(
+        rainMm1h: _rainMm,
+        heightMOverride: _overrideHeight ? _heightM : null,
+        soilPctOverride: _overrideSoil ? _soilPct : null,
+      );
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _running = false;
+      });
+    } on ApiException {
+      if (!mounted) return;
+      setState(() {
+        _errored = true;
+        _running = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.benchEvalDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.4)),
+          const SizedBox(height: 16),
+
+          Text('${l10n.benchEvalRainLabel}: ${_rainMm.round()} mm', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+          Slider(
+            value: _rainMm,
+            min: 0,
+            max: 100,
+            divisions: 20,
+            activeColor: AppColors.accent,
+            onChanged: (v) => setState(() => _rainMm = v),
+          ),
+
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(l10n.benchEvalHeightLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+            value: _overrideHeight,
+            onChanged: (v) => setState(() => _overrideHeight = v),
+          ),
+          if (_overrideHeight) ...[
+            Text('${_heightM.toStringAsFixed(1)} m', style: AppFonts.mono(fontSize: 13, color: AppColors.textPrimary)),
+            Slider(
+              value: _heightM,
+              min: 0,
+              max: 5,
+              divisions: 50,
+              activeColor: AppColors.watch,
+              onChanged: (v) => setState(() => _heightM = v),
+            ),
+          ],
+
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(l10n.benchEvalSoilLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+            value: _overrideSoil,
+            onChanged: (v) => setState(() => _overrideSoil = v),
+          ),
+          if (_overrideSoil) ...[
+            Text('${_soilPct.round()}%', style: AppFonts.mono(fontSize: 13, color: AppColors.textPrimary)),
+            Slider(
+              value: _soilPct,
+              min: 0,
+              max: 100,
+              divisions: 20,
+              activeColor: AppColors.warning,
+              onChanged: (v) => setState(() => _soilPct = v),
+            ),
+          ],
+
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _running ? null : _run,
+              child: Text(_running ? l10n.benchEvalRunning : l10n.benchEvalRunButton),
+            ),
+          ),
+
+          if (_errored) ...[
+            const SizedBox(height: 12),
+            Text(l10n.benchEvalErrorMsg, style: const TextStyle(color: AppColors.evacuate, fontSize: 12.5)),
+          ],
+
+          if (_result != null) ...[
+            const SizedBox(height: 16),
+            const Divider(color: AppColors.hairline),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(l10n.benchEvalResultTitle.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                const Spacer(),
+                RiskBadge(state: _result!.state),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _BenchStat(label: l10n.benchEvalProbabilityLabel, value: '${(_result!.tier2Probability * 100).toStringAsFixed(1)}%'),
+                _BenchStat(label: l10n.benchEvalCorroborationLabel, value: '${_result!.corroboratingChannels}'),
+                _BenchStat(label: 'Physical breach', value: _result!.physicalBreach ? 'YES' : 'no'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(l10n.benchEvalReadingUsedLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(
+              _result!.readingUsed.entries.map((e) => '${e.key}=${e.value}').join('  ·  '),
+              style: AppFonts.mono(fontSize: 11.5, color: AppColors.textSecondary),
+            ),
+          ],
         ],
       ),
     );
