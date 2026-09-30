@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../core/models.dart';
 import '../core/theme.dart';
-import 'glass_card.dart';
 import 'risk_badge.dart';
 
-/// High-visibility banner for an active hazard — a glowing gradient-bordered
-/// panel with a pulsing beacon dot, replacing the old plain message card.
-/// Motion here is deliberate: this is the one element on the dashboard
-/// that should visually interrupt, because it's the one that matters.
+/// High-visibility banner for an active hazard. Used to be a full GlassCard
+/// with a glowing gradient border + boxShadow halo — team feedback was that
+/// the saturated colour wash was too loud, more distracting than legible.
+/// Flat dark card + a single coloured left accent bar reads as "this is an
+/// alert" without dominating the screen; the pulsing beacon dot still
+/// carries the "something is happening" motion cue on its own.
 class ActiveThreatBanner extends StatefulWidget {
   final Hazard hazard;
   final String message;
@@ -36,9 +37,21 @@ class _ActiveThreatBannerState extends State<ActiveThreatBanner> with SingleTick
     final color = riskStateColor(widget.hazard.state);
     final label = riskStateLabel(context, widget.hazard.state);
 
-    return GlassCard(
-      glowColor: color,
-      borderGradient: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.15)],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        // A single flat-coloured left accent edge instead of a glowing
+        // gradient border wrapping the whole card.
+        border: Border(
+          top: const BorderSide(color: AppColors.hairline),
+          right: const BorderSide(color: AppColors.hairline),
+          bottom: const BorderSide(color: AppColors.hairline),
+          left: BorderSide(color: color, width: 3),
+        ),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.16), blurRadius: 14, offset: const Offset(0, 6))],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
