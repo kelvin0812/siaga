@@ -307,4 +307,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get benchEvalReadingUsedLabel => 'Reading fed to the model';
+
+  @override
+  String get benchEvalStubWarning =>
+      'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.';
 }

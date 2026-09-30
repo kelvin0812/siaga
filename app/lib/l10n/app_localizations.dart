@@ -673,6 +673,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading fed to the model'**
   String get benchEvalReadingUsedLabel;
+
+  /// No description provided for @benchEvalStubWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.'**
+  String get benchEvalStubWarning;
 }
 
 class _AppLocalizationsDelegate

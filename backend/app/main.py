@@ -87,13 +87,19 @@ def build_tier2_model() -> Tier2Model:
         return HeuristicTier2Stub()
     try:
         return LightGBMTier2Model(settings.tier2_model_dir)
-    except (FileNotFoundError, ImportError, ValueError) as e:
+    except (FileNotFoundError, ImportError, OSError, ValueError) as e:
         # FileNotFoundError: no model trained yet. ImportError: lightgbm
-        # isn't installed in this environment (it's a training-only dep
-        # per ml/requirements.txt, not guaranteed everywhere the
-        # persistent process might run). ValueError: persisted feature
-        # list doesn't match features.py anymore. All three should
-        # degrade to the stub, not crash the process (Section 2).
+        # isn't installed in this environment. OSError: lightgbm IS
+        # installed but its compiled extension can't load its native
+        # OpenMP dependency (libgomp.so.1) -- this is exactly what
+        # actually happens on Vercel's Python serverless runtime, a real,
+        # confirmed failure mode (docs/nexus-log.md), not a hypothetical
+        # one: that minimal container doesn't ship libgomp, and there's no
+        # way to apt-get it there. ValueError: persisted feature list
+        # doesn't match features.py anymore. All four should degrade to
+        # the stub, not crash the process (Section 2) -- catching only
+        # ImportError here previously meant this exact OSError still
+        # crashed every request that touched Tier 2 on Vercel.
         logger.warning("falling back to HeuristicTier2Stub: %s", e)
         return HeuristicTier2Stub()
 

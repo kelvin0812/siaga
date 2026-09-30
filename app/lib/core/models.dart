@@ -219,6 +219,13 @@ class BenchEvalResult {
   final RiskState state;
   final Map<String, dynamic> readingUsed;
   final DateTime? benchReadingAt;
+  // Which Tier2Model implementation actually produced tier2Probability --
+  // "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
+  // (a placeholder used when the real model can't load, e.g. Vercel's
+  // serverless runtime is missing lightgbm's native OpenMP dependency —
+  // see docs/nexus-log.md, 2026-09-30). Surfaced in the UI so a stub
+  // answer is never shown as if it were the real model's.
+  final String modelType;
 
   const BenchEvalResult({
     required this.tier2Probability,
@@ -227,7 +234,10 @@ class BenchEvalResult {
     required this.state,
     required this.readingUsed,
     required this.benchReadingAt,
+    required this.modelType,
   });
+
+  bool get isRealModel => modelType == 'LightGBMTier2Model';
 
   factory BenchEvalResult.fromJson(Map<String, dynamic> json) => BenchEvalResult(
         tier2Probability: (json['tier2_probability'] as num).toDouble(),
@@ -236,5 +246,6 @@ class BenchEvalResult {
         state: RiskState.fromApi(json['state'] as String),
         readingUsed: json['reading_used'] as Map<String, dynamic>,
         benchReadingAt: json['bench_reading_at'] != null ? DateTime.parse(json['bench_reading_at'] as String) : null,
+        modelType: json['model_type'] as String,
       );
 }

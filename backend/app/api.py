@@ -291,6 +291,12 @@ class BenchEvaluateOut(BaseModel):
     bench_reading_at: datetime | None
     """When the underlying sensor_table row was captured -- null if no
     bench reading exists yet and the frame fell back to defaults."""
+    model_type: str
+    """Which Tier2Model implementation actually produced tier2_probability
+    -- "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
+    (a placeholder — see tier2.py). Reported explicitly so a stub answer
+    is never presented as if it were the real model's, e.g. on a runtime
+    where the trained model can't load (docs/nexus-log.md, 2026-09-30)."""
 
 
 @router.post("/bench/evaluate", response_model=BenchEvaluateOut)
@@ -336,4 +342,5 @@ async def bench_evaluate(body: BenchEvaluateIn, request: Request):
             "rain_tips": reading.rain_tips,
         },
         bench_reading_at=row.get("created_at") if row else None,
+        model_type=type(tier2_model).__name__,
     )
