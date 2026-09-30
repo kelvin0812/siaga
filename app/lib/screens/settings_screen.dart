@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
+import '../core/bench_sensor_service.dart';
 import '../core/fcm_service.dart';
 import '../core/locale_provider.dart';
 import '../core/models.dart';
@@ -161,6 +164,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            _SectionLabel(l10n.benchSensorTitle),
+            const SizedBox(height: 8),
+            GlassCard(child: const _BenchSensorPanel()),
+            const SizedBox(height: 24),
             _SectionLabel(l10n.settingsAbout),
             const SizedBox(height: 8),
             GlassCard(
@@ -195,6 +202,147 @@ class _SectionLabel extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 1.0,
         ),
+      ),
+    );
+  }
+}
+
+/// Live-polls Supabase's sensor_table (the ESP32/Pico bench rig, see
+/// bench_sensor_service.dart) every few seconds while this screen is
+/// visible, and shows the newest row. Deliberately its own small
+/// StatefulWidget rather than routed through AppState -- this is bench
+/// test data with no relation to the real node/guardrail pipeline, so it
+/// shouldn't share state with anything that drives an actual risk
+/// reading.
+class _BenchSensorPanel extends StatefulWidget {
+  const _BenchSensorPanel();
+
+  @override
+  State<_BenchSensorPanel> createState() => _BenchSensorPanelState();
+}
+
+class _BenchSensorPanelState extends State<_BenchSensorPanel> {
+  final _service = BenchSensorService();
+  Timer? _timer;
+  BenchSensorReading? _latest;
+  bool _loading = true;
+  bool _errored = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _fetch());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final rows = await _service.latest(limit: 1);
+      if (!mounted) return;
+      setState(() {
+        _latest = rows.isNotEmpty ? rows.first : _latest;
+        _loading = false;
+        _errored = false;
+      });
+    } on BenchSensorException {
+      if (!mounted) return;
+      // Keep showing the last good reading rather than blanking the panel
+      // on one dropped request (Section 2: degrade visibly, don't flicker
+      // between data and nothing on every transient network hiccup).
+      setState(() {
+        _loading = false;
+        _errored = _latest == null;
+      });
+    }
+  }
+
+  String _formatAgo(DateTime time) {
+    final diff = DateTime.now().toUtc().difference(time.toUtc());
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    return '${diff.inHours}h ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.benchSensorDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.4)),
+          const SizedBox(height: 14),
+          if (_loading)
+            const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
+          else if (_latest == null)
+            Text(
+              _errored ? l10n.benchSensorError : l10n.benchSensorWaiting,
+              style: const TextStyle(color: AppColors.textSecondary),
+            )
+          else ...[
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _BenchStat(label: 'Soil', value: _latest!.soil?.toString() ?? '—'),
+                _BenchStat(label: 'Distance', value: _latest!.dist != null ? '${_latest!.dist!.toStringAsFixed(1)} cm' : '—'),
+                _BenchStat(label: 'Flow', value: _latest!.flow?.toString() ?? '—'),
+                _BenchStat(
+                  label: 'Accel (x,y,z)',
+                  value: [_latest!.accelX, _latest!.accelY, _latest!.accelZ]
+                      .map((v) => v?.toStringAsFixed(2) ?? '—')
+                      .join(', '),
+                ),
+                _BenchStat(
+                  label: 'Gyro (x,y,z)',
+                  value: [_latest!.gyroX, _latest!.gyroY, _latest!.gyroZ]
+                      .map((v) => v?.toStringAsFixed(2) ?? '—')
+                      .join(', '),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${l10n.benchSensorUpdated} ${_formatAgo(_latest!.createdAt)}${_errored ? ' — ${l10n.benchSensorError}' : ''}',
+              style: TextStyle(color: _errored ? AppColors.evacuate : AppColors.textMuted, fontSize: 11.5),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BenchStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _BenchStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+          const SizedBox(height: 3),
+          Text(value, style: AppFonts.mono(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        ],
       ),
     );
   }

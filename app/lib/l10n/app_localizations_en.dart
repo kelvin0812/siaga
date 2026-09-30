@@ -253,4 +253,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reportPhotoUploadFailed =>
       'Photo upload failed. Try again or remove the photo.';
+
+  @override
+  String get benchSensorTitle => 'Bench Sensor Rig (Live)';
+
+  @override
+  String get benchSensorDescription =>
+      'Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.';
+
+  @override
+  String get benchSensorWaiting => 'Waiting for a reading...';
+
+  @override
+  String get benchSensorError => 'Could not reach Supabase.';
+
+  @override
+  String get benchSensorUpdated => 'Updated';
 }

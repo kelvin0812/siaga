@@ -78,5 +78,10 @@
   "reportLocationCurrent": "Lokasi semasa saya",
   "reportPhotoRemove": "Buang foto",
   "reportPhotoUploading": "Memuat naik foto…",
-  "reportPhotoUploadFailed": "Muat naik foto gagal. Cuba lagi atau buang foto."
+  "reportPhotoUploadFailed": "Muat naik foto gagal. Cuba lagi atau buang foto.",
+  "benchSensorTitle": "Rig Sensor Bangku (Langsung)",
+  "benchSensorDescription": "Bacaan langsung daripada rig ujian ESP32/Pico melalui Supabase — berasingan daripada nod sungai yang dipantau di atas.",
+  "benchSensorWaiting": "Menunggu bacaan...",
+  "benchSensorError": "Tidak dapat menghubungi Supabase.",
+  "benchSensorUpdated": "Dikemas kini"
 }
