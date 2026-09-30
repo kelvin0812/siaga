@@ -56,8 +56,13 @@ class _RiskScreenState extends State<RiskScreen> {
         if (mounted) appState.setLockedNode(null);
       });
     }
+    // Demo mode has exactly one node (the simulated one) -- feed it to the
+    // metrics panel as `nearest` too, rather than leaving it null, so the
+    // Distance/Last Sync cards have something to show instead of "—"
+    // during a demo. (Real-mode locking/nearest-by-GPS logic below is
+    // unrelated and unaffected by this.)
     final focusedNode = appState.demoMode
-        ? null
+        ? appState.nodes.firstOrNull
         : (appState.lockedNodeId != null
             ? appState.nodes.where((n) => n.id == appState.lockedNodeId).firstOrNull
             : null) ??
@@ -351,9 +356,15 @@ class _MetricsPanel extends StatelessWidget {
     final heightM = appState.demoMode ? demo?.heightM : liveReading?.heightM;
 
     final position = appState.locationService.lastKnownPosition;
-    final distanceM = (nearest != null && position != null)
-        ? Geolocator.distanceBetween(position.latitude, position.longitude, nearest!.lat, nearest!.lon)
-        : null;
+    // Demo mode has no real GPS fix to measure from -- same convention
+    // already used for the map's evacuation-route origin (map_screen.dart):
+    // the demo is illustrating "you are at this node," so the honest
+    // answer is 0m, not a blank dash.
+    final distanceM = nearest == null
+        ? null
+        : appState.demoMode
+            ? 0.0
+            : (position != null ? Geolocator.distanceBetween(position.latitude, position.longitude, nearest!.lat, nearest!.lon) : null);
 
     final items = [
       MicroMetricCard(
