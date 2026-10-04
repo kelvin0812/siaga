@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET is only granted implicitly in debug builds; release needs it declared. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Location is used only to compute the H3 res-8 cell on-device; coordinates are never transmitted. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <application
-        android:label="siaga_app"
+        android:label="SIAGA"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
