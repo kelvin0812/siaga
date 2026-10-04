@@ -222,9 +222,8 @@ class BenchEvalResult {
   // Which Tier2Model implementation actually produced tier2Probability --
   // "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
   // (a placeholder used when the real model can't load, e.g. Vercel's
-  // serverless runtime is missing lightgbm's native OpenMP dependency —
-  // see docs/nexus-log.md, 2026-09-30). Surfaced in the UI so a stub
-  // answer is never shown as if it were the real model's.
+  // serverless runtime is missing lightgbm's native OpenMP dependency).
+  // Surfaced in the UI so a stub answer is never shown as if it were the real model's.
   final String modelType;
 
   const BenchEvalResult({

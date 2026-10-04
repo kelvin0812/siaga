@@ -26,7 +26,7 @@ class FakeCellComputer implements CellComputer {
 /// reproduces exactly what a browser's geolocation prompt does with no
 /// one present to click it, or what a native permission dialog does if
 /// the user just never responds. Used to prove data loading doesn't wait
-/// on it (main.dart's _startup regression, see docs/nexus-log.md).
+/// on it (main.dart's _startup regression).
 class HangingLocationService extends LocationService {
   HangingLocationService({required super.h3Service, required super.fcmService, required super.prefs});
 

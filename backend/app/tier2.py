@@ -1,8 +1,7 @@
 """
 Tier 2 inference interface (build brief Section 6.3 / 7). The real model
 is LightGBM, trained on historical public rainfall/water-level records
-plus synthetic hydrographs (Section 7) — see ml/train.py and
-docs/nexus-log.md for the training pipeline and what it actually found.
+plus synthetic hydrographs (Section 7) — see ml/train.py for the training pipeline.
 
 `HeuristicTier2Stub` exists only so the guardrail and state machine have
 something to run against without a trained model present (e.g. a fresh

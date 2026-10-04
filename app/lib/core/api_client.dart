@@ -65,8 +65,7 @@ class ApiClient {
   }
 
   /// Delta is +1 on subscribe, -1 on unsubscribe. This is the endpoint
-  /// that exists purely because FCM has no subscriber-count API — see
-  /// docs/nexus-log.md.
+  /// that exists purely because FCM has no subscriber-count API.
   Future<void> pingSubscription(String cellId, int delta) async {
     final res = await _client.post(
       Uri.parse('$baseUrl/subscriptions/ping'),

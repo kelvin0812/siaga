@@ -1,6 +1,6 @@
 """
 Bridges the ESP32/Pico bench rig's readings (Supabase `sensor_table`, a
-different sensor set from the real node firmware -- see docs/nexus-log.md)
+different sensor set from the real node firmware)
 into the *actual trained* Tier 2 pipeline, so a resident on the bench can
 see what the real model says about real sensor data, live -- not a second,
 hand-rolled evaluation, and not a retrain (there's nowhere near enough

@@ -2,8 +2,7 @@
 --
 -- Section 4.1 of the build brief specifies SQLite for the prototype and
 -- says explicitly "do not introduce Postgres for a 3-node demo." This
--- schema is a deliberate, logged override to Postgres/Supabase (see
--- docs/nexus-log.md, 2026-08-13) — kept schema-portable in the sense that
+-- schema is a deliberate override to Postgres/Supabase. It is kept portable:
 -- it uses no Supabase-specific features (no RLS policies, no auth.uid()),
 -- so it could still be moved to a bare Postgres host later.
 
@@ -100,8 +99,7 @@ create table if not exists reports (
 -- counts — Section 3.1/5.3 assume that data exists, but nothing in the
 -- brief specifies how it gets populated. The app pings a subscribe/
 -- unsubscribe delta (cell_id only, no device identifier) and this counter
--- is incremented/decremented accordingly. Flagged in docs/nexus-log.md as
--- an addition beyond Section 5.3's fixed endpoint table.
+-- is incremented/decremented accordingly. This is an addition beyond Section 5.3's fixed endpoint table.
 create table if not exists cell_subscriptions (
     cell_id text primary key,
     count integer not null default 0,
@@ -109,21 +107,21 @@ create table if not exists cell_subscriptions (
 );
 
 -- Bench-test ingestion table for a WiFi ESP32 + Pico rig that posts
--- straight to Supabase's PostgREST API (yoooo.ino), bypassing the LoRa/
+-- straight to Supabase's PostgREST API (the ESP32 bench rig), bypassing the LoRa/
 -- gateway/MQTT pipeline entirely -- kept separate from `readings` on
 -- purpose, so opening it to a direct anon insert doesn't touch that
--- table's deny-all RLS policy below. Flagged in docs/nexus-log.md:
--- anything landing here never reaches Tier 1/Tier 2/the guardrail, so
+-- table's deny-all RLS policy below.
+-- Anything landing here never reaches Tier 1/Tier 2/the guardrail, so
 -- it's bench data, not a real node.
 --
 -- Columns match the Pico's ACTUAL JSON payload (confirmed from Serial
--- Monitor output, see docs/nexus-log.md) -- an earlier version of this
+-- Monitor output). An earlier version of this
 -- table guessed at the SIAGA 12-byte frame's field names instead and
 -- every insert 400'd, since PostgREST requires an exact column match.
 -- This rig's sensor set (raw soil + ultrasonic distance + flow + 6-axis
 -- accel/gyro) is a different physical setup from the node firmware's
 -- tilt-delta/rain-tip sensors, not a drop-in replacement for it -- see
--- the Nexus Log entry on why this data isn't wired into Tier 2 as-is.
+-- why this data isn't wired straight into Tier 2.
 create table if not exists sensor_table (
     id bigserial primary key,
     soil integer,

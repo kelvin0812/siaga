@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Reads live readings straight from Supabase's `sensor_table` -- the
-/// bench-test rig (ESP32 + Pico + soil/ultrasonic/IMU, see docs/nexus-log.md)
+/// bench-test rig (ESP32 + Pico + soil/ultrasonic/IMU)
 /// that's separate from the real SIAGA node pipeline. Deliberately its own
 /// small client rather than going through ApiClient/the FastAPI backend:
 /// this table isn't part of the Section 5.3 REST surface, has no

@@ -22,3 +22,4 @@ ml/data/processed/*.csv
 
 .vercel
 .env*
+docs/

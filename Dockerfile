@@ -1,8 +1,7 @@
 # Persistent ingest process (build brief Section 4.1/6.3): the always-on
 # MQTT subscriber + state machine + REST API bundled together, exactly the
-# "single process" the brief describes. NOT what Vercel runs — see
-# api/index.py and docs/nexus-log.md for why the REST-only surface is
-# split out separately.
+# "single process" the brief describes. NOT what Vercel runs: the
+# REST-only surface is split out separately in api/index.py.
 FROM python:3.11-slim
 
 WORKDIR /app

@@ -167,8 +167,7 @@ class _EvacuateScreenState extends State<EvacuateScreen> with SingleTickerProvid
 /// deliberately simplified stand-in for real turn-by-turn routing, which
 /// no routing API is specified for anywhere in the brief (Section 6.4
 /// says "cache evacuation routes" but Section 5.3 has no endpoint for
-/// them — see docs/nexus-log.md). Good enough to point someone in the
-/// right direction; not a substitute for official guidance, which the
+/// them). Good enough to point someone in the right direction; not a substitute for official guidance, which the
 /// alert copy itself says explicitly.
 class _RouteInfo extends StatelessWidget {
   final List<AssemblyPoint> assemblyPoints;

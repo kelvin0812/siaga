@@ -13,8 +13,7 @@ an EVACUATE that quietly senses one calm reading should not silently
 reopen a road; each step down re-arms its own dwell timer. The brief
 gives an exact escalation dwell only for WARNING (10 min); the
 de-escalation dwell (30 min, DEESCALATION_DWELL_S below) and per-step
-behavior are this implementation's judgment call, not a spec value —
-flagged in docs/nexus-log.md for the team to confirm.
+behavior are this implementation's judgment call, not a spec value.
 """
 from __future__ import annotations
 

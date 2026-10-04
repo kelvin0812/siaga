@@ -3,11 +3,11 @@ REST API (build brief Section 5.3). Depends only on Repository for every
 endpoint in Section 5.3's own table — never on the state machine, Tier 2
 model, or FCM client directly, since those normally only run inside the
 ingest pipeline (pipeline.py), which this router doesn't need and which
-can't run on a serverless deployment anyway (see deploy/README.md for the
-Vercel/persistent-process split).
+can't run on a serverless deployment anyway (the Vercel REST API and the
+persistent ingest process are split on purpose).
 
-Two endpoints below are deliberate, documented exceptions to Section
-5.3's fixed table, both flagged in docs/nexus-log.md:
+Two endpoints below are deliberate additions to Section
+5.3's fixed table:
 
 - POST /api/v1/subscriptions/ping exists because Firebase Cloud Messaging
   has no API to read topic subscriber counts, so nothing would ever
@@ -296,7 +296,7 @@ class BenchEvaluateOut(BaseModel):
     -- "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
     (a placeholder — see tier2.py). Reported explicitly so a stub answer
     is never presented as if it were the real model's, e.g. on a runtime
-    where the trained model can't load (docs/nexus-log.md, 2026-09-30)."""
+    where the trained model can't load."""
 
 
 @router.post("/bench/evaluate", response_model=BenchEvaluateOut)

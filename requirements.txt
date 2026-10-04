@@ -15,7 +15,7 @@ httpx>=0.27
 #
 # lightgbm is deliberately NOT listed here, even though LightGBMTier2Model
 # is what POST /bench/evaluate wants to run. Confirmed live on this exact
-# deployment (docs/nexus-log.md, 2026-09-30): it fails to import with
+# deployment: it fails to import with
 # `OSError: libgomp.so.1: cannot open shared object file` -- Vercel's
 # Python serverless runtime is a minimal container with no OpenMP runtime,
 # and there's no apt-get available to add one. This isn't a "missing pip

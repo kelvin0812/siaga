@@ -13,7 +13,7 @@ first request.
 `run_full_process()` is the "single process" build brief Section 4.1
 actually describes: REST API plus the MQTT ingest loop together, for
 local/booth/persistent-host use. Splitting ingest onto a separate always-
-on host from the read-only Vercel API (see docs/nexus-log.md) is a
+on host from the read-only Vercel API is a
 deployment-topology choice forced by choosing Vercel, not a change to
 this default: run_full_process() still runs everything in one process
 exactly as specified, whether that process is your laptop or a small VM.
@@ -93,7 +93,7 @@ def build_tier2_model() -> Tier2Model:
         # installed but its compiled extension can't load its native
         # OpenMP dependency (libgomp.so.1) -- this is exactly what
         # actually happens on Vercel's Python serverless runtime, a real,
-        # confirmed failure mode (docs/nexus-log.md), not a hypothetical
+        # confirmed failure mode, not a hypothetical
         # one: that minimal container doesn't ship libgomp, and there's no
         # way to apt-get it there. ValueError: persisted feature list
         # doesn't match features.py anymore. All four should degrade to

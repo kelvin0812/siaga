@@ -35,7 +35,7 @@ const _kCachedHazardsKey = 'siaga.cached_hazards';
 /// Section 6.4: the app must stay useful with no data connection. This
 /// wraps two different kinds of "offline data":
 ///  - assembly points: bundled with the app (see assets/assembly_points.json
-///    — there's no backend endpoint for this, see docs/nexus-log.md), so
+///    — there's no backend endpoint for this), so
 ///    they're always available, connection or not.
 ///  - nodes/hazards: normally fetched live; every successful fetch is
 ///    mirrored here so the last known state is still shown when a later

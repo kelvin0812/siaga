@@ -42,7 +42,7 @@ def build_features(now: datetime, readings: list[ReadingRecord]) -> dict[str, fl
 
     # Lagged level, expressed as a ratio to this node's own baseline rather
     # than an absolute height in metres. Found via a post-training
-    # simulation (docs/nexus-log.md): with absolute level_lag_* features,
+    # simulation: with absolute level_lag_* features,
     # the trained model used raw height_m as a strong signal, but the real
     # JPS training stations span wildly different absolute datums (10.5m to
     # 246.5m alert thresholds), so "what height looks risky" partly encoded

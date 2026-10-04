@@ -9,8 +9,8 @@ There is no documented public API or bulk-download endpoint for this data
 (Public Infobanjir at https://publicinfobanjir.water.gov.my is a live
 monitoring dashboard, not an open-data portal). The query endpoints used
 here were found by reverse-engineering the dashboard's own network
-requests when driving its date-range/"Show Options" panel — see
-docs/nexus-log.md for exactly how they were found and verified. This is
+requests when driving its date-range/"Show Options" panel, then
+checked against the dashboard's own numbers. This is
 still real government telemetry (the same data the dashboard itself
 displays), just accessed the same way the dashboard's own JavaScript
 does, rather than through a maintained/versioned API.
