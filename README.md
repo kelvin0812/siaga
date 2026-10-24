@@ -43,7 +43,7 @@ A bench rig measures four things: water level (ultrasonic), soil moisture, water
 | `app/` | Flutter app (Android, iOS, web): live map, my-risk screen, evacuation routes, community reports, English and Bahasa Malaysia, offline cache, demo mode. |
 | `api/`, `vercel.json` | The REST API as deployed on Vercel. |
 | `ml/` (other files), `backend/models/tier2_lightgbm/` | An earlier river-flood experiment, kept for reference. See the note under Results. |
-| `tests/`, `app/test/` | 142 backend tests and 29 app tests. The frame codec, state machine, geofence, rule engine and phase features get the heaviest coverage, and the app's model is checked against the Python one on real rig rows. |
+| `tests/`, `app/test/` | 145 backend tests and 29 app tests. The frame codec, state machine, geofence, rule engine and phase features get the heaviest coverage, and the app's model is checked against the Python one on real rig rows. |
 
 ## Try it
 
@@ -51,9 +51,10 @@ A bench rig measures four things: water level (ultrasonic), soil moisture, water
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 pip install -r ml/requirements.txt
-pytest                                              # 142 tests
+pytest                                              # 145 tests
 python -m ml.rig.train                              # retrain the phase model from the rig recording
 python -m ml.rig.export_app                         # re-export it for the app (and refresh the app's test fixture)
+python -m ml.rig.export_pico                        # generate the C++ model headers for the Pico (written next to this repo)
 python -m backend.rig_check --csv ml/data/rig/sensor_table_rows.csv --mount-cm 31 --alert-cm 4 \n    --soil-dry 450 --soil-wet 630 --flow-active 250   # replay the rig data through the rule engine (example calibration)
 python -m backend.demo --speed 600                  # replay a simulated flood, printing every state change
 ```
