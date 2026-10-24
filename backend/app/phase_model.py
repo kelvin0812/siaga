@@ -81,9 +81,16 @@ class FeatureStream:
             "tilt_deg": median(self._tilts[-5:]) if len(self._tilts) >= 3 else None,
             "gyro_peak": max(self._gyros[-10:]) if len(self._gyros) >= 3 else None,
         }
+        self._trim()
         if any(v is None for v in feats.values()):
             return None
         return feats  # type: ignore[return-value]
+
+    def _trim(self, keep: int = 40) -> None:
+        """Only the last ~21 readings are ever looked at, so a long-running stream does not grow forever."""
+        for series in (self._dists, self._flows, self._soils, self._levels, self._times, self._tilts, self._gyros):
+            if len(series) > keep:
+                del series[: len(series) - keep]
 
 
 class PhasePredictor:
