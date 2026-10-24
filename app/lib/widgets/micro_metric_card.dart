@@ -17,6 +17,7 @@ class MicroMetricCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String? unit;
   final String? caption;
   final Color accent;
 
@@ -25,6 +26,7 @@ class MicroMetricCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.unit,
     this.caption,
     this.accent = AppColors.accent,
   });
@@ -62,15 +64,26 @@ class MicroMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppFonts.mono(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          Text.rich(
+            TextSpan(
+              text: value,
+              style: AppFonts.mono(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              children: [
+                if (unit != null)
+                  TextSpan(
+                    text: unit == '°' ? unit : ' $unit',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (caption != null) ...[
             const SizedBox(height: 3),
             Text(
               caption!,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
             ),

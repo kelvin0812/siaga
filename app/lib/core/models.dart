@@ -280,3 +280,24 @@ class RigReading {
   /// The rig has not sent anything for a while, so what is shown is old.
   bool get isStale => age > const Duration(seconds: 30);
 }
+
+/// One point of the rig's recent history, for the trend charts.
+class RigPoint {
+  final DateTime time;
+  final double heightCm;
+  final double flow;
+  final double soilRaw;
+  final double tiltDeg;
+
+  /// 1 (Normal) to 4 (Evacuate), as the model showed it at that moment.
+  final int phase;
+
+  const RigPoint({
+    required this.time,
+    required this.heightCm,
+    required this.flow,
+    required this.soilRaw,
+    required this.tiltDeg,
+    required this.phase,
+  });
+}

@@ -146,6 +146,71 @@ void main() {
     expect(appState.nodes, isEmpty);
   });
 
+  test('the charts get the recent readings, oldest first, capped at the last 10 minutes', () async {
+    final service = _FakeService(rows)..served = rows.length;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+
+    final trend = appState.rigTrend;
+    expect(trend, isNotEmpty);
+    expect(trend.length, lessThanOrEqualTo(RigController.trendLength));
+    for (var i = 1; i < trend.length; i++) {
+      expect(trend[i].time.isBefore(trend[i - 1].time), isFalse);
+    }
+    for (final p in trend) {
+      expect(p.phase, inInclusiveRange(1, 4));
+    }
+    // The newest point is the reading the tiles show.
+    expect(trend.last.heightCm, appState.rigReading!.heightCm);
+    expect(trend.last.phase, appState.rigReading!.phase);
+  });
+
+  test('rows from before a long gap are left out, so old data cannot stretch the charts', () async {
+    // The rig recorded an hour of readings two hours ago, was off, and is sending again now.
+    final earlier = _rowsEndingAt(sourceRows, DateTime.now().subtract(const Duration(hours: 2)));
+    final now = _rowsEndingAt(sourceRows, DateTime.now());
+    final later = [
+      for (var i = 0; i < now.length; i++)
+        BenchSensorReading(
+          id: earlier.length + i + 1,
+          soil: now[i].soil,
+          dist: now[i].dist,
+          flow: now[i].flow,
+          accelX: now[i].accelX,
+          accelY: now[i].accelY,
+          accelZ: now[i].accelZ,
+          gyroX: now[i].gyroX,
+          gyroY: now[i].gyroY,
+          gyroZ: now[i].gyroZ,
+          createdAt: now[i].createdAt,
+        ),
+    ];
+    final service = _FakeService([...earlier, ...later])..served = earlier.length + later.length;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+
+    final trend = appState.rigTrend;
+    expect(trend, isNotEmpty);
+    final span = trend.last.time.difference(trend.first.time);
+    expect(span, lessThanOrEqualTo(RigController.trendWindow));
+    expect(DateTime.now().difference(trend.first.time), lessThan(const Duration(hours: 1)));
+  });
+
+  test('the chart history is cleared when live mode is switched off', () async {
+    final service = _FakeService(rows)..served = rows.length;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    expect(appState.rigTrend, isNotEmpty);
+    appState.setRigMode(false);
+    expect(appState.rigTrend, isEmpty);
+  });
+
   test('turning live mode off returns the app to normal data', () async {
     final service = _FakeService(rows)..served = 120;
     final controller = controllerFor(service);

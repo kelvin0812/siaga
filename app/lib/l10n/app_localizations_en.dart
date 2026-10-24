@@ -332,29 +332,114 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rigReadoutTitle => 'Live rig readings';
 
   @override
-  String get rigMetricLevel => 'Water Level';
+  String get rigMetricLevel => 'Water level';
 
   @override
-  String get rigMetricLevelCaption => 'cm above normal';
+  String get rigMetricLevelCaption => 'Above normal river level';
 
   @override
-  String get rigMetricFlow => 'Flow';
+  String get rigMetricFlow => 'Water flow';
 
   @override
-  String get rigMetricFlowCaption => 'as logged';
+  String get rigMetricFlowCaption => 'Sensor pulses every 3 s';
 
   @override
-  String get rigMetricSoil => 'Soil';
+  String get rigUnitPulses => 'pulses';
 
   @override
-  String get rigMetricSoilCaption => 'raw reading';
+  String get rigMetricSoil => 'Soil moisture';
 
   @override
-  String get rigMetricTilt => 'Tilt';
+  String get rigMetricSoilCaption => 'Soil sensor signal';
 
   @override
-  String get rigMetricTiltCaption => 'degrees from rest';
+  String get rigMetricTilt => 'Slope tilt';
+
+  @override
+  String get rigMetricTiltCaption => 'Shift from resting position';
 
   @override
   String get rigLastKnown => 'Last known';
+
+  @override
+  String get rigStatusLive => 'Live';
+
+  @override
+  String get rigStatusOffline => 'Rig offline';
+
+  @override
+  String get rigLastData => 'last data';
+
+  @override
+  String get riskScoreLabel => 'Risk score';
+
+  @override
+  String get riskSummaryTitle => 'What this means';
+
+  @override
+  String get riskSummaryNormal =>
+      'The water is at a normal level. No action is needed.';
+
+  @override
+  String get riskSummaryWatch =>
+      'Conditions are changing. Stay alert and keep checking this screen.';
+
+  @override
+  String get riskSummaryWarning =>
+      'Danger is building. Get ready to move to higher ground.';
+
+  @override
+  String get riskSummaryEvacuate =>
+      'Dangerous conditions. Move to higher ground now.';
+
+  @override
+  String get riskSummaryOffline =>
+      'The rig is not sending data, so there is no live assessment right now.';
+
+  @override
+  String get riskTrendsTitle => 'Trends';
+
+  @override
+  String get riskTrendsSubtitle =>
+      'The last 10 minutes from the rig, updated live';
+
+  @override
+  String get trendRisk => 'Risk level';
+
+  @override
+  String get trendRiskHelp =>
+      'The model\'s decision over time. Higher means more danger.';
+
+  @override
+  String get trendLevelHelp => 'Rising water is the strongest warning sign.';
+
+  @override
+  String get trendFlowHelp => 'A sudden surge means water is moving fast.';
+
+  @override
+  String get trendSoilHelp => 'Shows how much water the ground has taken in.';
+
+  @override
+  String get trendTiltHelp => 'Movement here can mean the slope is shifting.';
+
+  @override
+  String get trendNoData => 'Waiting for readings to draw this chart';
+
+  @override
+  String get trendNow => 'now';
+
+  @override
+  String get howTitle => 'How SIAGA decides';
+
+  @override
+  String get howStep1 =>
+      'Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.';
+
+  @override
+  String get howStep2 =>
+      'A machine-learning model, trained on this rig\'s own recorded runs, reads those four signals. Water level counts the most.';
+
+  @override
+  String get howStep3 =>
+      'It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.';
 }

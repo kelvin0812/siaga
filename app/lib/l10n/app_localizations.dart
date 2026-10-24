@@ -719,49 +719,55 @@ abstract class AppLocalizations {
   /// No description provided for @rigMetricLevel.
   ///
   /// In en, this message translates to:
-  /// **'Water Level'**
+  /// **'Water level'**
   String get rigMetricLevel;
 
   /// No description provided for @rigMetricLevelCaption.
   ///
   /// In en, this message translates to:
-  /// **'cm above normal'**
+  /// **'Above normal river level'**
   String get rigMetricLevelCaption;
 
   /// No description provided for @rigMetricFlow.
   ///
   /// In en, this message translates to:
-  /// **'Flow'**
+  /// **'Water flow'**
   String get rigMetricFlow;
 
   /// No description provided for @rigMetricFlowCaption.
   ///
   /// In en, this message translates to:
-  /// **'as logged'**
+  /// **'Sensor pulses every 3 s'**
   String get rigMetricFlowCaption;
+
+  /// No description provided for @rigUnitPulses.
+  ///
+  /// In en, this message translates to:
+  /// **'pulses'**
+  String get rigUnitPulses;
 
   /// No description provided for @rigMetricSoil.
   ///
   /// In en, this message translates to:
-  /// **'Soil'**
+  /// **'Soil moisture'**
   String get rigMetricSoil;
 
   /// No description provided for @rigMetricSoilCaption.
   ///
   /// In en, this message translates to:
-  /// **'raw reading'**
+  /// **'Soil sensor signal'**
   String get rigMetricSoilCaption;
 
   /// No description provided for @rigMetricTilt.
   ///
   /// In en, this message translates to:
-  /// **'Tilt'**
+  /// **'Slope tilt'**
   String get rigMetricTilt;
 
   /// No description provided for @rigMetricTiltCaption.
   ///
   /// In en, this message translates to:
-  /// **'degrees from rest'**
+  /// **'Shift from resting position'**
   String get rigMetricTiltCaption;
 
   /// No description provided for @rigLastKnown.
@@ -769,6 +775,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last known'**
   String get rigLastKnown;
+
+  /// No description provided for @rigStatusLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get rigStatusLive;
+
+  /// No description provided for @rigStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Rig offline'**
+  String get rigStatusOffline;
+
+  /// No description provided for @rigLastData.
+  ///
+  /// In en, this message translates to:
+  /// **'last data'**
+  String get rigLastData;
+
+  /// No description provided for @riskScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk score'**
+  String get riskScoreLabel;
+
+  /// No description provided for @riskSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What this means'**
+  String get riskSummaryTitle;
+
+  /// No description provided for @riskSummaryNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'The water is at a normal level. No action is needed.'**
+  String get riskSummaryNormal;
+
+  /// No description provided for @riskSummaryWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions are changing. Stay alert and keep checking this screen.'**
+  String get riskSummaryWatch;
+
+  /// No description provided for @riskSummaryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger is building. Get ready to move to higher ground.'**
+  String get riskSummaryWarning;
+
+  /// No description provided for @riskSummaryEvacuate.
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous conditions. Move to higher ground now.'**
+  String get riskSummaryEvacuate;
+
+  /// No description provided for @riskSummaryOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The rig is not sending data, so there is no live assessment right now.'**
+  String get riskSummaryOffline;
+
+  /// No description provided for @riskTrendsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get riskTrendsTitle;
+
+  /// No description provided for @riskTrendsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The last 10 minutes from the rig, updated live'**
+  String get riskTrendsSubtitle;
+
+  /// No description provided for @trendRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk level'**
+  String get trendRisk;
+
+  /// No description provided for @trendRiskHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The model\'s decision over time. Higher means more danger.'**
+  String get trendRiskHelp;
+
+  /// No description provided for @trendLevelHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rising water is the strongest warning sign.'**
+  String get trendLevelHelp;
+
+  /// No description provided for @trendFlowHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A sudden surge means water is moving fast.'**
+  String get trendFlowHelp;
+
+  /// No description provided for @trendSoilHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows how much water the ground has taken in.'**
+  String get trendSoilHelp;
+
+  /// No description provided for @trendTiltHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement here can mean the slope is shifting.'**
+  String get trendTiltHelp;
+
+  /// No description provided for @trendNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for readings to draw this chart'**
+  String get trendNoData;
+
+  /// No description provided for @trendNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get trendNow;
+
+  /// No description provided for @howTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How SIAGA decides'**
+  String get howTitle;
+
+  /// No description provided for @howStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.'**
+  String get howStep1;
+
+  /// No description provided for @howStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'A machine-learning model, trained on this rig\'s own recorded runs, reads those four signals. Water level counts the most.'**
+  String get howStep2;
+
+  /// No description provided for @howStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.'**
+  String get howStep3;
 }
 
 class _AppLocalizationsDelegate

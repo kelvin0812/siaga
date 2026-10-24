@@ -11,6 +11,7 @@ import '../widgets/command_background.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/micro_metric_card.dart';
 import '../widgets/risk_badge.dart';
+import '../widgets/rig_trend_card.dart';
 import '../widgets/risk_gauge.dart';
 
 /// Section 6.4: "Prominent four-level risk indicator for the user's own
@@ -127,15 +128,21 @@ class _RiskScreenState extends State<RiskScreen> {
             state: riskState,
             probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability,
             probabilityLabel: appState.rigMode
-                ? (appState.rigReading?.isStale ?? false ? 'Rig offline, no recent data' : 'Rig phase model')
+                ? (appState.rigReading?.isStale ?? false ? l10n.rigStatusOffline : l10n.riskScoreLabel)
                 : appState.demoMode
                     ? 'Simulated severity'
                     : 'Tier 2 probability',
           ),
         const SizedBox(height: 24),
         if (hasKnownArea) _ThreatStepper(current: riskState),
+        if (appState.rigMode) ...[
+          const SizedBox(height: 24),
+          _SummaryCard(state: riskState, stale: appState.rigReading?.isStale ?? true, l10n: l10n),
+        ],
       ],
     );
+
+    final attribution = _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null);
 
     return CommandBackground(
       glow: glowColor,
@@ -144,12 +151,15 @@ class _RiskScreenState extends State<RiskScreen> {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= _wideBreakpoint;
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 110), // clear of the floating nav bar
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
-                  child: wide
-                      ? Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (wide)
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(flex: 5, child: gaugeColumn),
@@ -163,23 +173,31 @@ class _RiskScreenState extends State<RiskScreen> {
                                   const SizedBox(height: 16),
                                   _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
                                   const SizedBox(height: 16),
-                                  _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null),
+                                  attribution,
                                 ],
                               ),
                             ),
                           ],
                         )
-                      : Column(
-                          children: [
-                            gaugeColumn,
-                            const SizedBox(height: 24),
-                            metrics,
-                            const SizedBox(height: 16),
-                            _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
-                            const SizedBox(height: 16),
-                            _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null),
-                          ],
-                        ),
+                      else ...[
+                        gaugeColumn,
+                        const SizedBox(height: 24),
+                        metrics,
+                        const SizedBox(height: 16),
+                        _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
+                      ],
+                      if (appState.rigMode) ...[
+                        const SizedBox(height: 32),
+                        _TrendsSection(appState: appState, l10n: l10n, wide: wide),
+                        const SizedBox(height: 24),
+                        _HowItWorks(l10n: l10n),
+                      ],
+                      if (!wide) ...[
+                        const SizedBox(height: 16),
+                        attribution,
+                      ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -329,40 +347,48 @@ class _MetricsPanel extends StatelessWidget {
     final rig = appState.rigMode ? appState.rigReading : null;
     final items = _rigItems(rig);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 480 ? 4 : 2;
-        return GridView.count(
-          crossAxisCount: columns,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: columns == 4 ? 1.05 : 1.35,
-          children: items,
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (appState.rigMode) ...[
+          _LiveStatus(reading: rig, l10n: l10n),
+          const SizedBox(height: 12),
+        ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 480 ? 4 : 2;
+            return GridView.count(
+              crossAxisCount: columns,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: columns == 4 ? 1.05 : 1.12, // room for a two-line caption
+              children: items,
+            );
+          },
+        ),
+      ],
     );
   }
 
   /// The four sensors the phase model reads. With no reading yet (or Live Rig switched off) each shows a dash,
   /// never an invented value.
   List<Widget> _rigItems(RigReading? r) {
-    final caption = r == null
-        ? (appState.rigMode ? l10n.rigWaiting : null)
-        : (r.isStale ? 'no data ${_formatAgo(r.rowTime)}' : null);
     return [
       MicroMetricCard(
         icon: Icons.waves,
         label: l10n.rigMetricLevel,
         value: r != null ? r.heightCm.toStringAsFixed(1) : '—',
-        caption: caption ?? l10n.rigMetricLevelCaption,
+        unit: r != null ? 'cm' : null,
+        caption: l10n.rigMetricLevelCaption,
         accent: AppColors.watch,
       ),
       MicroMetricCard(
         icon: Icons.water_drop_outlined,
         label: l10n.rigMetricFlow,
         value: r != null ? r.flow.toStringAsFixed(0) : '—',
+        unit: r != null ? l10n.rigUnitPulses : null,
         caption: l10n.rigMetricFlowCaption,
         accent: AppColors.accent,
       ),
@@ -377,18 +403,247 @@ class _MetricsPanel extends StatelessWidget {
         icon: Icons.rotate_right,
         label: l10n.rigMetricTilt,
         value: r != null ? r.tiltDeg.toStringAsFixed(1) : '—',
+        unit: r != null ? '°' : null,
         caption: l10n.rigMetricTiltCaption,
         accent: AppColors.normal,
       ),
     ];
   }
 
-  String _formatAgo(DateTime time) {
-    final diff = DateTime.now().difference(time);
-    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+}
+
+String _formatAgo(DateTime time) {
+  final diff = DateTime.now().difference(time);
+  if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
+}
+
+/// A small status line over the tiles: a green dot while the rig is sending, an orange one when it has gone quiet,
+/// so nobody mistakes old numbers for live ones.
+class _LiveStatus extends StatelessWidget {
+  final RigReading? reading;
+  final AppLocalizations l10n;
+  const _LiveStatus({required this.reading, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reading;
+    final live = r != null && !r.isStale;
+    final color = r == null ? AppColors.textSecondary : (live ? AppColors.normal : const Color(0xFFE8833A));
+    final text = r == null
+        ? l10n.rigWaiting
+        : live
+            ? '${l10n.rigStatusLive}  ·  ${l10n.benchSensorUpdated} ${_formatAgo(r.rowTime)}'
+            : '${l10n.rigStatusOffline}  ·  ${l10n.rigLastData} ${_formatAgo(r.rowTime)}';
+    return Row(
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color, boxShadow: live ? appGlow(color, alpha: 0.6, blur: 8) : null),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One plain sentence on what the current level means for a resident, so the colours do not need explaining.
+class _SummaryCard extends StatelessWidget {
+  final RiskState state;
+  final bool stale;
+  final AppLocalizations l10n;
+  const _SummaryCard({required this.state, required this.stale, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = stale ? AppColors.textSecondary : riskStateColor(state);
+    final text = stale
+        ? l10n.riskSummaryOffline
+        : switch (state) {
+            RiskState.normal => l10n.riskSummaryNormal,
+            RiskState.watch => l10n.riskSummaryWatch,
+            RiskState.warning => l10n.riskSummaryWarning,
+            RiskState.evacuate => l10n.riskSummaryEvacuate,
+          };
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
+      radius: AppRadius.md,
+      glowColor: color,
+      glowAlpha: 0.12,
+      glowBlur: 20,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 20, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.riskSummaryTitle.toUpperCase(),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 6),
+                Text(text, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.4, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A trend chart for each of the rig's four signals, plus the model's decision over the same minutes.
+class _TrendsSection extends StatelessWidget {
+  final AppState appState;
+  final AppLocalizations l10n;
+  final bool wide;
+  const _TrendsSection({required this.appState, required this.l10n, required this.wide});
+
+  @override
+  Widget build(BuildContext context) {
+    final points = appState.rigTrend;
+    final r = appState.rigReading;
+    final phaseState = r == null ? RiskState.normal : RiskState.values[r.phase - 1];
+
+    final risk = RigTrendCard(
+      icon: Icons.shield_outlined,
+      title: l10n.trendRisk,
+      help: l10n.trendRiskHelp,
+      color: riskStateColor(phaseState),
+      points: points,
+      valueOf: (p) => p.phase.toDouble(),
+      latestText: r == null ? '—' : riskStateLabel(context, phaseState),
+      phaseAxis: true,
+    );
+    final sensors = [
+      RigTrendCard(
+        icon: Icons.waves,
+        title: l10n.rigMetricLevel,
+        help: l10n.trendLevelHelp,
+        color: AppColors.watch,
+        points: points,
+        valueOf: (p) => p.heightCm,
+        latestText: r == null ? '—' : '${r.heightCm.toStringAsFixed(1)} cm',
+        unit: 'cm',
+        minSpan: 2,
+      ),
+      RigTrendCard(
+        icon: Icons.water_drop_outlined,
+        title: l10n.rigMetricFlow,
+        help: l10n.trendFlowHelp,
+        color: AppColors.accent,
+        points: points,
+        valueOf: (p) => p.flow,
+        latestText: r == null ? '—' : '${r.flow.toStringAsFixed(0)} ${l10n.rigUnitPulses}',
+        unit: l10n.rigUnitPulses,
+        decimals: 0,
+        minSpan: 4,
+      ),
+      RigTrendCard(
+        icon: Icons.grass,
+        title: l10n.rigMetricSoil,
+        help: l10n.trendSoilHelp,
+        color: const Color(0xFFA78BFA),
+        points: points,
+        valueOf: (p) => p.soilRaw,
+        latestText: r == null ? '—' : r.soilRaw.toStringAsFixed(0),
+        decimals: 0,
+        minSpan: 40,
+      ),
+      RigTrendCard(
+        icon: Icons.rotate_right,
+        title: l10n.rigMetricTilt,
+        help: l10n.trendTiltHelp,
+        color: AppColors.normal,
+        points: points,
+        valueOf: (p) => p.tiltDeg,
+        latestText: r == null ? '—' : '${r.tiltDeg.toStringAsFixed(1)}°',
+        unit: '°',
+        minSpan: 4,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.riskTrendsTitle.toUpperCase(),
+          style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
+        ),
+        const SizedBox(height: 6),
+        Text(l10n.riskTrendsSubtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        const SizedBox(height: 16),
+        risk,
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = wide ? 2 : 1;
+            final width = (constraints.maxWidth - 12 * (columns - 1)) / columns;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [for (final card in sensors) SizedBox(width: width, child: card)],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// Three short steps on how a reading becomes a warning, for anyone seeing SIAGA for the first time.
+class _HowItWorks extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _HowItWorks({required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = [l10n.howStep1, l10n.howStep2, l10n.howStep3];
+    return GlassCard(
+      padding: const EdgeInsets.all(20),
+      radius: AppRadius.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.howTitle.toUpperCase(),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < steps.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == steps.length - 1 ? 0 : 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.accent.withValues(alpha: 0.18)),
+                    child: Text('${i + 1}', style: const TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(steps[i], style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.45))),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

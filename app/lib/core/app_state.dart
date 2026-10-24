@@ -25,6 +25,9 @@ class AppState extends ChangeNotifier {
   bool rigMode = false;
   RigReading? rigReading;
 
+  /// The rig's last few minutes of readings, oldest first, for the trend charts.
+  List<RigPoint> rigTrend = const [];
+
   /// Set from the map screen's "lock to this node" action, or the My Risk
   /// screen's own dropdown (the two are the same underlying selection —
   /// per the mentor-review feedback that risk level should be tied to a
@@ -100,6 +103,7 @@ class AppState extends ChangeNotifier {
     demoMode = value;
     rigMode = false;
     rigReading = null;
+    rigTrend = const [];
     if (!value) {
       demoReading = null;
       unawaited(refresh());
@@ -113,6 +117,7 @@ class AppState extends ChangeNotifier {
     demoReading = null;
     if (!value) {
       rigReading = null;
+      rigTrend = const [];
       unawaited(refresh());
     }
     notifyListeners();
@@ -123,10 +128,12 @@ class AppState extends ChangeNotifier {
     required List<SiagaNode> nodes,
     required List<Hazard> hazards,
     required RigReading? reading,
+    List<RigPoint> trend = const [],
   }) {
     this.nodes = nodes;
     activeHazards = hazards;
     rigReading = reading;
+    rigTrend = trend;
     demoReading = null;
     isOffline = false;
     notifyListeners();

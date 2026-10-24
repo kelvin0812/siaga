@@ -333,29 +333,116 @@ class AppLocalizationsMs extends AppLocalizations {
   String get rigReadoutTitle => 'Bacaan rig langsung';
 
   @override
-  String get rigMetricLevel => 'Paras Air';
+  String get rigMetricLevel => 'Paras air';
 
   @override
-  String get rigMetricLevelCaption => 'cm di atas biasa';
+  String get rigMetricLevelCaption => 'Atas paras sungai biasa';
 
   @override
-  String get rigMetricFlow => 'Aliran';
+  String get rigMetricFlow => 'Aliran air';
 
   @override
-  String get rigMetricFlowCaption => 'seperti direkod';
+  String get rigMetricFlowCaption => 'Denyut sensor setiap 3 s';
 
   @override
-  String get rigMetricSoil => 'Tanah';
+  String get rigUnitPulses => 'denyut';
 
   @override
-  String get rigMetricSoilCaption => 'bacaan mentah';
+  String get rigMetricSoil => 'Kelembapan tanah';
 
   @override
-  String get rigMetricTilt => 'Kecondongan';
+  String get rigMetricSoilCaption => 'Isyarat sensor tanah';
 
   @override
-  String get rigMetricTiltCaption => 'darjah dari rehat';
+  String get rigMetricTilt => 'Kecondongan cerun';
+
+  @override
+  String get rigMetricTiltCaption => 'Anjakan dari kedudukan asal';
 
   @override
   String get rigLastKnown => 'Terakhir diketahui';
+
+  @override
+  String get rigStatusLive => 'Langsung';
+
+  @override
+  String get rigStatusOffline => 'Rig di luar talian';
+
+  @override
+  String get rigLastData => 'data terakhir';
+
+  @override
+  String get riskScoreLabel => 'Skor risiko';
+
+  @override
+  String get riskSummaryTitle => 'Maksud keadaan ini';
+
+  @override
+  String get riskSummaryNormal => 'Paras air biasa. Tiada tindakan diperlukan.';
+
+  @override
+  String get riskSummaryWatch =>
+      'Keadaan sedang berubah. Berwaspada dan terus semak skrin ini.';
+
+  @override
+  String get riskSummaryWarning =>
+      'Bahaya semakin meningkat. Bersedia untuk berpindah ke kawasan yang lebih tinggi.';
+
+  @override
+  String get riskSummaryEvacuate =>
+      'Keadaan berbahaya. Berpindah ke kawasan yang lebih tinggi sekarang.';
+
+  @override
+  String get riskSummaryOffline =>
+      'Rig tidak menghantar data, jadi tiada penilaian langsung buat masa ini.';
+
+  @override
+  String get riskTrendsTitle => 'Trend';
+
+  @override
+  String get riskTrendsSubtitle =>
+      '10 minit terakhir daripada rig, dikemas kini secara langsung';
+
+  @override
+  String get trendRisk => 'Tahap risiko';
+
+  @override
+  String get trendRiskHelp =>
+      'Keputusan model dari semasa ke semasa. Lebih tinggi bermakna lebih bahaya.';
+
+  @override
+  String get trendLevelHelp =>
+      'Air yang meningkat ialah tanda amaran paling kuat.';
+
+  @override
+  String get trendFlowHelp => 'Lonjakan mengejut bermakna air mengalir laju.';
+
+  @override
+  String get trendSoilHelp =>
+      'Menunjukkan jumlah air yang telah diserap tanah.';
+
+  @override
+  String get trendTiltHelp =>
+      'Pergerakan di sini mungkin bermakna cerun sedang bergerak.';
+
+  @override
+  String get trendNoData => 'Menunggu bacaan untuk melukis carta ini';
+
+  @override
+  String get trendNow => 'kini';
+
+  @override
+  String get howTitle => 'Bagaimana SIAGA membuat keputusan';
+
+  @override
+  String get howStep1 =>
+      'Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 3 saat.';
+
+  @override
+  String get howStep2 =>
+      'Model pembelajaran mesin, dilatih menggunakan rekod larian rig ini sendiri, membaca empat isyarat itu. Paras air paling diutamakan.';
+
+  @override
+  String get howStep3 =>
+      'Ia memilih satu daripada empat tahap: Normal, Perhatian, Amaran atau Berpindah. Siren pada rig menjalankan model yang sama, jadi ia dan aplikasi ini mengikut bacaan yang sama.';
 }

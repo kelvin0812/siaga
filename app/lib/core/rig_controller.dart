@@ -46,6 +46,13 @@ class RigController {
 
   static const _pageSize = 200;
 
+  /// The charts show the last 10 minutes, measured back from the newest reading. This is a time window, not a row
+  /// count: after the rig has been off for hours, older rows must not stretch the chart. [trendLength] only
+  /// bounds the memory used (10 minutes at 3 s apart is 200 readings).
+  static const trendWindow = Duration(minutes: 10);
+  static const trendLength = 250;
+  final List<RigPoint> _trend = [];
+
   bool get isRunning => _running;
 
   Future<void> start() async {
@@ -57,8 +64,10 @@ class RigController {
     _lastId = 0;
     _last = null;
     _lastRow = null;
+    _trend.clear();
     try {
-      for (final row in await service.history()) {
+      // A little more than the chart keeps, because the first readings only warm the model's windows up.
+      for (final row in await service.history(count: trendLength + 30)) {
         _feed(row);
       }
     } catch (_) {
@@ -122,6 +131,17 @@ class RigController {
     if (result != null) {
       _last = result;
       _lastRow = row;
+      _trend.add(RigPoint(
+        time: row.createdAt,
+        heightCm: result.features.heightCm,
+        flow: result.features.flowMed,
+        soilRaw: result.features.soilMed,
+        tiltDeg: result.features.tiltDeg,
+        phase: result.phase,
+      ));
+      final oldest = row.createdAt.subtract(trendWindow);
+      _trend.removeWhere((p) => p.time.isBefore(oldest));
+      if (_trend.length > trendLength) _trend.removeRange(0, _trend.length - trendLength);
     }
   }
 
@@ -175,6 +195,7 @@ class RigController {
         rowTime: row.createdAt,
         rowId: row.id,
       ),
+      trend: List.unmodifiable(_trend),
     );
   }
 }
