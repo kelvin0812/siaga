@@ -1,0 +1,108 @@
+{
+  "trained_at": "2026-10-24T13:20:23.301825+00:00",
+  "source": "sensor_table_rows.csv",
+  "rows": 2217,
+  "phase_end_rows": [
+    547,
+    1019,
+    1775,
+    2217
+  ],
+  "level_features": [
+    "height_cm",
+    "rate_cm_min"
+  ],
+  "other_features": [
+    "flow_med",
+    "soil_med",
+    "tilt_deg",
+    "gyro_peak"
+  ],
+  "level_weight": 0.6,
+  "smoothing_readings": 10,
+  "calibration": {
+    "baseline_dist_cm": 30.91,
+    "rest_accel": [
+      9.78,
+      -0.535,
+      0.84
+    ],
+    "gyro_bias": [
+      0.13,
+      -0.06,
+      0.01
+    ]
+  },
+  "band_edges_height_cm": [
+    0.76,
+    2.18,
+    3.63
+  ],
+  "evaluation": {
+    "method": "5 contiguous blocks per phase, 30 rows purged around each test block",
+    "results": {
+      "distance_bands_only (no machine learning)": {
+        "accuracy": 0.8673,
+        "macro_f1": 0.8715,
+        "within_one_phase": 0.9872
+      },
+      "water level model only": {
+        "accuracy": 0.86,
+        "macro_f1": 0.8668,
+        "within_one_phase": 0.9608
+      },
+      "flow + soil + tilt only": {
+        "accuracy": 0.7319,
+        "macro_f1": 0.7157,
+        "within_one_phase": 0.9736
+      },
+      "all sensors, one model": {
+        "accuracy": 0.8108,
+        "macro_f1": 0.8056,
+        "within_one_phase": 0.9872
+      },
+      "blend, water level weight 40%": {
+        "accuracy": 0.7588,
+        "macro_f1": 0.7437,
+        "within_one_phase": 0.9895
+      },
+      "blend, water level weight 50%": {
+        "accuracy": 0.7747,
+        "macro_f1": 0.7685,
+        "within_one_phase": 0.9772
+      },
+      "blend, water level weight 60%": {
+        "accuracy": 0.8577,
+        "macro_f1": 0.8588,
+        "within_one_phase": 0.9827
+      },
+      "blend, water level weight 70%": {
+        "accuracy": 0.8591,
+        "macro_f1": 0.8645,
+        "within_one_phase": 0.9635
+      },
+      "blend, water level weight 80%": {
+        "accuracy": 0.8609,
+        "macro_f1": 0.8665,
+        "within_one_phase": 0.9631
+      },
+      "blend, water level weight 90%": {
+        "accuracy": 0.8605,
+        "macro_f1": 0.8668,
+        "within_one_phase": 0.9608
+      },
+      "CHOSEN: blend 60% + smoothed over 10 readings": {
+        "accuracy": 0.8673,
+        "macro_f1": 0.8685,
+        "within_one_phase": 0.9836
+      }
+    },
+    "sensor_contribution_pct": {
+      "water_level": 98.8,
+      "flow": 0.0,
+      "soil": 0.2,
+      "tilt": 1.0
+    }
+  },
+  "caveat": "Tested on blocks of the same recording. It shows the rig's phases are recognised, not that it generalises to another day."
+}
