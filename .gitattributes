@@ -1,0 +1,3 @@
+# LightGBM model files are plain text, but LightGBM cannot read them with Windows line endings.
+# Never convert them on checkout.
+backend/models/**/*.txt -text
