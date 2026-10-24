@@ -15,6 +15,7 @@ import 'core/location_service.dart';
 import 'core/offline_cache.dart';
 import 'core/theme.dart';
 import 'demo/demo_controller.dart';
+import 'core/rig_controller.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/evacuate_screen.dart';
 import 'screens/map_screen.dart';
@@ -57,6 +58,7 @@ Future<void> main() async {
     locationService: locationService,
   );
   final demoController = DemoController(appState: appState);
+  final rigController = RigController(appState: appState);
 
   runApp(
     MultiProvider(
@@ -64,6 +66,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: appState),
         ChangeNotifierProvider(create: (_) => LocaleProvider(prefs)),
         Provider.value(value: demoController),
+        Provider.value(value: rigController),
         Provider.value(value: fcmService),
       ],
       child: SiagaApp(fcmService: fcmService),

@@ -312,4 +312,50 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get benchEvalStubWarning =>
       'Ini dijalankan pada model ganti heuristik, bukan model terlatih sebenar — pelayan bahagian belakang tidak dapat memuatkannya kali ini. Nombor di atas hanya untuk ilustrasi.';
+
+  @override
+  String get rigModeTitle => 'Rig Langsung (Model Fasa)';
+
+  @override
+  String get rigModeDescription =>
+      'Menjalankan seluruh aplikasi daripada sensor sebenar rig ujian. Model fasa membaca paras air, aliran, tanah dan kecondongan, lalu menunjukkan Normal, Perhatian, Amaran atau Berpindah.';
+
+  @override
+  String get rigWaiting => 'Menunggu bacaan daripada rig...';
+
+  @override
+  String get rigOffline => 'Tiada data terkini daripada rig';
+
+  @override
+  String get rigPhaseLabel => 'Fasa';
+
+  @override
+  String get rigReadoutTitle => 'Bacaan rig langsung';
+
+  @override
+  String get rigMetricLevel => 'Paras Air';
+
+  @override
+  String get rigMetricLevelCaption => 'cm di atas biasa';
+
+  @override
+  String get rigMetricFlow => 'Aliran';
+
+  @override
+  String get rigMetricFlowCaption => 'seperti direkod';
+
+  @override
+  String get rigMetricSoil => 'Tanah';
+
+  @override
+  String get rigMetricSoilCaption => 'bacaan mentah';
+
+  @override
+  String get rigMetricTilt => 'Kecondongan';
+
+  @override
+  String get rigMetricTiltCaption => 'darjah dari rehat';
+
+  @override
+  String get rigLastKnown => 'Terakhir diketahui';
 }

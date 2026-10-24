@@ -1,0 +1,160 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:siaga_app/core/api_client.dart';
+import 'package:siaga_app/core/app_state.dart';
+import 'package:siaga_app/core/bench_sensor_service.dart';
+import 'package:siaga_app/core/fcm_service.dart';
+import 'package:siaga_app/core/h3_service.dart';
+import 'package:siaga_app/core/location_service.dart';
+import 'package:siaga_app/core/models.dart';
+import 'package:siaga_app/core/offline_cache.dart';
+import 'package:siaga_app/core/rig_controller.dart';
+
+class _FakeCells implements CellComputer {
+  @override
+  String cellForPoint(double lat, double lon) => 'cellA';
+}
+
+/// Serves rig rows from a list, the way Supabase's sensor_table would, without any network.
+class _FakeService implements BenchSensorService {
+  final List<BenchSensorReading> rows;
+  int served = 0; // how many rows have "arrived" so far
+  _FakeService(this.rows);
+
+  @override
+  Future<List<BenchSensorReading>> history({int count = 150}) async {
+    final slice = rows.sublist(0, served);
+    return slice.length <= count ? slice : slice.sublist(slice.length - count);
+  }
+
+  @override
+  Future<List<BenchSensorReading>> since(int afterId, {int limit = 200}) async =>
+      rows.sublist(0, served).where((r) => r.id > afterId).take(limit).toList();
+
+  @override
+  Future<List<BenchSensorReading>> latest({int limit = 20}) async => rows.sublist(0, served).reversed.take(limit).toList();
+}
+
+BenchSensorReading _row(int id, Map<String, dynamic> r, DateTime t0) => BenchSensorReading(
+      id: id,
+      soil: (r['soil'] as num).toInt(),
+      dist: (r['dist'] as num).toDouble(),
+      flow: (r['flow'] as num).toInt(),
+      accelX: ((r['accel'] as List)[0] as num).toDouble(),
+      accelY: ((r['accel'] as List)[1] as num).toDouble(),
+      accelZ: ((r['accel'] as List)[2] as num).toDouble(),
+      gyroX: ((r['gyro'] as List)[0] as num).toDouble(),
+      gyroY: ((r['gyro'] as List)[1] as num).toDouble(),
+      gyroZ: ((r['gyro'] as List)[2] as num).toDouble(),
+      createdAt: t0.add(Duration(milliseconds: ((r['t'] as num) * 1000).round())),
+    );
+
+/// The fixture's real rig rows, spaced as recorded, with the last one stamped at [end].
+List<BenchSensorReading> _rowsEndingAt(List<Map<String, dynamic>> src, DateTime end) {
+  final lastT = (src.last['t'] as num).toDouble();
+  final t0 = end.subtract(Duration(milliseconds: (lastT * 1000).round()));
+  return [for (var i = 0; i < src.length; i++) _row(i + 1, src[i], t0)];
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late AppState appState;
+  late List<BenchSensorReading> rows;
+  late List<Map<String, dynamic>> sourceRows;
+  final modelJson = File('assets/phase_model.json').readAsStringSync();
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    appState = AppState(
+      api: ApiClient(),
+      cache: OfflineCache(prefs),
+      locationService: LocationService(h3Service: _FakeCells(), fcmService: FcmService(), prefs: prefs),
+    );
+    final fixture = jsonDecode(File('test/fixtures/phase_fixture.json').readAsStringSync()) as Map<String, dynamic>;
+    final caseRows = (fixture['cases'][0]['rows'] as List).cast<Map<String, dynamic>>();
+    sourceRows = caseRows;
+    rows = _rowsEndingAt(sourceRows, DateTime.now());
+  });
+
+  RigController controllerFor(_FakeService service) =>
+      RigController(appState: appState, service: service, loadModelJson: () async => modelJson);
+
+  test('live mode turns real rig rows into a phase and drives the app state', () async {
+    // The fixture starts at row 480 of the recording; Phase 1 runs to row 547, so the first 60 rows are Phase 1.
+    final service = _FakeService(rows)..served = 60;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+
+    expect(appState.rigMode, isTrue);
+    expect(appState.nodes, hasLength(1));
+    expect(appState.nodes.first.state, RiskState.normal);
+    expect(appState.rigReading, isNotNull);
+    expect(appState.rigReading!.phase, 1);
+
+    // The rig keeps sending: the later rows are the Phase 2 stretch, and a poll picks them up.
+    service.served = rows.length;
+    await controller.poll();
+    controller.stop();
+    expect(appState.rigReading!.phase, greaterThanOrEqualTo(2));
+    expect(appState.nodes.first.state.index, greaterThanOrEqualTo(RiskState.watch.index));
+    expect(appState.nodes.first.riskProbability, inInclusiveRange(0.0, 1.0));
+  });
+
+  test('an alertable phase creates an advisory with the official-channel wording', () async {
+    final service = _FakeService(rows)..served = rows.length; // fresh: the last row is stamped now
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    expect(appState.rigReading!.isStale, isFalse);
+    expect(appState.rigReading!.phase, greaterThanOrEqualTo(2));
+    final state = appState.nodes.first.state;
+    if (state.isAlertable) {
+      expect(appState.activeHazards, isNotEmpty);
+      expect(appState.activeHazards.first.messageEn, contains('NADMA'));
+    } else {
+      expect(appState.activeHazards, isEmpty);
+    }
+  });
+
+  test('old data raises no alert and is shown as last known, not as a live emergency', () async {
+    final service = _FakeService(_rowsEndingAt(sourceRows, DateTime.now().subtract(const Duration(hours: 1))));
+    service.served = service.rows.length;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    expect(appState.rigReading!.isStale, isTrue);
+    expect(appState.rigReading!.phase, greaterThanOrEqualTo(2)); // the last known phase is still kept
+    expect(appState.nodes.first.state, RiskState.normal);       // but it is not shown as a live state
+    expect(appState.nodes.first.riskProbability, isNull);
+    expect(appState.activeHazards, isEmpty);                     // and no advisory is raised
+  });
+
+  test('with no rows yet the app shows waiting, not a made-up phase', () async {
+    final service = _FakeService(rows)..served = 0;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    expect(appState.rigReading, isNull);
+    expect(appState.nodes, isEmpty);
+  });
+
+  test('turning live mode off returns the app to normal data', () async {
+    final service = _FakeService(rows)..served = 120;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    appState.setRigMode(false);
+    expect(appState.rigMode, isFalse);
+    expect(appState.demoMode, isFalse);
+    expect(appState.rigReading, isNull);
+  });
+}

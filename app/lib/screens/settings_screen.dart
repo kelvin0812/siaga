@@ -10,6 +10,7 @@ import '../core/locale_provider.dart';
 import '../core/models.dart';
 import '../core/theme.dart';
 import '../demo/demo_controller.dart';
+import '../core/rig_controller.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/command_background.dart';
 import '../widgets/glass_card.dart';
@@ -113,8 +114,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       l10n.settingsDemoModeDescription,
                       style: const TextStyle(color: AppColors.textMuted),
                     ),
-                    value: appState.demoMode,
+                    value: appState.demoMode && !appState.rigMode,
                     onChanged: (v) {
+                      context.read<RigController>().stop();
                       appState.setDemoMode(v);
                       final demo = context.read<DemoController>();
                       if (v) {
@@ -125,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                     contentPadding: EdgeInsets.zero,
                   ),
-                  if (appState.demoMode) ...[
+                  if (appState.demoMode && !appState.rigMode) ...[
                     const SizedBox(height: 12),
                     Text(
                       l10n.settingsDemoTriggerLabel,
@@ -164,6 +166,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            _SectionLabel(l10n.rigModeTitle),
+            const SizedBox(height: 8),
+            GlassCard(child: _RigModeCard(appState: appState)),
             const SizedBox(height: 24),
             _SectionLabel(l10n.benchSensorTitle),
             const SizedBox(height: 8),
@@ -586,5 +592,72 @@ class _NotificationTile extends StatelessWidget {
       value: enabled,
       onChanged: loading ? null : (v) { if (v && !enabled) onEnable(); },
     );
+  }
+}
+
+
+/// Live rig mode: switch the whole app over to the bench rig's real sensors, read by the phase model.
+class _RigModeCard extends StatelessWidget {
+  final AppState appState;
+  const _RigModeCard({required this.appState});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final rig = appState.rigReading;
+    final state = rig == null ? null : RiskState.values[rig.phase - 1];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          title: Text(l10n.rigModeTitle, style: const TextStyle(color: AppColors.textPrimary)),
+          subtitle: Text(l10n.rigModeDescription, style: const TextStyle(color: AppColors.textMuted)),
+          value: appState.rigMode,
+          onChanged: (v) {
+            final rigController = context.read<RigController>();
+            if (v) {
+              context.read<DemoController>().stop();
+              appState.setRigMode(true);
+              rigController.start();
+            } else {
+              rigController.stop();
+              appState.setRigMode(false);
+            }
+          },
+          contentPadding: EdgeInsets.zero,
+        ),
+        if (appState.rigMode) ...[
+          const SizedBox(height: 8),
+          if (rig == null || state == null)
+            Text(l10n.rigWaiting, style: const TextStyle(color: AppColors.textMuted))
+          else ...[
+            Row(
+              children: [
+                Text('${rig.isStale ? '${l10n.rigLastKnown} ' : ''}${l10n.rigPhaseLabel} ${rig.phase}: ',
+                    style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                Text(riskStateLabel(context, state).toUpperCase(),
+                    style: TextStyle(color: riskStateColor(state), fontWeight: FontWeight.w700)),
+                const SizedBox(width: 12),
+                Text('${(rig.confidence * 100).round()}%', style: const TextStyle(color: AppColors.textMuted)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              rig.isStale
+                  ? '${l10n.rigOffline}: ${_ago(rig.age)}'
+                  : '${l10n.benchSensorUpdated} ${_ago(rig.age)}',
+              style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.textMuted, fontSize: 13),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  static String _ago(Duration d) {
+    if (d.inSeconds < 90) return '${d.inSeconds}s ago';
+    if (d.inMinutes < 90) return '${d.inMinutes} min ago';
+    if (d.inHours < 48) return '${d.inHours} h ago';
+    return '${d.inDays} d ago';
   }
 }

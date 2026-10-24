@@ -10,6 +10,7 @@ import '../core/offline_cache.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/demo_readout.dart';
+import '../widgets/rig_readout.dart';
 import '../widgets/node_history_chart.dart';
 import '../widgets/risk_badge.dart';
 
@@ -307,6 +308,7 @@ class _MapScreenState extends State<MapScreen> {
           _NodeInfoPanel(
             node: selectedNode,
             demoReading: appState.demoMode ? appState.demoReading : null,
+            rigReading: appState.rigMode ? appState.rigReading : null,
             onClose: () => setState(() => _selectedNodeId = null),
             locked: appState.lockedNodeId == selectedNode.id,
             onToggleLock: () => appState.setLockedNode(
@@ -543,6 +545,7 @@ class _AssemblyPointMarker extends StatelessWidget {
 class _NodeInfoPanel extends StatelessWidget {
   final SiagaNode node;
   final DemoReading? demoReading;
+  final RigReading? rigReading;
   final VoidCallback onClose;
   final bool locked;
   final VoidCallback onToggleLock;
@@ -550,6 +553,7 @@ class _NodeInfoPanel extends StatelessWidget {
   const _NodeInfoPanel({
     required this.node,
     required this.demoReading,
+    required this.rigReading,
     required this.onClose,
     required this.locked,
     required this.onToggleLock,
@@ -655,7 +659,9 @@ class _NodeInfoPanel extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              if (demoReading != null) ...[
+              if (rigReading != null) ...[
+                RigReadout(reading: rigReading!),
+              ] else if (demoReading != null) ...[
                 DemoReadout(reading: demoReading!),
               ] else ...[
                 Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),

@@ -142,7 +142,11 @@ class _RiskScreenState extends State<RiskScreen> {
           RiskGauge(
             state: riskState,
             probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability,
-            probabilityLabel: appState.demoMode ? 'Simulated severity' : 'Tier 2 probability',
+            probabilityLabel: appState.rigMode
+                ? (appState.rigReading?.isStale ?? false ? 'Rig offline, no recent data' : 'Rig phase model')
+                : appState.demoMode
+                    ? 'Simulated severity'
+                    : 'Tier 2 probability',
           ),
         const SizedBox(height: 24),
         if (hasKnownArea) _ThreatStepper(current: riskState),
@@ -366,7 +370,10 @@ class _MetricsPanel extends StatelessWidget {
             ? 0.0
             : (position != null ? Geolocator.distanceBetween(position.latitude, position.longitude, nearest!.lat, nearest!.lon) : null);
 
-    final items = [
+    final rig = appState.rigMode ? appState.rigReading : null;
+    final items = rig != null
+        ? _rigItems(rig)
+        : [
       MicroMetricCard(
         icon: Icons.water_drop_outlined,
         label: 'Rain Gauge',
@@ -411,6 +418,41 @@ class _MetricsPanel extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Live rig mode: the four sensors the phase model reads, in place of the river-node cards.
+  List<Widget> _rigItems(RigReading r) {
+    final ago = r.isStale ? 'no data ${_formatAgo(r.rowTime)}' : null;
+    return [
+      MicroMetricCard(
+        icon: Icons.waves,
+        label: l10n.rigMetricLevel,
+        value: r.heightCm.toStringAsFixed(1),
+        caption: ago ?? l10n.rigMetricLevelCaption,
+        accent: AppColors.watch,
+      ),
+      MicroMetricCard(
+        icon: Icons.water_drop_outlined,
+        label: l10n.rigMetricFlow,
+        value: r.flow.toStringAsFixed(0),
+        caption: l10n.rigMetricFlowCaption,
+        accent: AppColors.accent,
+      ),
+      MicroMetricCard(
+        icon: Icons.grass,
+        label: l10n.rigMetricSoil,
+        value: r.soilRaw.toStringAsFixed(0),
+        caption: l10n.rigMetricSoilCaption,
+        accent: AppColors.accent,
+      ),
+      MicroMetricCard(
+        icon: Icons.rotate_right,
+        label: l10n.rigMetricTilt,
+        value: r.tiltDeg.toStringAsFixed(1),
+        caption: l10n.rigMetricTiltCaption,
+        accent: AppColors.normal,
+      ),
+    ];
   }
 
   String _formatDistance(double meters) {

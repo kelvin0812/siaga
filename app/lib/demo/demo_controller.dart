@@ -144,7 +144,11 @@ class DemoController {
 
   /// Mirrors backend/app/fcm.py's alert templates, kept in sync by hand
   /// — the demo has no network path to the real backend to fetch these.
-  (String, String) _alertCopyFor(RiskState state) {
+  (String, String) _alertCopyFor(RiskState state) => alertCopyFor(state);
+}
+
+/// The advisory wording shown for an alertable state, shared by demo mode and live rig mode.
+(String, String) alertCopyFor(RiskState state) {
     const attributionEn =
         'SIAGA advisory (decision support only) — confirm with NADMA / MetMalaysia / JPS.';
     const attributionMs =
@@ -160,4 +164,3 @@ class DemoController {
       'Risiko banjir/tanah runtuh meningkat di kawasan anda. Bersedia untuk berpindah dan semak laluan anda. $attributionMs',
     );
   }
-}

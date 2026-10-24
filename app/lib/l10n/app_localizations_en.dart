@@ -311,4 +311,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get benchEvalStubWarning =>
       'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.';
+
+  @override
+  String get rigModeTitle => 'Live Rig (Phase Model)';
+
+  @override
+  String get rigModeDescription =>
+      'Runs the whole app from the bench rig\'s real sensors. The phase model reads the water level, flow, soil and tilt, and shows Normal, Watch, Warning or Evacuate.';
+
+  @override
+  String get rigWaiting => 'Waiting for the rig\'s readings...';
+
+  @override
+  String get rigOffline => 'No recent data from the rig';
+
+  @override
+  String get rigPhaseLabel => 'Phase';
+
+  @override
+  String get rigReadoutTitle => 'Live rig readings';
+
+  @override
+  String get rigMetricLevel => 'Water Level';
+
+  @override
+  String get rigMetricLevelCaption => 'cm above normal';
+
+  @override
+  String get rigMetricFlow => 'Flow';
+
+  @override
+  String get rigMetricFlowCaption => 'as logged';
+
+  @override
+  String get rigMetricSoil => 'Soil';
+
+  @override
+  String get rigMetricSoilCaption => 'raw reading';
+
+  @override
+  String get rigMetricTilt => 'Tilt';
+
+  @override
+  String get rigMetricTiltCaption => 'degrees from rest';
+
+  @override
+  String get rigLastKnown => 'Last known';
 }

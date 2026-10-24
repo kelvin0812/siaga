@@ -96,5 +96,20 @@
   "benchEvalProbabilityLabel": "Tier 2 probability",
   "benchEvalCorroborationLabel": "Corroborating channels",
   "benchEvalReadingUsedLabel": "Reading fed to the model",
-  "benchEvalStubWarning": "This ran on the heuristic placeholder, not the real trained model — the backend's server couldn't load it this time. The number above is illustrative only."
+  "benchEvalStubWarning": "This ran on the heuristic placeholder, not the real trained model — the backend's server couldn't load it this time. The number above is illustrative only.",
+  "rigModeTitle": "Live Rig (Phase Model)",
+  "rigModeDescription": "Runs the whole app from the bench rig's real sensors. The phase model reads the water level, flow, soil and tilt, and shows Normal, Watch, Warning or Evacuate.",
+  "rigWaiting": "Waiting for the rig's readings...",
+  "rigOffline": "No recent data from the rig",
+  "rigPhaseLabel": "Phase",
+  "rigReadoutTitle": "Live rig readings",
+  "rigMetricLevel": "Water Level",
+  "rigMetricLevelCaption": "cm above normal",
+  "rigMetricFlow": "Flow",
+  "rigMetricFlowCaption": "as logged",
+  "rigMetricSoil": "Soil",
+  "rigMetricSoilCaption": "raw reading",
+  "rigMetricTilt": "Tilt",
+  "rigMetricTiltCaption": "degrees from rest",
+  "rigLastKnown": "Last known"
 }

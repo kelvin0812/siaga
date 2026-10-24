@@ -80,6 +80,20 @@ class BenchSensorService {
     final list = jsonDecode(res.body) as List;
     return list.map((e) => BenchSensorReading.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  /// Readings newer than [afterId], oldest first. This is what live rig mode polls for.
+  Future<List<BenchSensorReading>> since(int afterId, {int limit = 200}) async {
+    final uri = Uri.parse('$_baseUrl/rest/v1/sensor_table?select=*&id=gt.$afterId&order=id.asc&limit=$limit');
+    final res = await _client.get(uri, headers: {'apikey': _anonKey, 'Authorization': 'Bearer $_anonKey'});
+    if (res.statusCode != 200) {
+      throw BenchSensorException('GET sensor_table failed: ${res.statusCode}');
+    }
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => BenchSensorReading.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// The last [count] readings, oldest first, used to fill the phase model's windows when live mode starts.
+  Future<List<BenchSensorReading>> history({int count = 150}) async => (await latest(limit: count)).reversed.toList();
 }
 
 class BenchSensorException implements Exception {

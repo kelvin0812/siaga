@@ -679,6 +679,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.'**
   String get benchEvalStubWarning;
+
+  /// No description provided for @rigModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Rig (Phase Model)'**
+  String get rigModeTitle;
+
+  /// No description provided for @rigModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the whole app from the bench rig\'s real sensors. The phase model reads the water level, flow, soil and tilt, and shows Normal, Watch, Warning or Evacuate.'**
+  String get rigModeDescription;
+
+  /// No description provided for @rigWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the rig\'s readings...'**
+  String get rigWaiting;
+
+  /// No description provided for @rigOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent data from the rig'**
+  String get rigOffline;
+
+  /// No description provided for @rigPhaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase'**
+  String get rigPhaseLabel;
+
+  /// No description provided for @rigReadoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live rig readings'**
+  String get rigReadoutTitle;
+
+  /// No description provided for @rigMetricLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Water Level'**
+  String get rigMetricLevel;
+
+  /// No description provided for @rigMetricLevelCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'cm above normal'**
+  String get rigMetricLevelCaption;
+
+  /// No description provided for @rigMetricFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Flow'**
+  String get rigMetricFlow;
+
+  /// No description provided for @rigMetricFlowCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'as logged'**
+  String get rigMetricFlowCaption;
+
+  /// No description provided for @rigMetricSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil'**
+  String get rigMetricSoil;
+
+  /// No description provided for @rigMetricSoilCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'raw reading'**
+  String get rigMetricSoilCaption;
+
+  /// No description provided for @rigMetricTilt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tilt'**
+  String get rigMetricTilt;
+
+  /// No description provided for @rigMetricTiltCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'degrees from rest'**
+  String get rigMetricTiltCaption;
+
+  /// No description provided for @rigLastKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Last known'**
+  String get rigLastKnown;
 }
 
 class _AppLocalizationsDelegate

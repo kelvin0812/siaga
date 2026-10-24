@@ -20,6 +20,11 @@ class AppState extends ChangeNotifier {
   bool demoMode = false;
   DemoReading? demoReading;
 
+  /// Live rig mode: the phase model reads the bench rig's real sensors and drives the same screens demo mode
+  /// does. It reuses demoMode so every screen that already handles demo mode shows it.
+  bool rigMode = false;
+  RigReading? rigReading;
+
   /// Set from the map screen's "lock to this node" action, or the My Risk
   /// screen's own dropdown (the two are the same underlying selection —
   /// per the mentor-review feedback that risk level should be tied to a
@@ -93,10 +98,37 @@ class AppState extends ChangeNotifier {
 
   void setDemoMode(bool value) {
     demoMode = value;
+    rigMode = false;
+    rigReading = null;
     if (!value) {
       demoReading = null;
       unawaited(refresh());
     }
+    notifyListeners();
+  }
+
+  void setRigMode(bool value) {
+    rigMode = value;
+    demoMode = value;
+    demoReading = null;
+    if (!value) {
+      rigReading = null;
+      unawaited(refresh());
+    }
+    notifyListeners();
+  }
+
+  /// The phase model pushes the rig's state here, the same way demo mode pushes its own.
+  void applyRigState({
+    required List<SiagaNode> nodes,
+    required List<Hazard> hazards,
+    required RigReading? reading,
+  }) {
+    this.nodes = nodes;
+    activeHazards = hazards;
+    rigReading = reading;
+    demoReading = null;
+    isOffline = false;
     notifyListeners();
   }
 

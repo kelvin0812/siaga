@@ -96,5 +96,20 @@
   "benchEvalProbabilityLabel": "Kebarangkalian Tier 2",
   "benchEvalCorroborationLabel": "Saluran pengesahan",
   "benchEvalReadingUsedLabel": "Bacaan yang dihantar ke model",
-  "benchEvalStubWarning": "Ini dijalankan pada model ganti heuristik, bukan model terlatih sebenar — pelayan bahagian belakang tidak dapat memuatkannya kali ini. Nombor di atas hanya untuk ilustrasi."
+  "benchEvalStubWarning": "Ini dijalankan pada model ganti heuristik, bukan model terlatih sebenar — pelayan bahagian belakang tidak dapat memuatkannya kali ini. Nombor di atas hanya untuk ilustrasi.",
+  "rigModeTitle": "Rig Langsung (Model Fasa)",
+  "rigModeDescription": "Menjalankan seluruh aplikasi daripada sensor sebenar rig ujian. Model fasa membaca paras air, aliran, tanah dan kecondongan, lalu menunjukkan Normal, Perhatian, Amaran atau Berpindah.",
+  "rigWaiting": "Menunggu bacaan daripada rig...",
+  "rigOffline": "Tiada data terkini daripada rig",
+  "rigPhaseLabel": "Fasa",
+  "rigReadoutTitle": "Bacaan rig langsung",
+  "rigMetricLevel": "Paras Air",
+  "rigMetricLevelCaption": "cm di atas biasa",
+  "rigMetricFlow": "Aliran",
+  "rigMetricFlowCaption": "seperti direkod",
+  "rigMetricSoil": "Tanah",
+  "rigMetricSoilCaption": "bacaan mentah",
+  "rigMetricTilt": "Kecondongan",
+  "rigMetricTiltCaption": "darjah dari rehat",
+  "rigLastKnown": "Terakhir diketahui"
 }

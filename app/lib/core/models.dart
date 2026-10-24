@@ -248,3 +248,35 @@ class BenchEvalResult {
         modelType: json['model_type'] as String,
       );
 }
+
+
+/// What the live rig mode shows: the phase the model reached, plus the readings it was based on.
+class RigReading {
+  /// 1 (Normal) to 4 (Evacuate).
+  final int phase;
+  final double confidence;
+  final double severity;
+  final double heightCm; // water above the rig's normal level
+  final double flow;
+  final double soilRaw;
+  final double tiltDeg;
+  final DateTime rowTime;
+  final int rowId;
+
+  const RigReading({
+    required this.phase,
+    required this.confidence,
+    required this.severity,
+    required this.heightCm,
+    required this.flow,
+    required this.soilRaw,
+    required this.tiltDeg,
+    required this.rowTime,
+    required this.rowId,
+  });
+
+  Duration get age => DateTime.now().difference(rowTime);
+
+  /// The rig has not sent anything for a while, so what is shown is old.
+  bool get isStale => age > const Duration(seconds: 30);
+}
