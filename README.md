@@ -35,13 +35,15 @@ A bench rig measures four things: water level (ultrasonic), soil moisture, water
 | `ml/data/rig/` | The rig's raw recording the model is trained on (2,220 readings). |
 | `backend/models/phase_model/` | The trained phase model, its calibration and its evaluation, saved together. |
 | `backend/app/phase_model.py` | Live phase prediction, one reading at a time. A test checks it matches the training features. |
+| `ml/rig/export_app.py`, `app/assets/phase_model.json` | Exports the trained model so the phone can run it. Writes a test fixture of real rig rows with the Python answers. |
+| `app/lib/core/phase_model.dart`, `rig_controller.dart` | The phase model running inside the app, and the controller that feeds it the rig's live readings from the database. |
 | `backend/app/rules.py`, `backend/rig_check.py` | The rule engine, and a script that replays recorded rig data through it. |
 | `backend/` | FastAPI service: ingest, features, guardrail, state machine, geofence, FCM dispatch, heartbeat monitoring, REST API. |
 | `shared/` | The 12-byte LoRa frame codec and the synthetic flood simulator used for the demo mode. |
 | `app/` | Flutter app (Android, iOS, web): live map, my-risk screen, evacuation routes, community reports, English and Bahasa Malaysia, offline cache, demo mode. |
 | `api/`, `vercel.json` | The REST API as deployed on Vercel. |
 | `ml/` (other files), `backend/models/tier2_lightgbm/` | An earlier river-flood experiment, kept for reference. See the note under Results. |
-| `tests/` | 140 backend tests. The frame codec, state machine, geofence, rule engine and phase features get the heaviest coverage. |
+| `tests/`, `app/test/` | 142 backend tests and 29 app tests. The frame codec, state machine, geofence, rule engine and phase features get the heaviest coverage, and the app's model is checked against the Python one on real rig rows. |
 
 ## Try it
 
@@ -49,8 +51,9 @@ A bench rig measures four things: water level (ultrasonic), soil moisture, water
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 pip install -r ml/requirements.txt
-pytest                                              # 140 tests
+pytest                                              # 142 tests
 python -m ml.rig.train                              # retrain the phase model from the rig recording
+python -m ml.rig.export_app                         # re-export it for the app (and refresh the app's test fixture)
 python -m backend.rig_check --csv ml/data/rig/sensor_table_rows.csv --mount-cm 31 --alert-cm 4 \n    --soil-dry 450 --soil-wet 630 --flow-active 250   # replay the rig data through the rule engine (example calibration)
 python -m backend.demo --speed 600                  # replay a simulated flood, printing every state change
 ```
@@ -63,7 +66,11 @@ flutter pub get
 flutter run -d chrome        # or an Android device
 ```
 
-Open Settings and switch on demo mode to step through Normal, Watch, Warning and Evacuate without any data.
+Open Settings and switch on **demo mode** to step through Normal, Watch, Warning and Evacuate without any data. Switch on **Live Rig (Phase Model)** to run the whole app from the bench rig: the app reads the rig's latest readings from the database, the phase model runs on the phone, and the risk screen, map and evacuation alert follow it. If the rig goes quiet for more than 30 seconds, no alert is raised and the screen says the data is old.
+
+```bash
+flutter test     # 29 tests, including the model check against real rig rows
+```
 
 ## Results
 
@@ -90,13 +97,14 @@ We'd rather be upfront about this than have you find out at the booth.
 
 **Working**
 - The rig sends readings to the database through the hub, and the phase model and rule engine run on them.
+- The app runs the phase model on the phone from the rig's live readings (Settings, Live Rig).
 - The backend pipeline end to end, in simulation, with tests.
 - The Flutter app (web and Android build), including demo mode.
 - On-device H3 cell computation, with no coordinates sent to the backend.
 
 **Not finished or not measured**
 - **Hardware code isn't in this repo.** The node, hub and Pico code is kept separately.
-- **The phase model isn't connected to the app yet.** The app's demo mode still runs on the simulator.
+- **The rule engine isn't shown in the app.** The app shows the phase model's result; the rule engine runs from the command line.
 - **Push notifications.** The FCM dispatch code and tests are in, but no Firebase project is connected, so alerts are logged rather than delivered. The in-app EVACUATE screen works.
 - **One recording, one day.** The phase model has not been tested on a second day, a different mounting height or a different order of events.
 - **The hosted API uses a heuristic stand-in** for the older river model, because LightGBM cannot load on Vercel's runtime.
