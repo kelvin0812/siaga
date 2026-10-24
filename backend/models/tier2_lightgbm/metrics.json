@@ -35,5 +35,6 @@
     "time_of_day_cos",
     "season_sin",
     "season_cos"
-  ]
+  ],
+  "caveat": "Earlier experiment, kept for reference. These numbers are inflated: the label counted a row as positive when the water was already above the alert level (about 94% of the real positive rows), and about two thirds of the positive rows come from synthetic hydrographs. They do not show that flooding can be predicted. The model used for the competition demo is backend/models/phase_model, trained on the rig's own recordings."
 }
