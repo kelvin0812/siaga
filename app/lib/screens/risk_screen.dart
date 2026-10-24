@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import '../core/api_client.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
 import '../core/theme.dart';
@@ -32,9 +29,6 @@ class RiskScreen extends StatefulWidget {
 
 class _RiskScreenState extends State<RiskScreen> {
   static const _wideBreakpoint = 720.0;
-
-  int? _fetchedForNodeId;
-  NodeReading? _liveReading;
 
   @override
   Widget build(BuildContext context) {
@@ -90,17 +84,7 @@ class _RiskScreenState extends State<RiskScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     final glowColor = hasKnownArea ? riskStateColor(riskState) : AppColors.accent;
 
-    if (!appState.demoMode && focusedNode != null && focusedNode.id != _fetchedForNodeId) {
-      _fetchedForNodeId = focusedNode.id;
-      unawaited(_fetchLatestReading(appState.api, focusedNode.id));
-    }
-
-    final metrics = _MetricsPanel(
-      appState: appState,
-      nearest: focusedNode,
-      liveReading: appState.demoMode ? null : _liveReading,
-      l10n: l10n,
-    );
+    final metrics = _MetricsPanel(appState: appState, l10n: l10n);
 
     final gaugeColumn = Column(
       mainAxisSize: MainAxisSize.min,
@@ -220,17 +204,6 @@ class _RiskScreenState extends State<RiskScreen> {
     });
   }
 
-  Future<void> _fetchLatestReading(ApiClient api, int nodeId) async {
-    try {
-      final history = await api.getNodeHistory(nodeId, hours: 1);
-      if (history.isEmpty) return;
-      final latest = history.reduce((a, b) => a.receivedAt.isAfter(b.receivedAt) ? a : b);
-      if (mounted && _fetchedForNodeId == nodeId) setState(() => _liveReading = latest);
-    } on ApiException {
-      // Leave _liveReading as whatever it was — metrics degrade to "—"
-      // rather than the screen crashing (Section 2: degrade visibly).
-    }
-  }
 }
 
 /// Dropdown letting the resident explicitly pick which node's risk level
@@ -341,68 +314,20 @@ class _ThreatStepper extends StatelessWidget {
   }
 }
 
-/// The instrument grid: rainfall gauge, water level, distance to the
-/// nearest node, and time since its last transmission. Column count
+/// The instrument grid: the rig's four real sensors (water level, flow, soil, tilt). Column count
 /// adapts to available width via GridView so wide viewports fill out
 /// instead of leaving margins empty.
 class _MetricsPanel extends StatelessWidget {
   final AppState appState;
-  final SiagaNode? nearest;
-  final NodeReading? liveReading;
   final AppLocalizations l10n;
 
-  const _MetricsPanel({required this.appState, required this.nearest, required this.liveReading, required this.l10n});
+  const _MetricsPanel({required this.appState, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final demo = appState.demoReading;
-    final rainTips = appState.demoMode ? demo?.rainTips : liveReading?.rainTips;
-    final heightM = appState.demoMode ? demo?.heightM : liveReading?.heightM;
-
-    final position = appState.locationService.lastKnownPosition;
-    // Demo mode has no real GPS fix to measure from -- same convention
-    // already used for the map's evacuation-route origin (map_screen.dart):
-    // the demo is illustrating "you are at this node," so the honest
-    // answer is 0m, not a blank dash.
-    final distanceM = nearest == null
-        ? null
-        : appState.demoMode
-            ? 0.0
-            : (position != null ? Geolocator.distanceBetween(position.latitude, position.longitude, nearest!.lat, nearest!.lon) : null);
-
+    // Only what the rig really measures: no rain gauge, no distance to a node, no node sync time.
     final rig = appState.rigMode ? appState.rigReading : null;
-    final items = rig != null
-        ? _rigItems(rig)
-        : [
-      MicroMetricCard(
-        icon: Icons.water_drop_outlined,
-        label: 'Rain Gauge',
-        value: rainTips != null ? '$rainTips' : '—',
-        caption: 'tips since last tx',
-        accent: AppColors.accent,
-      ),
-      MicroMetricCard(
-        icon: Icons.waves,
-        label: 'Water Level',
-        value: heightM != null ? heightM.toStringAsFixed(2) : '—',
-        caption: heightM != null ? 'm above datum' : null,
-        accent: AppColors.watch,
-      ),
-      MicroMetricCard(
-        icon: Icons.social_distance_outlined,
-        label: 'Distance',
-        value: distanceM != null ? _formatDistance(distanceM) : '—',
-        caption: nearest != null ? nearest!.name : 'nearest node',
-        accent: AppColors.accent,
-      ),
-      MicroMetricCard(
-        icon: Icons.sync,
-        label: 'Last Sync',
-        value: nearest?.lastSeen != null ? _formatAgo(nearest!.lastSeen!) : '—',
-        caption: nearest != null ? 'node #${nearest!.id}' : null,
-        accent: AppColors.normal,
-      ),
-    ];
+    final items = _rigItems(rig);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -420,44 +345,42 @@ class _MetricsPanel extends StatelessWidget {
     );
   }
 
-  /// Live rig mode: the four sensors the phase model reads, in place of the river-node cards.
-  List<Widget> _rigItems(RigReading r) {
-    final ago = r.isStale ? 'no data ${_formatAgo(r.rowTime)}' : null;
+  /// The four sensors the phase model reads. With no reading yet (or Live Rig switched off) each shows a dash,
+  /// never an invented value.
+  List<Widget> _rigItems(RigReading? r) {
+    final caption = r == null
+        ? (appState.rigMode ? l10n.rigWaiting : null)
+        : (r.isStale ? 'no data ${_formatAgo(r.rowTime)}' : null);
     return [
       MicroMetricCard(
         icon: Icons.waves,
         label: l10n.rigMetricLevel,
-        value: r.heightCm.toStringAsFixed(1),
-        caption: ago ?? l10n.rigMetricLevelCaption,
+        value: r != null ? r.heightCm.toStringAsFixed(1) : '—',
+        caption: caption ?? l10n.rigMetricLevelCaption,
         accent: AppColors.watch,
       ),
       MicroMetricCard(
         icon: Icons.water_drop_outlined,
         label: l10n.rigMetricFlow,
-        value: r.flow.toStringAsFixed(0),
+        value: r != null ? r.flow.toStringAsFixed(0) : '—',
         caption: l10n.rigMetricFlowCaption,
         accent: AppColors.accent,
       ),
       MicroMetricCard(
         icon: Icons.grass,
         label: l10n.rigMetricSoil,
-        value: r.soilRaw.toStringAsFixed(0),
+        value: r != null ? r.soilRaw.toStringAsFixed(0) : '—',
         caption: l10n.rigMetricSoilCaption,
         accent: AppColors.accent,
       ),
       MicroMetricCard(
         icon: Icons.rotate_right,
         label: l10n.rigMetricTilt,
-        value: r.tiltDeg.toStringAsFixed(1),
+        value: r != null ? r.tiltDeg.toStringAsFixed(1) : '—',
         caption: l10n.rigMetricTiltCaption,
         accent: AppColors.normal,
       ),
     ];
-  }
-
-  String _formatDistance(double meters) {
-    if (meters >= 1000) return '${(meters / 1000).toStringAsFixed(1)}km';
-    return '${meters.round()}m';
   }
 
   String _formatAgo(DateTime time) {

@@ -60,6 +60,10 @@ Future<void> main() async {
   final demoController = DemoController(appState: appState);
   final rigController = RigController(appState: appState);
 
+  // Open on the bench rig's real readings; Settings can still switch to the simulated demo or off.
+  appState.setRigMode(true);
+  unawaited(rigController.start());
+
   runApp(
     MultiProvider(
       providers: [
