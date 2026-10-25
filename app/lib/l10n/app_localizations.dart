@@ -919,6 +919,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.'**
   String get howStep3;
+
+  /// No description provided for @mapLegendNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor node'**
+  String get mapLegendNode;
+
+  /// No description provided for @mapLegendAssembly.
+  ///
+  /// In en, this message translates to:
+  /// **'Assembly point'**
+  String get mapLegendAssembly;
+
+  /// No description provided for @mapLegendYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get mapLegendYou;
+
+  /// No description provided for @routeShortest.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest route'**
+  String get routeShortest;
+
+  /// No description provided for @routeByRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'by road'**
+  String get routeByRoad;
+
+  /// No description provided for @routeStraight.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight line, offline'**
+  String get routeStraight;
+
+  /// No description provided for @routeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved route'**
+  String get routeSaved;
+
+  /// No description provided for @routeWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'on foot'**
+  String get routeWalk;
+
+  /// No description provided for @routeCalculating.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the shortest route...'**
+  String get routeCalculating;
+
+  /// No description provided for @routeAreaNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The route starts from your area. Your exact position is never sent.'**
+  String get routeAreaNote;
+
+  /// No description provided for @routeHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Show route to this point'**
+  String get routeHere;
+
+  /// No description provided for @routeNearest.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the shortest route'**
+  String get routeNearest;
+
+  /// No description provided for @nodeKindSensor.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor node'**
+  String get nodeKindSensor;
+
+  /// No description provided for @nodeKindAssembly.
+  ///
+  /// In en, this message translates to:
+  /// **'Assembly point'**
+  String get nodeKindAssembly;
+
+  /// No description provided for @mapAway.
+  ///
+  /// In en, this message translates to:
+  /// **'away in a straight line'**
+  String get mapAway;
 }
 
 class _AppLocalizationsDelegate

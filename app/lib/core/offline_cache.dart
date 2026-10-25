@@ -52,6 +52,10 @@ class OfflineCache {
         .toList();
   }
 
+  /// Evacuation routes already fetched, kept so the same route can still be shown with no connection.
+  String? loadRouteCache(String key) => _prefs.getString('siaga.route.$key');
+  Future<void> saveRouteCache(String key, String value) => _prefs.setString('siaga.route.$key', value);
+
   Future<void> saveNodes(List<SiagaNode> nodes) async {
     await _prefs.setString(
       _kCachedNodesKey,

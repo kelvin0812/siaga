@@ -9,10 +9,8 @@ import '../l10n/app_localizations.dart';
 import '../widgets/active_threat_banner.dart';
 import '../widgets/command_background.dart';
 import '../widgets/glass_card.dart';
-import '../widgets/micro_metric_card.dart';
 import '../widgets/risk_badge.dart';
 import '../widgets/rig_trend_card.dart';
-import '../widgets/risk_gauge.dart';
 
 /// Section 6.4: "Prominent four-level risk indicator for the user's own
 /// cell." Redesigned as a command-center dashboard: a telemetry-dial gauge
@@ -30,8 +28,6 @@ class RiskScreen extends StatefulWidget {
 }
 
 class _RiskScreenState extends State<RiskScreen> {
-  static const _wideBreakpoint = 720.0;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -86,19 +82,20 @@ class _RiskScreenState extends State<RiskScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     final glowColor = hasKnownArea ? riskStateColor(riskState) : AppColors.accent;
 
-    final metrics = _MetricsPanel(appState: appState, l10n: l10n);
+    final score = appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability;
+    final scoreLabel = appState.rigMode
+        ? (appState.rigReading?.isStale ?? false ? l10n.rigStatusOffline : l10n.riskScoreLabel)
+        : appState.demoMode
+            ? 'Simulated severity'
+            : 'Tier 2 probability';
 
-    final gaugeColumn = Column(
-      mainAxisSize: MainAxisSize.min,
+    // The first screenful: where the area stands, then every real sensor with its number and its last 10 minutes.
+    final top = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.myRiskTitle.toUpperCase(),
-          style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
-        ),
         if (!appState.demoMode && appState.nodes.length > 1) ...[
-          const SizedBox(height: 14),
           Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 '${l10n.riskSelectorLabel}: ',
@@ -111,8 +108,8 @@ class _RiskScreenState extends State<RiskScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 14),
         ],
-        const SizedBox(height: 24),
         if (!hasKnownArea)
           GlassCard(
             padding: const EdgeInsets.all(28),
@@ -125,21 +122,18 @@ class _RiskScreenState extends State<RiskScreen> {
             ),
           )
         else
-          RiskGauge(
+          _LevelHero(
             state: riskState,
-            probability: appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability,
-            probabilityLabel: appState.rigMode
-                ? (appState.rigReading?.isStale ?? false ? l10n.rigStatusOffline : l10n.riskScoreLabel)
-                : appState.demoMode
-                    ? 'Simulated severity'
-                    : 'Tier 2 probability',
+            score: score,
+            scoreLabel: scoreLabel,
+            rig: appState.rigMode ? appState.rigReading : null,
+            showStatus: appState.rigMode,
+            l10n: l10n,
           ),
-        const SizedBox(height: 24),
-        if (hasKnownArea) _ThreatStepper(current: riskState),
-        if (appState.rigMode) ...[
-          const SizedBox(height: 24),
-          _SummaryCard(state: riskState, stale: appState.rigReading?.isStale ?? true, l10n: l10n),
-        ],
+        const SizedBox(height: 20),
+        _SectionTitle(title: l10n.riskTrendsTitle, subtitle: l10n.riskTrendsSubtitle),
+        const SizedBox(height: 12),
+        _SensorGrid(appState: appState, l10n: l10n),
       ],
     );
 
@@ -150,24 +144,24 @@ class _RiskScreenState extends State<RiskScreen> {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Wide enough for two columns of trend charts; everything else is one column at every width.
-            final wide = constraints.maxWidth >= _wideBreakpoint;
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 110), // clear of the floating nav bar
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
+                  constraints: const BoxConstraints(maxWidth: 1000),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      gaugeColumn,
-                      const SizedBox(height: 24),
-                      metrics,
+                      top,
+                      if (appState.rigMode) ...[
+                        const SizedBox(height: 12),
+                        _RiskHistory(appState: appState, l10n: l10n),
+                        const SizedBox(height: 16),
+                        _SummaryCard(state: riskState, stale: appState.rigReading?.isStale ?? true, l10n: l10n),
+                      ],
                       const SizedBox(height: 16),
                       _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
                       if (appState.rigMode) ...[
-                        const SizedBox(height: 32),
-                        _TrendsSection(appState: appState, l10n: l10n, wide: wide),
                         const SizedBox(height: 24),
                         _HowItWorks(l10n: l10n),
                       ],
@@ -309,84 +303,232 @@ class _ThreatStepper extends StatelessWidget {
   }
 }
 
-/// The instrument grid: the rig's four real sensors (water level, flow, soil, tilt). Column count
-/// adapts to available width via GridView so wide viewports fill out
-/// instead of leaving margins empty.
-class _MetricsPanel extends StatelessWidget {
+/// The four real sensors as tiles: the number big, what it means in a few words, and its last 10 minutes right
+/// under it, so the live data is the first thing seen. Four across on a wide screen, two on a phone.
+class _SensorGrid extends StatelessWidget {
   final AppState appState;
   final AppLocalizations l10n;
-
-  const _MetricsPanel({required this.appState, required this.l10n});
+  const _SensorGrid({required this.appState, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    // Only what the rig really measures: no rain gauge, no distance to a node, no node sync time.
-    final rig = appState.rigMode ? appState.rigReading : null;
-    final items = _rigItems(rig);
+    final points = appState.rigMode ? appState.rigTrend : const <RigPoint>[];
+    final r = appState.rigMode ? appState.rigReading : null;
+    final tiles = <Widget>[
+      RigTrendCard(
+        dense: true,
+        icon: Icons.waves,
+        title: l10n.rigMetricLevel,
+        help: l10n.trendLevelHelp,
+        caption: l10n.rigMetricLevelCaption,
+        color: AppColors.watch,
+        points: points,
+        valueOf: (p) => p.heightCm,
+        latestText: r == null ? '—' : r.heightCm.toStringAsFixed(1),
+        unit: 'cm',
+        minSpan: 2,
+      ),
+      RigTrendCard(
+        dense: true,
+        icon: Icons.water_drop_outlined,
+        title: l10n.rigMetricFlow,
+        help: l10n.trendFlowHelp,
+        caption: l10n.rigMetricFlowCaption,
+        color: AppColors.accent,
+        points: points,
+        valueOf: (p) => p.flow,
+        latestText: r == null ? '—' : r.flow.toStringAsFixed(0),
+        unit: l10n.rigUnitPulses,
+        decimals: 0,
+        minSpan: 4,
+      ),
+      RigTrendCard(
+        dense: true,
+        icon: Icons.grass,
+        title: l10n.rigMetricSoil,
+        help: l10n.trendSoilHelp,
+        caption: l10n.rigMetricSoilCaption,
+        color: const Color(0xFFA78BFA),
+        points: points,
+        valueOf: (p) => p.soilRaw,
+        latestText: r == null ? '—' : r.soilRaw.toStringAsFixed(0),
+        unit: '',
+        decimals: 0,
+        minSpan: 40,
+      ),
+      RigTrendCard(
+        dense: true,
+        icon: Icons.rotate_right,
+        title: l10n.rigMetricTilt,
+        help: l10n.trendTiltHelp,
+        caption: l10n.rigMetricTiltCaption,
+        color: AppColors.normal,
+        points: points,
+        valueOf: (p) => p.tiltDeg,
+        latestText: r == null ? '—' : r.tiltDeg.toStringAsFixed(1),
+        unit: '°',
+        minSpan: 4,
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 840 ? 4 : 2;
+        final width = (constraints.maxWidth - 12 * (columns - 1)) / columns;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [for (final tile in tiles) SizedBox(width: width, child: tile)],
+        );
+      },
+    );
+  }
+}
 
+/// The model's decision over the same 10 minutes, as steps from Normal to Evacuate.
+class _RiskHistory extends StatelessWidget {
+  final AppState appState;
+  final AppLocalizations l10n;
+  const _RiskHistory({required this.appState, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = appState.rigReading;
+    final state = r == null ? RiskState.normal : RiskState.values[r.phase - 1];
+    return RigTrendCard(
+      icon: Icons.shield_outlined,
+      title: l10n.trendRisk,
+      help: l10n.trendRiskHelp,
+      color: riskStateColor(state),
+      points: appState.rigTrend,
+      valueOf: (p) => p.phase.toDouble(),
+      latestText: r == null ? '—' : riskStateLabel(context, state),
+      phaseAxis: true,
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  const _SectionTitle({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (appState.rigMode) ...[
-          _LiveStatus(reading: rig, l10n: l10n),
-          const SizedBox(height: 12),
-        ],
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 480 ? 4 : 2;
-            return GridView.count(
-              crossAxisCount: columns,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: columns == 4 ? 1.05 : 1.12, // room for a two-line caption
-              children: items,
-            );
-          },
+        Text(
+          title.toUpperCase(),
+          style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
         ),
+        const SizedBox(height: 4),
+        Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
       ],
     );
   }
+}
 
-  /// The four sensors the phase model reads. With no reading yet (or Live Rig switched off) each shows a dash,
-  /// never an invented value.
-  List<Widget> _rigItems(RigReading? r) {
-    return [
-      MicroMetricCard(
-        icon: Icons.waves,
-        label: l10n.rigMetricLevel,
-        value: r != null ? r.heightCm.toStringAsFixed(1) : '—',
-        unit: r != null ? 'cm' : null,
-        caption: l10n.rigMetricLevelCaption,
-        accent: AppColors.watch,
+/// Where the area stands, in one strip: a ring for the risk score, the level in large type, the four-step scale and
+/// whether the rig is live. It replaces the large dial so the sensor tiles can sit on the first screen.
+class _LevelHero extends StatelessWidget {
+  final RiskState state;
+  final double? score;
+  final String scoreLabel;
+  final RigReading? rig;
+  final bool showStatus;
+  final AppLocalizations l10n;
+  const _LevelHero({
+    required this.state,
+    required this.score,
+    required this.scoreLabel,
+    required this.rig,
+    required this.showStatus,
+    required this.l10n,
+  });
+
+  IconData get _icon => switch (state) {
+        RiskState.normal => Icons.check_circle_outline,
+        RiskState.watch => Icons.visibility_outlined,
+        RiskState.warning => Icons.warning_amber_rounded,
+        RiskState.evacuate => Icons.crisis_alert,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = riskStateColor(state);
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+      radius: AppRadius.lg,
+      glowColor: color,
+      glowAlpha: 0.20,
+      glowBlur: 28,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 84,
+                height: 84,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: (score ?? 0).clamp(0.0, 1.0),
+                        strokeWidth: 7,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                        valueColor: AlwaysStoppedAnimation(color),
+                      ),
+                    ),
+                    Icon(_icon, color: color, size: 34),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.myRiskTitle.toUpperCase(),
+                      style: AppFonts.heading(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 1.8),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      riskStateLabel(context, state).toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.heading(fontSize: 32, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.4),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 14,
+                      children: [
+                        Text('LVL ${state.index + 1}/4', style: AppFonts.mono(fontSize: 12, color: AppColors.textSecondary)),
+                        if (score != null)
+                          Text(
+                            '${scoreLabel.toUpperCase()} ${(score! * 100).round()}%',
+                            style: AppFonts.mono(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _ThreatStepper(current: state),
+          if (showStatus) ...[
+            const SizedBox(height: 12),
+            _LiveStatus(reading: rig, l10n: l10n),
+          ],
+        ],
       ),
-      MicroMetricCard(
-        icon: Icons.water_drop_outlined,
-        label: l10n.rigMetricFlow,
-        value: r != null ? r.flow.toStringAsFixed(0) : '—',
-        unit: r != null ? l10n.rigUnitPulses : null,
-        caption: l10n.rigMetricFlowCaption,
-        accent: AppColors.accent,
-      ),
-      MicroMetricCard(
-        icon: Icons.grass,
-        label: l10n.rigMetricSoil,
-        value: r != null ? r.soilRaw.toStringAsFixed(0) : '—',
-        caption: l10n.rigMetricSoilCaption,
-        accent: AppColors.accent,
-      ),
-      MicroMetricCard(
-        icon: Icons.rotate_right,
-        label: l10n.rigMetricTilt,
-        value: r != null ? r.tiltDeg.toStringAsFixed(1) : '—',
-        unit: r != null ? '°' : null,
-        caption: l10n.rigMetricTiltCaption,
-        accent: AppColors.normal,
-      ),
-    ];
+    );
   }
-
 }
 
 String _formatAgo(DateTime time) {
@@ -478,105 +620,6 @@ class _SummaryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// A trend chart for each of the rig's four signals, plus the model's decision over the same minutes.
-class _TrendsSection extends StatelessWidget {
-  final AppState appState;
-  final AppLocalizations l10n;
-  final bool wide;
-  const _TrendsSection({required this.appState, required this.l10n, required this.wide});
-
-  @override
-  Widget build(BuildContext context) {
-    final points = appState.rigTrend;
-    final r = appState.rigReading;
-    final phaseState = r == null ? RiskState.normal : RiskState.values[r.phase - 1];
-
-    final risk = RigTrendCard(
-      icon: Icons.shield_outlined,
-      title: l10n.trendRisk,
-      help: l10n.trendRiskHelp,
-      color: riskStateColor(phaseState),
-      points: points,
-      valueOf: (p) => p.phase.toDouble(),
-      latestText: r == null ? '—' : riskStateLabel(context, phaseState),
-      phaseAxis: true,
-    );
-    final sensors = [
-      RigTrendCard(
-        icon: Icons.waves,
-        title: l10n.rigMetricLevel,
-        help: l10n.trendLevelHelp,
-        color: AppColors.watch,
-        points: points,
-        valueOf: (p) => p.heightCm,
-        latestText: r == null ? '—' : '${r.heightCm.toStringAsFixed(1)} cm',
-        unit: 'cm',
-        minSpan: 2,
-      ),
-      RigTrendCard(
-        icon: Icons.water_drop_outlined,
-        title: l10n.rigMetricFlow,
-        help: l10n.trendFlowHelp,
-        color: AppColors.accent,
-        points: points,
-        valueOf: (p) => p.flow,
-        latestText: r == null ? '—' : '${r.flow.toStringAsFixed(0)} ${l10n.rigUnitPulses}',
-        unit: l10n.rigUnitPulses,
-        decimals: 0,
-        minSpan: 4,
-      ),
-      RigTrendCard(
-        icon: Icons.grass,
-        title: l10n.rigMetricSoil,
-        help: l10n.trendSoilHelp,
-        color: const Color(0xFFA78BFA),
-        points: points,
-        valueOf: (p) => p.soilRaw,
-        latestText: r == null ? '—' : r.soilRaw.toStringAsFixed(0),
-        decimals: 0,
-        minSpan: 40,
-      ),
-      RigTrendCard(
-        icon: Icons.rotate_right,
-        title: l10n.rigMetricTilt,
-        help: l10n.trendTiltHelp,
-        color: AppColors.normal,
-        points: points,
-        valueOf: (p) => p.tiltDeg,
-        latestText: r == null ? '—' : '${r.tiltDeg.toStringAsFixed(1)}°',
-        unit: '°',
-        minSpan: 4,
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          l10n.riskTrendsTitle.toUpperCase(),
-          style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
-        ),
-        const SizedBox(height: 6),
-        Text(l10n.riskTrendsSubtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 16),
-        risk,
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = wide ? 2 : 1;
-            final width = (constraints.maxWidth - 12 * (columns - 1)) / columns;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [for (final card in sensors) SizedBox(width: width, child: card)],
-            );
-          },
-        ),
-      ],
     );
   }
 }

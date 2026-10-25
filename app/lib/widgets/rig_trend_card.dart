@@ -33,6 +33,12 @@ class RigTrendCard extends StatelessWidget {
   final double minSpan;
   final bool phaseAxis;
 
+  /// A compact tile for a grid: the value is large, the chart sits right under it, and there is no left axis.
+  final bool dense;
+
+  /// A short plain-language meaning shown under the value in a dense tile.
+  final String? caption;
+
   const RigTrendCard({
     super.key,
     required this.icon,
@@ -46,11 +52,64 @@ class RigTrendCard extends StatelessWidget {
     this.decimals = 1,
     this.minSpan = 1,
     this.phaseAxis = false,
+    this.dense = false,
+    this.caption,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final titleText = Expanded(
+      child: Text(
+        title.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+      ),
+    );
+    final chart = SizedBox(
+      height: dense ? 104 : 140,
+      child: points.length < 2
+          ? Center(child: Text(l10n.trendNoData, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)))
+          : _chart(context, l10n),
+    );
+    if (dense) {
+      return GlassCard(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+        radius: AppRadius.md,
+        glowColor: color,
+        glowAlpha: 0.10,
+        glowBlur: 20,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [Icon(icon, size: 15, color: color), const SizedBox(width: 6), titleText]),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                text: latestText,
+                style: AppFonts.mono(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
+                children: [
+                  if (unit.isNotEmpty)
+                    TextSpan(
+                      text: unit == '°' ? unit : ' $unit',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0),
+                    ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (caption != null) ...[
+              const SizedBox(height: 2),
+              Text(caption!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            ],
+            const SizedBox(height: 10),
+            chart,
+          ],
+        ),
+      );
+    }
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       radius: AppRadius.md,
@@ -64,31 +123,14 @@ class RigTrendCard extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: color),
               const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
+              titleText,
               Text(latestText, style: AppFonts.mono(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
             ],
           ),
           const SizedBox(height: 4),
           Text(help, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.35)),
           const SizedBox(height: 14),
-          SizedBox(
-            height: 140,
-            child: points.length < 2
-                ? Center(child: Text(l10n.trendNoData, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)))
-                : _chart(context, l10n),
-          ),
+          chart,
         ],
       ),
     );
@@ -140,7 +182,7 @@ class RigTrendCard extends StatelessWidget {
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
-              showTitles: true,
+              showTitles: !dense,
               reservedSize: phaseAxis ? 66 : 38,
               interval: phaseAxis ? 1 : null,
               getTitlesWidget: (value, meta) {
@@ -161,13 +203,13 @@ class RigTrendCard extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 22,
-              interval: span / 2,
+              interval: dense ? span : span / 2,
               getTitlesWidget: (value, meta) {
                 // Short stretches read better in seconds ("90 s") than as "1 min, 0 min".
                 final text = value.abs() < 0.01
                     ? l10n.trendNow
                     : span >= 3
-                        ? '${(-value).round()} min'
+                        ? '${(-value).round()}${dense ? 'm' : ' min'}'
                         : '${(-value * 60).round()} s';
                 return SideTitleWidget(meta: meta, child: Text(text, style: labelStyle));
               },

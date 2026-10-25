@@ -445,4 +445,50 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get howStep3 =>
       'Ia memilih satu daripada empat tahap: Normal, Perhatian, Amaran atau Berpindah. Siren pada rig menjalankan model yang sama, jadi ia dan aplikasi ini mengikut bacaan yang sama.';
+
+  @override
+  String get mapLegendNode => 'Nod sensor';
+
+  @override
+  String get mapLegendAssembly => 'Tempat berkumpul';
+
+  @override
+  String get mapLegendYou => 'Anda';
+
+  @override
+  String get routeShortest => 'Laluan terpendek';
+
+  @override
+  String get routeByRoad => 'melalui jalan';
+
+  @override
+  String get routeStraight => 'Garis lurus, luar talian';
+
+  @override
+  String get routeSaved => 'Laluan tersimpan';
+
+  @override
+  String get routeWalk => 'berjalan kaki';
+
+  @override
+  String get routeCalculating => 'Mencari laluan terpendek...';
+
+  @override
+  String get routeAreaNote =>
+      'Laluan bermula dari kawasan anda. Kedudukan tepat anda tidak pernah dihantar.';
+
+  @override
+  String get routeHere => 'Tunjuk laluan ke sini';
+
+  @override
+  String get routeNearest => 'Kembali ke laluan terpendek';
+
+  @override
+  String get nodeKindSensor => 'Nod sensor';
+
+  @override
+  String get nodeKindAssembly => 'Tempat berkumpul';
+
+  @override
+  String get mapAway => 'jarak garis lurus';
 }

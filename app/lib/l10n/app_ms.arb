@@ -136,5 +136,20 @@
   "howTitle": "Bagaimana SIAGA membuat keputusan",
   "howStep1": "Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 3 saat.",
   "howStep2": "Model pembelajaran mesin, dilatih menggunakan rekod larian rig ini sendiri, membaca empat isyarat itu. Paras air paling diutamakan.",
-  "howStep3": "Ia memilih satu daripada empat tahap: Normal, Perhatian, Amaran atau Berpindah. Siren pada rig menjalankan model yang sama, jadi ia dan aplikasi ini mengikut bacaan yang sama."
+  "howStep3": "Ia memilih satu daripada empat tahap: Normal, Perhatian, Amaran atau Berpindah. Siren pada rig menjalankan model yang sama, jadi ia dan aplikasi ini mengikut bacaan yang sama.",
+  "mapLegendNode": "Nod sensor",
+  "mapLegendAssembly": "Tempat berkumpul",
+  "mapLegendYou": "Anda",
+  "routeShortest": "Laluan terpendek",
+  "routeByRoad": "melalui jalan",
+  "routeStraight": "Garis lurus, luar talian",
+  "routeSaved": "Laluan tersimpan",
+  "routeWalk": "berjalan kaki",
+  "routeCalculating": "Mencari laluan terpendek...",
+  "routeAreaNote": "Laluan bermula dari kawasan anda. Kedudukan tepat anda tidak pernah dihantar.",
+  "routeHere": "Tunjuk laluan ke sini",
+  "routeNearest": "Kembali ke laluan terpendek",
+  "nodeKindSensor": "Nod sensor",
+  "nodeKindAssembly": "Tempat berkumpul",
+  "mapAway": "jarak garis lurus"
 }

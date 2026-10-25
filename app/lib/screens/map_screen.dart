@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -7,10 +10,11 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
 import '../core/offline_cache.dart';
+import '../core/route_service.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/demo_readout.dart';
-import '../widgets/rig_readout.dart';
+import '../widgets/rig_trend_card.dart';
 import '../widgets/node_history_chart.dart';
 import '../widgets/risk_badge.dart';
 
@@ -35,6 +39,16 @@ class _MapScreenState extends State<MapScreen> {
   List<AssemblyPoint> _assemblyPoints = const [];
   bool _showEvacRoute = false;
 
+  // The shortest walking route to an assembly point, planned by RouteService. It is planned again only when the
+  // start area or the chosen destination changes. _chosen is an assembly point the person picked by hand.
+  late final RouteService _routes;
+  RoutePlan? _plan;
+  bool _planning = false;
+  String? _planKey;
+  AssemblyPoint? _chosen;
+  double _zoom = 13;
+  final DraggableScrollableController _sheetController = DraggableScrollableController();
+
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -45,6 +59,10 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     final appState = context.read<AppState>();
     final locationService = appState.locationService;
+    _routes = RouteService(
+      readCache: appState.cache.loadRouteCache,
+      writeCache: (key, value) => unawaited(appState.cache.saveRouteCache(key, value)),
+    );
     _myPosition = locationService.lastKnownPosition;
     locationService.positionUpdates.listen((position) {
       if (mounted) setState(() => _myPosition = position);
@@ -59,6 +77,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _sheetController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -129,6 +148,98 @@ class _MapScreenState extends State<MapScreen> {
     return nearest;
   }
 
+  /// Plans the route when the start area or the destination has changed. Called after a frame, never during build.
+  void _ensureRoute(ll.LatLng origin) {
+    if (_assemblyPoints.isEmpty) return;
+    final start = RouteService.coarse(origin);
+    final key = '${start.latitude},${start.longitude}|${_chosen?.id ?? 'shortest'}|${_assemblyPoints.length}';
+    if (key == _planKey) return;
+    _planKey = key;
+    setState(() => _planning = true);
+    _routes.shortest(origin, _assemblyPoints, only: _chosen).then((plan) {
+      if (!mounted || _planKey != key) return;
+      setState(() {
+        _plan = plan;
+        _planning = false;
+      });
+      // Bring the whole route into view, clear of the search bar above and the route card and nav bar below.
+      if (plan != null) {
+        _mapController.fitCamera(CameraFit.coordinates(
+          coordinates: [origin, ...plan.points],
+          padding: const EdgeInsets.fromLTRB(48, 150, 48, 270),
+          maxZoom: 16,
+        ));
+      }
+    });
+  }
+
+  List<Polyline> _routeLines(ll.LatLng origin, RoutePlan plan) {
+    final lines = <Polyline>[];
+    if (plan.byRoad) {
+      lines.add(Polyline(points: plan.points, color: Colors.white.withValues(alpha: 0.9), strokeWidth: 9));
+      lines.add(Polyline(points: plan.points, color: AppColors.accent, strokeWidth: 5));
+    } else {
+      lines.add(Polyline(points: plan.points, color: AppColors.accent, strokeWidth: 4, pattern: const StrokePattern.dotted()));
+    }
+    // The route starts from the person's area, not their exact spot: a short local connector joins the two.
+    if (RouteService.straightMeters(origin, plan.points.first) > 25) {
+      lines.add(Polyline(points: [origin, plan.points.first], color: AppColors.accent, strokeWidth: 3, pattern: const StrokePattern.dotted()));
+    }
+    return lines;
+  }
+
+  void _showAssemblyInfo(BuildContext context, AssemblyPoint point, ll.LatLng? origin) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.nodeKindAssembly.toUpperCase(),
+                style: const TextStyle(color: _kAssemblyColor, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
+            const SizedBox(height: 4),
+            Text(point.nameFor(locale), style: Theme.of(context).textTheme.titleLarge),
+            if (origin != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                '${_formatDistance(RouteService.straightMeters(origin, ll.LatLng(point.lat, point.lon)))} ${l10n.mapAway}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            const SizedBox(height: 16),
+            if (origin != null)
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() {
+                    _chosen = point;
+                    _showEvacRoute = true;
+                  });
+                },
+                icon: const Icon(Icons.directions_walk),
+                label: Text(l10n.routeHere),
+              ),
+            if (_chosen != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() => _chosen = null);
+                },
+                child: Text(l10n.routeNearest),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showMyLocationInfo(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final appState = context.read<AppState>();
@@ -195,6 +306,13 @@ class _MapScreenState extends State<MapScreen> {
     final origin = _evacuationOrigin(appState);
     final nearestAssembly = origin != null ? _nearestAssemblyPoint(origin) : null;
     final routeActive = _showEvacRoute && origin != null && nearestAssembly != null;
+    final destination = routeActive ? (_plan?.assembly ?? nearestAssembly) : null;
+    if (routeActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureRoute(origin);
+      });
+    }
+    final showRouteCard = routeActive && selectedNode == null;
 
     final searchResults = _searchResults();
 
@@ -214,53 +332,57 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   child: FlutterMap(
                 mapController: _mapController,
-                options: MapOptions(initialCenter: center, initialZoom: 13),
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 13,
+                  onPositionChanged: (camera, _) {
+                    if ((camera.zoom - _zoom).abs() >= 0.25) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) setState(() => _zoom = camera.zoom);
+                      });
+                    }
+                  },
+                ),
                 children: [
                   TileLayer(
                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.siaga.siaga_app',
                   ),
-                  if (routeActive)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: [origin, ll.LatLng(nearestAssembly.lat, nearestAssembly.lon)],
-                          color: AppColors.accent,
-                          strokeWidth: 4,
-                          pattern: const StrokePattern.dotted(),
-                        ),
-                      ],
-                    ),
+                  if (routeActive && _plan != null) PolylineLayer(polylines: _routeLines(origin, _plan!)),
                   MarkerLayer(
                     markers: [
                       ...nodes.map(
                         (node) => Marker(
                           point: ll.LatLng(node.lat, node.lon),
-                          width: 40,
-                          height: 40,
-                          child: _NodeMarker(
-                            node: node,
-                            onTap: () => setState(() => _selectedNodeId = node.id),
-                          ),
+                          width: _kMarkerW,
+                          height: _kMarkerH,
+                          child: _NodeMarker(node: node, onTap: () => setState(() => _selectedNodeId = node.id)),
                         ),
                       ),
                       ..._assemblyPoints.map(
                         (point) => Marker(
                           point: ll.LatLng(point.lat, point.lon),
-                          width: 34,
-                          height: 34,
+                          width: _kMarkerW,
+                          height: _kMarkerH,
                           child: _AssemblyPointMarker(
                             point: point,
-                            highlighted: routeActive && point.id == nearestAssembly.id,
+                            highlighted: destination != null && point.id == destination.id,
+                            showName: _zoom >= 14 || (destination != null && point.id == destination.id),
+                            onTap: () => _showAssemblyInfo(context, point, origin),
                           ),
                         ),
                       ),
                       if (_myPosition != null)
                         Marker(
                           point: ll.LatLng(_myPosition!.latitude, _myPosition!.longitude),
-                          width: 54,
-                          height: 54,
-                          child: _MyLocationMarker(onTap: () => _showMyLocationInfo(context)),
+                          width: _kMarkerW,
+                          height: _kMarkerH,
+                          child: _MarkerBox(
+                            iconSize: 54,
+                            icon: _MyLocationMarker(onTap: () => _showMyLocationInfo(context)),
+                            name: AppLocalizations.of(context)!.mapLegendYou,
+                            accent: const Color(0xFF3D8BFF),
+                          ),
                         ),
                     ],
                   ),
@@ -291,24 +413,32 @@ class _MapScreenState extends State<MapScreen> {
               onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
             ),
           ),
-        if (routeActive)
+        Positioned(
+          left: 22,
+          bottom: showRouteCard ? 214 : 104,
+          child: const _MapLegend(),
+        ),
+        if (showRouteCard)
           Positioned(
             left: 12,
             right: 12,
-            // Clears the floating nav dock (68px tall + its own 12px
-            // bottom margin, see main.dart's _FloatingNavBar) rather than
-            // sitting directly above the screen edge, where it would end
-            // up underneath the dock instead of visible above it.
+            // Clears the floating nav dock (68px tall + its own 12px bottom margin, see main.dart's _FloatingNavBar).
             bottom: 92,
-            child: _EvacRouteSummary(assemblyPoint: nearestAssembly, distanceM: Geolocator.distanceBetween(
-              origin.latitude, origin.longitude, nearestAssembly.lat, nearestAssembly.lon,
-            )),
+            child: _RouteSummary(
+              plan: _plan,
+              planning: _planning,
+              exactPosition: _myPosition != null,
+              chosen: _chosen != null,
+              onBackToShortest: () => setState(() => _chosen = null),
+            ),
           ),
         if (selectedNode != null)
           _NodeInfoPanel(
             node: selectedNode,
             demoReading: appState.demoMode ? appState.demoReading : null,
             rigReading: appState.rigMode ? appState.rigReading : null,
+            trend: appState.rigMode ? appState.rigTrend : const [],
+            controller: _sheetController,
             onClose: () => setState(() => _selectedNodeId = null),
             locked: appState.lockedNodeId == selectedNode.id,
             onToggleLock: () => appState.setLockedNode(
@@ -469,46 +599,174 @@ class _EvacRouteToggle extends StatelessWidget {
   }
 }
 
-/// Bottom summary strip shown while the route overlay is active — the
-/// straight-line distance/direction to the nearest assembly point. Not
-/// turn-by-turn navigation (no routing API is in scope — see
-/// EvacuateScreen's _RouteInfo docstring), but enough to point someone
-/// the right way and let them pre-plan before a real evacuation.
-class _EvacRouteSummary extends StatelessWidget {
-  final AssemblyPoint assemblyPoint;
-  final double distanceM;
-  const _EvacRouteSummary({required this.assemblyPoint, required this.distanceM});
+const _kAssemblyColor = Color(0xFF8B7CFF);
+const double _kMarkerW = 150;
+const double _kMarkerH = 120;
+
+String _formatDistance(double meters) => meters >= 1000 ? '${(meters / 1000).toStringAsFixed(1)} km' : '${meters.round()} m';
+
+/// "12 s ago", "5 min ago", "3 h ago": how long since a node last reported.
+String _agoLabel(DateTime time) {
+  final d = DateTime.now().difference(time);
+  if (d.inSeconds < 60) return '${d.inSeconds < 0 ? 0 : d.inSeconds} s ago';
+  if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+  if (d.inHours < 48) return '${d.inHours} h ago';
+  return '${d.inDays} days ago';
+}
+
+String _formatDuration(double seconds) {
+  final minutes = (seconds / 60).round();
+  if (minutes < 90) return '$minutes min';
+  return '${minutes ~/ 60} h ${minutes % 60} min';
+}
+
+/// Bottom card while the route is on: where it goes, how far by road and how long on foot, and whether it is a real
+/// road route, a saved one, or only a straight line because nothing could be reached.
+class _RouteSummary extends StatelessWidget {
+  final RoutePlan? plan;
+  final bool planning;
+  final bool exactPosition;
+  final bool chosen;
+  final VoidCallback onBackToShortest;
+  const _RouteSummary({
+    required this.plan,
+    required this.planning,
+    required this.exactPosition,
+    required this.chosen,
+    required this.onBackToShortest,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
-    final distanceLabel = distanceM >= 1000 ? '${(distanceM / 1000).toStringAsFixed(1)} km' : '${distanceM.round()} m';
+    final p = plan;
+    final decoration = BoxDecoration(
+      color: Colors.black.withValues(alpha: 0.80),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.hairline),
+    );
+    if (p == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: decoration,
+        child: Row(
+          children: [
+            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(l10n.routeCalculating, style: const TextStyle(color: Colors.white))),
+          ],
+        ),
+      );
+    }
+    final source = !p.byRoad
+        ? l10n.routeStraight
+        : [
+            p.fromCache ? l10n.routeSaved : l10n.routeByRoad,
+            if (p.durationS != null) '${_formatDuration(p.durationS!)} ${l10n.routeWalk}',
+          ].join(' · ');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.hairline),
-      ),
-      child: Row(
+      decoration: decoration,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.shield_outlined, color: AppColors.accent, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.assemblyPointsTitle.toUpperCase(),
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+          Row(
+            children: [
+              const Icon(Icons.directions_walk, color: AppColors.accent, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.routeShortest.toUpperCase(),
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      p.assembly.nameFor(locale),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(assemblyPoint.nameFor(locale), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              Text(_formatDistance(p.distanceM), style: AppFonts.mono(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+            ],
           ),
-          Text(distanceLabel, style: AppFonts.mono(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+          const SizedBox(height: 6),
+          Text(source, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          if (exactPosition) ...[
+            const SizedBox(height: 2),
+            Text(l10n.routeAreaNote, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+          ],
+          if (chosen)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36), foregroundColor: AppColors.accent),
+                onPressed: onBackToShortest,
+                child: Text(l10n.routeNearest),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A map marker with a label under it saying what kind of thing it is and its name. The marker's own point is the
+/// centre of the icon, so the label hangs below without moving where the marker sits on the map.
+class _MarkerBox extends StatelessWidget {
+  final Widget icon;
+  final double iconSize;
+  final String? kind;
+  final String? name;
+  final Color accent;
+  const _MarkerBox({required this.icon, required this.iconSize, required this.accent, this.kind, this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _kMarkerW,
+      height: _kMarkerH,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          icon,
+          if (name != null)
+            Positioned(
+              top: _kMarkerH / 2 + iconSize / 2 + 4,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: _kMarkerW - 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.78),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: accent.withValues(alpha: 0.55)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (kind != null)
+                      Text(
+                        kind!.toUpperCase(),
+                        style: TextStyle(color: accent, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                      ),
+                    Text(
+                      name!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -518,160 +776,335 @@ class _EvacRouteSummary extends StatelessWidget {
 class _AssemblyPointMarker extends StatelessWidget {
   final AssemblyPoint point;
   final bool highlighted;
-  const _AssemblyPointMarker({required this.point, required this.highlighted});
+  final bool showName;
+  final VoidCallback onTap;
+  const _AssemblyPointMarker({required this.point, required this.highlighted, required this.showName, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
-    final color = highlighted ? AppColors.accent : AppColors.normal;
-    return Tooltip(
-      message: point.nameFor(locale),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: highlighted ? appGlow(color, alpha: 0.6, blur: 12) : const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+    final color = highlighted ? AppColors.accent : _kAssemblyColor;
+    return _MarkerBox(
+      iconSize: 38,
+      accent: color,
+      kind: showName ? l10n.nodeKindAssembly : null,
+      name: showName ? point.nameFor(locale) : null,
+      icon: GestureDetector(
+        onTap: onTap,
+        child: Tooltip(
+          message: point.nameFor(locale),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: highlighted ? appGlow(color, alpha: 0.6, blur: 14) : const [BoxShadow(color: Colors.black38, blurRadius: 5)],
+            ),
+            child: const Icon(Icons.groups, color: Colors.white, size: 21),
+          ),
         ),
-        child: const Icon(Icons.shield, color: Colors.white, size: 16),
       ),
     );
   }
 }
 
-/// Draggable bottom panel: starts small ("minimized"), can be dragged up
-/// to "maximize" for the chart, closes via the X button. Sits in the same
-/// Stack as the map rather than replacing it.
+/// What the three kinds of marker mean.
+class _MapLegend extends StatelessWidget {
+  const _MapLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    Widget row(Widget swatch, String text) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              swatch,
+              const SizedBox(width: 8),
+              Text(text, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          row(Container(width: 15, height: 15, decoration: const BoxDecoration(color: AppColors.normal, shape: BoxShape.circle)), l10n.mapLegendNode),
+          row(Container(width: 15, height: 15, decoration: BoxDecoration(color: _kAssemblyColor, borderRadius: BorderRadius.circular(5))), l10n.mapLegendAssembly),
+          row(Container(width: 15, height: 15, decoration: const BoxDecoration(color: Color(0xFF3D8BFF), shape: BoxShape.circle)), l10n.mapLegendYou),
+        ],
+      ),
+    );
+  }
+}
+
+/// Draggable bottom panel for a node. It opens with the node's name, state and live readings already in view, and
+/// can be dragged (with a finger or the mouse) or tapped at the handle to open it fully for the trend charts. It sits
+/// in the same Stack as the map rather than replacing it, and its content scrolls clear of the floating nav bar.
 class _NodeInfoPanel extends StatelessWidget {
   final SiagaNode node;
   final DemoReading? demoReading;
   final RigReading? rigReading;
+  final List<RigPoint> trend;
+  final DraggableScrollableController controller;
   final VoidCallback onClose;
   final bool locked;
   final VoidCallback onToggleLock;
+
+  static const _openSize = 0.42;
+  static const _fullSize = 0.9;
 
   const _NodeInfoPanel({
     required this.node,
     required this.demoReading,
     required this.rigReading,
+    required this.trend,
+    required this.controller,
     required this.onClose,
     required this.locked,
     required this.onToggleLock,
   });
 
+  void _toggle() {
+    if (!controller.isAttached) return;
+    controller.animateTo(controller.size > 0.65 ? _openSize : _fullSize, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final rig = rigReading;
     return DraggableScrollableSheet(
       key: ValueKey(node.id),
-      initialChildSize: 0.22,
-      minChildSize: 0.12,
-      maxChildSize: 0.7,
+      controller: controller,
+      initialChildSize: _openSize,
+      minChildSize: 0.16,
+      maxChildSize: _fullSize,
+      snap: true,
+      snapSizes: const [_openSize, _fullSize],
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12)],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: AppColors.hairline),
+            boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 18)],
           ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.24),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(node.name, style: Theme.of(context).textTheme.titleLarge),
-                  ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                ],
-              ),
-              Row(
-                children: [
-                  RiskBadge(state: node.state),
-                  if (node.riskProbability != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '${(node.riskProbability! * 100).round()}%',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w700, color: riskStateColor(node.state)),
-                    ),
-                  ],
-                  const SizedBox(width: 12),
-                  if (node.batteryVolts != null)
-                    Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
-                ],
-              ),
-              if (node.lastSeen != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${l10n.nodeLastSeen}: ${node.lastSeen}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: onToggleLock,
-                    icon: Icon(locked ? Icons.lock : Icons.lock_open_outlined, size: 16),
-                    label: Text(locked ? l10n.mapUnlockNode : l10n.mapLockNode),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: locked ? AppColors.accent : AppColors.textSecondary,
-                      backgroundColor: locked ? AppColors.accent.withValues(alpha: 0.14) : null,
-                      side: BorderSide(color: locked ? AppColors.accent : AppColors.hairline),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
-                    ),
-                  ),
-                  if (locked) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.mapLockedHint,
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+          // Flutter on the web does not let a mouse drag a scrollable by default, so allow it here.
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.stylus, PointerDeviceKind.trackpad},
+            ),
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 140), // the last items stay reachable above the nav bar
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggle,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.30), borderRadius: BorderRadius.circular(3)),
                       ),
                     ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(child: Text(node.name, style: Theme.of(context).textTheme.titleLarge)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: onClose),
                   ],
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.place_outlined, size: 14, color: const Color(0xFF97A2B8)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.normal.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.normal.withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sensors, size: 14, color: AppColors.normal),
+                          const SizedBox(width: 5),
+                          Text(
+                            l10n.nodeKindSensor.toUpperCase(),
+                            style: const TextStyle(color: AppColors.normal, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
+                          ),
+                        ],
+                      ),
+                    ),
+                    RiskBadge(state: node.state),
+                    if (node.riskProbability != null)
+                      Text(
+                        '${(node.riskProbability! * 100).round()}%',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: riskStateColor(node.state)),
+                      ),
+                    if (rig != null)
+                      Text(
+                        rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
+                        style: TextStyle(
+                          color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    if (node.batteryVolts != null) Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
+                  ],
+                ),
+                if (rig != null) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _ReadingTile(label: l10n.rigMetricLevel, value: rig.heightCm.toStringAsFixed(1), unit: 'cm', color: AppColors.watch),
+                      const SizedBox(width: 8),
+                      _ReadingTile(label: l10n.rigMetricFlow, value: rig.flow.toStringAsFixed(0), unit: '', color: AppColors.accent),
+                      const SizedBox(width: 8),
+                      _ReadingTile(label: l10n.rigMetricSoil, value: rig.soilRaw.toStringAsFixed(0), unit: '', color: const Color(0xFFA78BFA)),
+                      const SizedBox(width: 8),
+                      _ReadingTile(label: l10n.rigMetricTilt, value: rig.tiltDeg.toStringAsFixed(1), unit: '°', color: AppColors.normal),
+                    ],
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              if (rigReading != null) ...[
-                RigReadout(reading: rigReading!),
-              ] else if (demoReading != null) ...[
-                DemoReadout(reading: demoReading!),
-              ] else ...[
-                Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                SizedBox(height: 220, child: NodeHistoryChart(nodeId: node.id)),
+                if (node.lastSeen != null) ...[
+                  const SizedBox(height: 10),
+                  Text('${l10n.nodeLastSeen}: ${_agoLabel(node.lastSeen!)}', style: Theme.of(context).textTheme.bodySmall),
+                ],
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: onToggleLock,
+                      icon: Icon(locked ? Icons.lock : Icons.lock_open_outlined, size: 16),
+                      label: Text(locked ? l10n.mapUnlockNode : l10n.mapLockNode),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: locked ? AppColors.accent : AppColors.textSecondary,
+                        backgroundColor: locked ? AppColors.accent.withValues(alpha: 0.14) : null,
+                        side: BorderSide(color: locked ? AppColors.accent : AppColors.hairline),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
+                      ),
+                    ),
+                    if (locked) ...[
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(l10n.mapLockedHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 11))),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.place_outlined, size: 14, color: Color(0xFF97A2B8)),
+                    const SizedBox(width: 4),
+                    Text('${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}', style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                if (rig != null) ...[
+                  RigTrendCard(
+                    icon: Icons.waves,
+                    title: l10n.rigMetricLevel,
+                    help: l10n.trendLevelHelp,
+                    color: AppColors.watch,
+                    points: trend,
+                    valueOf: (p) => p.heightCm,
+                    latestText: '${rig.heightCm.toStringAsFixed(1)} cm',
+                    unit: 'cm',
+                    minSpan: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  RigTrendCard(
+                    icon: Icons.shield_outlined,
+                    title: l10n.trendRisk,
+                    help: l10n.trendRiskHelp,
+                    color: riskStateColor(node.state),
+                    points: trend,
+                    valueOf: (p) => p.phase.toDouble(),
+                    latestText: riskStateLabel(context, RiskState.values[rig.phase - 1]),
+                    phaseAxis: true,
+                  ),
+                ] else if (demoReading != null) ...[
+                  DemoReadout(reading: demoReading!),
+                ] else ...[
+                  Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  SizedBox(height: 220, child: NodeHistoryChart(nodeId: node.id)),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ReadingTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+  const _ReadingTile({required this.label, required this.value, required this.unit, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 9, 8, 9),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, height: 1.2),
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text.rich(
+                TextSpan(
+                  text: value,
+                  style: AppFonts.mono(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.3),
+                  children: [
+                    if (unit.isNotEmpty)
+                      TextSpan(
+                        text: unit == '°' ? unit : ' $unit',
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -779,18 +1212,28 @@ class _NodeMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Tooltip(
-        message: node.name,
-        child: Container(
-          decoration: BoxDecoration(
-            color: riskStateColor(node.state),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+    final l10n = AppLocalizations.of(context)!;
+    final color = riskStateColor(node.state);
+    return _MarkerBox(
+      iconSize: 42,
+      accent: color,
+      kind: l10n.nodeKindSensor,
+      name: node.name,
+      icon: GestureDetector(
+        onTap: onTap,
+        child: Tooltip(
+          message: node.name,
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.5),
+              boxShadow: appGlow(color, alpha: 0.5, blur: 14),
+            ),
+            child: Icon(Icons.sensors, color: node.state == RiskState.watch ? const Color(0xFF12202F) : Colors.white, size: 22),
           ),
-          child: const Icon(Icons.sensors, color: Colors.white, size: 20),
         ),
       ),
     );

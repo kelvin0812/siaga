@@ -136,5 +136,20 @@
   "howTitle": "How SIAGA decides",
   "howStep1": "Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.",
   "howStep2": "A machine-learning model, trained on this rig's own recorded runs, reads those four signals. Water level counts the most.",
-  "howStep3": "It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings."
+  "howStep3": "It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.",
+  "mapLegendNode": "Sensor node",
+  "mapLegendAssembly": "Assembly point",
+  "mapLegendYou": "You",
+  "routeShortest": "Shortest route",
+  "routeByRoad": "by road",
+  "routeStraight": "Straight line, offline",
+  "routeSaved": "Saved route",
+  "routeWalk": "on foot",
+  "routeCalculating": "Finding the shortest route...",
+  "routeAreaNote": "The route starts from your area. Your exact position is never sent.",
+  "routeHere": "Show route to this point",
+  "routeNearest": "Back to the shortest route",
+  "nodeKindSensor": "Sensor node",
+  "nodeKindAssembly": "Assembly point",
+  "mapAway": "away in a straight line"
 }

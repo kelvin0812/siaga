@@ -442,4 +442,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get howStep3 =>
       'It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.';
+
+  @override
+  String get mapLegendNode => 'Sensor node';
+
+  @override
+  String get mapLegendAssembly => 'Assembly point';
+
+  @override
+  String get mapLegendYou => 'You';
+
+  @override
+  String get routeShortest => 'Shortest route';
+
+  @override
+  String get routeByRoad => 'by road';
+
+  @override
+  String get routeStraight => 'Straight line, offline';
+
+  @override
+  String get routeSaved => 'Saved route';
+
+  @override
+  String get routeWalk => 'on foot';
+
+  @override
+  String get routeCalculating => 'Finding the shortest route...';
+
+  @override
+  String get routeAreaNote =>
+      'The route starts from your area. Your exact position is never sent.';
+
+  @override
+  String get routeHere => 'Show route to this point';
+
+  @override
+  String get routeNearest => 'Back to the shortest route';
+
+  @override
+  String get nodeKindSensor => 'Sensor node';
+
+  @override
+  String get nodeKindAssembly => 'Assembly point';
+
+  @override
+  String get mapAway => 'away in a straight line';
 }
