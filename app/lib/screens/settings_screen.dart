@@ -54,141 +54,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text(l10n.settingsTitle, style: AppFonts.heading(fontSize: 26)),
-            const SizedBox(height: 20),
-            _SectionLabel(l10n.settingsNotifications),
-            const SizedBox(height: 8),
-            GlassCard(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: _NotificationTile(
-                status: _notificationStatus,
-                onEnable: _enableNotifications,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.settingsLanguage),
-            const SizedBox(height: 8),
-            GlassCard(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Column(
-                children: [
-                  RadioListTile<Locale?>(
-                    title: Text(l10n.settingsLanguageSystem, style: const TextStyle(color: AppColors.textPrimary)),
-                    value: null,
-                    // ignore: deprecated_member_use
-                    groupValue: localeProvider.overrideLocale,
-                    // ignore: deprecated_member_use
-                    onChanged: (v) => localeProvider.setOverride(v),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 110), // clear of the floating nav bar
+              children: [
+                Text(l10n.settingsTitle, style: AppFonts.heading(fontSize: 26)),
+                const SizedBox(height: 22),
+                _Group(
+                  label: l10n.settingsNotifications,
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: _NotificationTile(status: _notificationStatus, onEnable: _enableNotifications),
                   ),
-                  RadioListTile<Locale?>(
-                    title: Text(l10n.settingsLanguageEnglish, style: const TextStyle(color: AppColors.textPrimary)),
-                    value: const Locale('en'),
-                    // ignore: deprecated_member_use
-                    groupValue: localeProvider.overrideLocale,
-                    // ignore: deprecated_member_use
-                    onChanged: (v) => localeProvider.setOverride(v),
+                ),
+                _Group(
+                  label: l10n.settingsLanguage,
+                  child: GlassCard(
+                    padding: const EdgeInsets.all(12),
+                    child: _LanguagePicker(provider: localeProvider, l10n: l10n),
                   ),
-                  RadioListTile<Locale?>(
-                    title: Text(l10n.settingsLanguageMalay, style: const TextStyle(color: AppColors.textPrimary)),
-                    value: const Locale('ms'),
-                    // ignore: deprecated_member_use
-                    groupValue: localeProvider.overrideLocale,
-                    // ignore: deprecated_member_use
-                    onChanged: (v) => localeProvider.setOverride(v),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.settingsDemoMode),
-            const SizedBox(height: 8),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SwitchListTile(
-                    title: Text(l10n.settingsDemoMode, style: const TextStyle(color: AppColors.textPrimary)),
-                    subtitle: Text(
-                      l10n.settingsDemoModeDescription,
-                      style: const TextStyle(color: AppColors.textMuted),
+                ),
+                _Group(
+                  label: l10n.settingsSectionDemo,
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _RigModeCard(appState: appState),
+                        const Divider(height: 24),
+                        _SyntheticDemo(appState: appState),
+                      ],
                     ),
-                    value: appState.demoMode && !appState.rigMode,
-                    onChanged: (v) {
-                      context.read<RigController>().stop();
-                      appState.setDemoMode(v);
-                      final demo = context.read<DemoController>();
-                      if (v) {
-                        demo.start();
-                      } else {
-                        demo.stop();
-                      }
-                    },
-                    contentPadding: EdgeInsets.zero,
                   ),
-                  if (appState.demoMode && !appState.rigMode) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.settingsDemoTriggerLabel,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                ),
+                _Group(
+                  label: l10n.settingsSectionDiagnostics,
+                  hint: l10n.settingsDiagnosticsHint,
+                  child: Column(
+                    children: [
+                      _Collapsible(title: l10n.benchSensorTitle, icon: Icons.sensors, child: const _BenchSensorPanel()),
+                      const SizedBox(height: 12),
+                      _Collapsible(title: l10n.benchEvalTitle, icon: Icons.analytics_outlined, child: const _BenchEvalPanel()),
+                    ],
+                  ),
+                ),
+                _Group(
+                  label: l10n.settingsAbout,
+                  last: true,
+                  child: GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: const Icon(Icons.shield_outlined, color: AppColors.accent, size: 22),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l10n.settingsAboutVersion, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15)),
+                                  const SizedBox(height: 2),
+                                  Text(l10n.settingsAboutTagline, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(l10n.settingsAboutCredits, style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, height: 1.4)),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: RiskState.values.map((state) {
-                        final color = riskStateColor(state);
-                        final isLive = state == appState.myRiskState;
-                        final button = OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: color,
-                            backgroundColor: color.withValues(alpha: isLive ? 0.16 : 0.08),
-                            side: isLive ? BorderSide.none : BorderSide(color: color.withValues(alpha: 0.4)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                          ),
-                          onPressed: () => context.read<DemoController>().jumpTo(state),
-                          child: Text(riskStateLabel(context, state).toUpperCase(), style: AppFonts.mono(fontSize: 12, color: color)),
-                        );
-                        if (!isLive) return button;
-                        return Container(
-                          padding: const EdgeInsets.all(1.5),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.3)]),
-                            boxShadow: appGlow(color, alpha: 0.4, blur: 12),
-                          ),
-                          child: button,
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.rigModeTitle),
-            const SizedBox(height: 8),
-            GlassCard(child: _RigModeCard(appState: appState)),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.benchSensorTitle),
-            const SizedBox(height: 8),
-            GlassCard(child: const _BenchSensorPanel()),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.benchEvalTitle),
-            const SizedBox(height: 8),
-            GlassCard(child: const _BenchEvalPanel()),
-            const SizedBox(height: 24),
-            _SectionLabel(l10n.settingsAbout),
-            const SizedBox(height: 8),
-            GlassCard(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: ListTile(
-                leading: const Icon(Icons.info_outline, color: AppColors.textSecondary),
-                title: Text(l10n.settingsAboutVersion, style: const TextStyle(color: AppColors.textPrimary)),
-              ),
-            ),
-          ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -196,6 +143,174 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+/// A titled block of the settings page; every group has the same label style and the same gap below it.
+class _Group extends StatelessWidget {
+  final String label;
+  final String? hint;
+  final Widget child;
+  final bool last;
+  const _Group({required this.label, required this.child, this.hint, this.last = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: last ? 0 : 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionLabel(label),
+          if (hint != null) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(hint!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.35)),
+            ),
+          ],
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// A card that opens on tap, so the technical panels stay out of the way until someone wants them.
+class _Collapsible extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+  const _Collapsible({required this.title, required this.icon, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          iconColor: AppColors.textSecondary,
+          collapsedIconColor: AppColors.textSecondary,
+          leading: Icon(icon, color: AppColors.textSecondary, size: 20),
+          title: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5)),
+          children: [child],
+        ),
+      ),
+    );
+  }
+}
+
+/// System, English or Bahasa Malaysia, as one three-way switch instead of three radio rows.
+class _LanguagePicker extends StatelessWidget {
+  final LocaleProvider provider;
+  final AppLocalizations l10n;
+  const _LanguagePicker({required this.provider, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final current = provider.overrideLocale?.languageCode ?? 'auto';
+    Widget label(String text) => FittedBox(fit: BoxFit.scaleDown, child: Text(text, maxLines: 1, softWrap: false));
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        segments: [
+          ButtonSegment(value: 'auto', icon: const Icon(Icons.smartphone, size: 16), label: label(l10n.settingsLanguageAuto)),
+          ButtonSegment(value: 'en', label: label(l10n.settingsLanguageEnglish)),
+          ButtonSegment(value: 'ms', label: label(l10n.settingsLanguageMalay)),
+        ],
+        selected: {current},
+        onSelectionChanged: (s) {
+          final v = s.first;
+          provider.setOverride(v == 'auto' ? null : Locale(v));
+        },
+        style: SegmentedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.textSecondary,
+          selectedBackgroundColor: AppColors.accent.withValues(alpha: 0.18),
+          selectedForegroundColor: AppColors.accent,
+          side: const BorderSide(color: AppColors.hairline),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+        ),
+      ),
+    );
+  }
+}
+
+/// The older demonstration that needs no hardware: the app plays a made-up rising flood.
+class _SyntheticDemo extends StatelessWidget {
+  final AppState appState;
+  const _SyntheticDemo({required this.appState});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final on = appState.demoMode && !appState.rigMode;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          title: Text(l10n.settingsDemoMode, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(l10n.settingsDemoModeDescription, style: const TextStyle(color: AppColors.textMuted, height: 1.35)),
+          ),
+          value: on,
+          onChanged: (v) {
+            context.read<RigController>().stop();
+            appState.setDemoMode(v);
+            final demo = context.read<DemoController>();
+            if (v) {
+              demo.start();
+            } else {
+              demo.stop();
+            }
+          },
+          contentPadding: EdgeInsets.zero,
+        ),
+        if (on) ...[
+          const SizedBox(height: 8),
+          Text(l10n.settingsDemoTriggerLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: RiskState.values.map((state) {
+              final color = riskStateColor(state);
+              final isLive = state == appState.myRiskState;
+              final button = OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: color,
+                  backgroundColor: color.withValues(alpha: isLive ? 0.16 : 0.08),
+                  side: isLive ? BorderSide.none : BorderSide(color: color.withValues(alpha: 0.4)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                ),
+                onPressed: () => context.read<DemoController>().jumpTo(state),
+                child: Text(riskStateLabel(context, state).toUpperCase(), style: AppFonts.mono(fontSize: 12, color: color)),
+              );
+              if (!isLive) return button;
+              return Container(
+                padding: const EdgeInsets.all(1.5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.3)]),
+                  boxShadow: appGlow(color, alpha: 0.4, blur: 12),
+                ),
+                child: button,
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
 
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -285,7 +400,7 @@ class _BenchSensorPanelState extends State<_BenchSensorPanel> {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -415,7 +530,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -596,7 +711,9 @@ class _NotificationTile extends StatelessWidget {
 }
 
 
-/// Live rig mode: switch the whole app over to the bench rig's real sensors, read by the phase model.
+
+/// Live rig mode: switch the whole app over to the bench rig's real sensors, read by the phase model. While it is
+/// on, the phase buttons below can force any of the four phases to rehearse an alert.
 class _RigModeCard extends StatelessWidget {
   final AppState appState;
   const _RigModeCard({required this.appState});
@@ -610,8 +727,11 @@ class _RigModeCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SwitchListTile(
-          title: Text(l10n.rigModeTitle, style: const TextStyle(color: AppColors.textPrimary)),
-          subtitle: Text(l10n.rigModeDescription, style: const TextStyle(color: AppColors.textMuted)),
+          title: Text(l10n.rigModeTitle, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(l10n.rigModeDescription, style: const TextStyle(color: AppColors.textMuted, height: 1.35)),
+          ),
           value: appState.rigMode,
           onChanged: (v) {
             final rigController = context.read<RigController>();
@@ -627,30 +747,68 @@ class _RigModeCard extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
         ),
         if (appState.rigMode) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           if (rig == null || state == null)
             Text(l10n.rigWaiting, style: const TextStyle(color: AppColors.textMuted))
-          else ...[
-            Row(
-              children: [
-                Text('${rig.isStale ? '${l10n.rigLastKnown} ' : ''}${l10n.rigPhaseLabel} ${rig.phase}: ',
-                    style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-                Text(riskStateLabel(context, state).toUpperCase(),
-                    style: TextStyle(color: riskStateColor(state), fontWeight: FontWeight.w700)),
-                const SizedBox(width: 12),
-                Text('${(rig.confidence * 100).round()}%', style: const TextStyle(color: AppColors.textMuted)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              rig.isStale
-                  ? '${l10n.rigOffline}: ${_ago(rig.age)}'
-                  : '${l10n.benchSensorUpdated} ${_ago(rig.age)}',
-              style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.textMuted, fontSize: 13),
-            ),
-          ],
+          else
+            _RigStatusLine(rig: rig, state: state),
+          const SizedBox(height: 18),
+          const _PhaseSimulator(),
+          const SizedBox(height: 4),
         ],
       ],
+    );
+  }
+}
+
+/// One line saying what the rig reads now: its phase, how sure the model is, and how fresh the reading is.
+class _RigStatusLine extends StatelessWidget {
+  final RigReading rig;
+  final RiskState state;
+  const _RigStatusLine({required this.rig, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final color = rig.simulated
+        ? AppColors.accent
+        : rig.isStale
+            ? const Color(0xFFE8833A)
+            : AppColors.normal;
+    final status = rig.simulated
+        ? l10n.rigStatusSimulated
+        : rig.isStale
+            ? l10n.rigOffline
+            : '${l10n.benchSensorUpdated} ${_ago(rig.age)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Row(
+        children: [
+          Container(width: 9, height: 9, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: '${rig.isStale && !rig.simulated ? '${l10n.rigLastKnown} ' : ''}${l10n.rigPhaseLabel} ${rig.phase}  ',
+                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: riskStateLabel(context, state).toUpperCase(),
+                  style: TextStyle(color: riskStateColor(state), fontWeight: FontWeight.w800),
+                ),
+              ]),
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+          Text(status, style: TextStyle(color: color, fontSize: 12.5, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
@@ -659,5 +817,113 @@ class _RigModeCard extends StatelessWidget {
     if (d.inMinutes < 90) return '${d.inMinutes} min ago';
     if (d.inHours < 48) return '${d.inHours} h ago';
     return '${d.inDays} d ago';
+  }
+}
+
+/// Five buttons: Live (follow the rig) and phases 1 to 4. A forced phase drives the map, My Risk, the demo nodes
+/// and the alert exactly as a real reading would, so a whole alert can be shown without waiting for the water.
+class _PhaseSimulator extends StatelessWidget {
+  const _PhaseSimulator();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final rig = context.select<AppState, RigReading?>((s) => s.rigReading);
+    final forced = rig != null && rig.simulated ? rig.phase : null;
+    final controller = context.read<RigController>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.simulatePhaseTitle, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5)),
+        const SizedBox(height: 4),
+        Text(l10n.simulatePhaseHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.35)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _PhaseButton(
+                top: const Icon(Icons.sensors, size: 20),
+                label: l10n.simulateLive,
+                color: AppColors.accent,
+                selected: forced == null,
+                onTap: () => controller.setOverride(null),
+              ),
+            ),
+            for (final state in RiskState.values) ...[
+              const SizedBox(width: 6),
+              Expanded(
+                child: _PhaseButton(
+                  top: Text('${state.index + 1}', style: AppFonts.mono(fontSize: 18, fontWeight: FontWeight.w800, color: riskStateColor(state))),
+                  label: riskStateLabel(context, state),
+                  color: riskStateColor(state),
+                  selected: forced == state.index + 1,
+                  onTap: () => controller.setOverride(state.index + 1),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (forced != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.science_outlined, size: 16, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.simulatingNow('$forced'),
+                  style: const TextStyle(color: AppColors.accent, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PhaseButton extends StatelessWidget {
+  final Widget top;
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  const _PhaseButton({required this.top, required this.label, required this.color, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: selected ? 0.18 : 0.05),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: color.withValues(alpha: selected ? 0.9 : 0.3), width: selected ? 1.5 : 1),
+            boxShadow: selected ? appGlow(color, alpha: 0.35, blur: 14) : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconTheme(data: IconThemeData(color: color), child: top),
+              const SizedBox(height: 3),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label, maxLines: 1, style: TextStyle(color: selected ? color : AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

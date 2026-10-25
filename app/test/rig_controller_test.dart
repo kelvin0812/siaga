@@ -258,6 +258,64 @@ void main() {
     expect(appState.rigTrend, isEmpty);
   });
 
+  test('a forced phase drives the node, the demo nodes, the alert and the charts, and is marked simulated', () async {
+    final service = _FakeService(rows)..served = 60; // the rig itself reads Phase 1
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+
+    for (var phase = 1; phase <= 4; phase++) {
+      controller.setOverride(phase);
+      expect(controller.overridePhase, phase);
+      final reading = appState.rigReading!;
+      expect(reading.phase, phase);
+      expect(reading.simulated, isTrue);
+      expect(reading.isStale, isFalse);
+      expect(appState.nodes.first.state, RiskState.values[phase - 1]);
+      expect(appState.nodes.first.simulated, isFalse); // it is still the rig's node, just forced
+      expect(appState.nodes.firstWhere((n) => n.id == 991).state, RiskState.values[phase - 1]);
+      expect(appState.activeHazards.isNotEmpty, RiskState.values[phase - 1].isAlertable);
+      expect(appState.rigTrend.length, greaterThanOrEqualTo(2));
+      expect(appState.rigTrend.every((p) => p.phase == phase), isTrue);
+    }
+    // the readings grow with the phase, as real ones would
+    controller.setOverride(1);
+    final calm = appState.rigReading!;
+    controller.setOverride(4);
+    final worst = appState.rigReading!;
+    expect(worst.heightCm, greaterThan(calm.heightCm));
+    expect(worst.severity, greaterThan(calm.severity));
+
+    // "Live" hands the screens back to the rig's real readings
+    controller.setOverride(null);
+    expect(controller.overridePhase, isNull);
+    expect(appState.rigReading!.simulated, isFalse);
+    expect(appState.rigReading!.phase, 1);
+    controller.stop();
+  });
+
+  test('a forced phase works even when the rig is silent, and does not outlive live mode', () async {
+    final service = _FakeService(rows)..served = 0; // no rows at all
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    expect(appState.rigReading, isNull);
+
+    controller.setOverride(4);
+    expect(appState.rigReading!.phase, 4);
+    expect(appState.nodes.first.state, RiskState.evacuate);
+    expect(appState.activeHazards.first.messageEn, contains('NADMA'));
+
+    await controller.poll(); // the next poll must not drop the forced phase
+    expect(appState.rigReading!.simulated, isTrue);
+
+    controller.stop();
+    expect(controller.overridePhase, isNull);
+    await controller.start();
+    expect(appState.rigReading, isNull); // a restart goes back to the rig, not the old simulation
+    controller.stop();
+  });
+
   test('turning live mode off returns the app to normal data', () async {
     final service = _FakeService(rows)..served = 120;
     final controller = controllerFor(service);

@@ -80,6 +80,7 @@ flutter:
   assets:
     - assets/assembly_points.json
     - assets/phase_model.json
+    - assets/population_h3.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

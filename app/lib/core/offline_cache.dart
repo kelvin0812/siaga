@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
+import 'population_service.dart';
 
 class AssemblyPoint {
   final String id;
@@ -47,10 +48,22 @@ const _kCachedHazardsKey = 'siaga.cached_hazards';
 ///    fetch fails.
 class OfflineCache {
   final SharedPreferences _prefs;
-  OfflineCache(this._prefs);
+  final AssetBundle _bundle;
+
+  /// [bundle] is where the bundled assembly points are read from: the app's own assets, unless a test supplies one.
+  OfflineCache(this._prefs, {AssetBundle? bundle}) : _bundle = bundle ?? rootBundle;
+
+  /// The bundled population estimate for the areas SIAGA is shown in. It is part of the app, so it works offline.
+  ///
+  /// The file is read and decoded here rather than with loadString, which hands anything over 50 KB to a separate
+  /// isolate. At 123 KB the decode takes a few milliseconds, and doing it here keeps loading simple and testable.
+  Future<PopulationGrid> loadPopulation() async {
+    final data = await _bundle.load('assets/population_h3.json');
+    return PopulationGrid.fromJsonString(utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+  }
 
   Future<List<AssemblyPoint>> loadAssemblyPoints() async {
-    final raw = await rootBundle.loadString('assets/assembly_points.json');
+    final raw = await _bundle.loadString('assets/assembly_points.json');
     final json = jsonDecode(raw) as Map<String, dynamic>;
     return (json['assemblyPoints'] as List)
         .map((e) => AssemblyPoint.fromJson(e as Map<String, dynamic>))

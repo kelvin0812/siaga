@@ -86,6 +86,9 @@ class RigController {
   static const trendLength = 250;
   final List<RigPoint> _trend = [];
 
+  int? _override;
+  final List<RigPoint> _simTrend = [];
+
   bool get isRunning => _running;
 
   Future<void> start() async {
@@ -112,6 +115,8 @@ class RigController {
   }
 
   void stop() {
+    _override = null; // a forced phase never outlives the live rig mode
+    _simTrend.clear();
     _running = false;
     _timer?.cancel();
     _timer = null;
@@ -193,7 +198,47 @@ class RigController {
           ),
       ];
 
+  /// Forces the whole app to show one phase (1 Normal to 4 Evacuate), whatever the rig reads, so an alert can be
+  /// rehearsed on demand at the booth. Null goes back to the rig's real readings. The readings shown while forced
+  /// are typical values for that phase and are marked simulated everywhere they appear.
+  void setOverride(int? phase) {
+    assert(phase == null || (phase >= 1 && phase <= 4));
+    _override = phase;
+    _simTrend.clear();
+    if (phase != null) {
+      // Two points, so the charts have a line to draw from the first moment.
+      final now = DateTime.now();
+      _simTrend.add(_simPoint(phase, now.subtract(pollInterval)));
+      _simTrend.add(_simPoint(phase, now));
+    }
+    if (_running) _publish();
+  }
+
+  /// The forced phase, or null when the app follows the rig.
+  int? get overridePhase => _override;
+
+  // Typical sensor values for each phase, by the model's own height bands (0.76, 2.18 and 3.63 cm).
+  static const _simHeight = [0.2, 1.5, 2.9, 4.5];
+  static const _simFlow = [0.0, 60.0, 140.0, 220.0];
+  static const _simSoil = [600.0, 520.0, 450.0, 380.0]; // a lower raw value is wetter soil
+  static const _simTilt = [0.2, 0.6, 1.2, 2.2];
+  static const _simSeverity = [0.1, 0.4, 0.7, 0.95];
+
+  RigPoint _simPoint(int phase, DateTime time) => RigPoint(
+        time: time,
+        heightCm: _simHeight[phase - 1],
+        flow: _simFlow[phase - 1],
+        soilRaw: _simSoil[phase - 1],
+        tiltDeg: _simTilt[phase - 1],
+        phase: phase,
+      );
+
   void _publish() {
+    final forced = _override;
+    if (forced != null) {
+      _publishForced(forced);
+      return;
+    }
     final result = _last;
     final row = _lastRow;
     if (result == null || row == null) {
@@ -216,22 +261,9 @@ class RigController {
       batteryVolts: null,
       riskProbability: stale ? null : result.severity,
     );
-    final hazards = <Hazard>[];
-    if (state.isAlertable) {
-      final cellId = appState.currentCellId;
-      final copy = alertCopyFor(state);
-      hazards.add(Hazard(
-        id: 1,
-        state: state,
-        cells: cellId != null ? [cellId] : [],
-        issuedAt: DateTime.now(),
-        messageEn: copy.$1,
-        messageMs: copy.$2,
-      ));
-    }
     appState.applyRigState(
       nodes: [node, ..._demoNodeList(stale ? null : result.phase)],
-      hazards: hazards,
+      hazards: _hazardsFor(state),
       reading: RigReading(
         phase: result.phase,
         confidence: result.confidence,
@@ -244,6 +276,61 @@ class RigController {
         rowId: row.id,
       ),
       trend: List.unmodifiable(_trend),
+    );
+  }
+
+  List<Hazard> _hazardsFor(RiskState state) {
+    if (!state.isAlertable) return const [];
+    final cellId = appState.currentCellId;
+    final copy = alertCopyFor(state);
+    return [
+      Hazard(
+        id: 1,
+        state: state,
+        cells: cellId != null ? [cellId] : [],
+        issuedAt: DateTime.now(),
+        messageEn: copy.$1,
+        messageMs: copy.$2,
+      ),
+    ];
+  }
+
+  /// What the app shows while a phase is forced: the rig's node and its demo neighbours at that phase, a fresh
+  /// reading (so nothing reads as offline), and a chart that keeps drawing the phase's typical values.
+  void _publishForced(int phase) {
+    final now = DateTime.now();
+    _simTrend.add(_simPoint(phase, now));
+    _simTrend.removeWhere((p) => p.time.isBefore(now.subtract(trendWindow)));
+    if (_simTrend.length > trendLength) _simTrend.removeRange(0, _simTrend.length - trendLength);
+    final state = RiskState.values[phase - 1];
+    appState.applyRigState(
+      nodes: [
+        SiagaNode(
+          id: nodeId,
+          name: nodeName,
+          lat: nodeLat,
+          lon: nodeLon,
+          state: state,
+          lastSeen: now,
+          batteryVolts: null,
+          riskProbability: _simSeverity[phase - 1],
+        ),
+        ..._demoNodeList(phase),
+      ],
+      hazards: _hazardsFor(state),
+      reading: RigReading(
+        phase: phase,
+        confidence: 1,
+        severity: _simSeverity[phase - 1],
+        heightCm: _simHeight[phase - 1],
+        flow: _simFlow[phase - 1],
+        soilRaw: _simSoil[phase - 1],
+        tiltDeg: _simTilt[phase - 1],
+        rowTime: now,
+        rowId: -1,
+        simulated: true,
+      ),
+      trend: List.unmodifiable(_simTrend),
     );
   }
 }

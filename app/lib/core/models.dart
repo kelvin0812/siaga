@@ -267,6 +267,10 @@ class RigReading {
   final DateTime rowTime;
   final int rowId;
 
+  /// True while a phase is being forced from Settings to rehearse an alert: the numbers are made up to match the
+  /// phase, not read from the rig, and the screens say so.
+  final bool simulated;
+
   const RigReading({
     required this.phase,
     required this.confidence,
@@ -277,6 +281,7 @@ class RigReading {
     required this.tiltDeg,
     required this.rowTime,
     required this.rowId,
+    this.simulated = false,
   });
 
   Duration get age => DateTime.now().difference(rowTime);

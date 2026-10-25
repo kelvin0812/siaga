@@ -11,6 +11,7 @@ import '../widgets/active_threat_banner.dart';
 import '../widgets/command_background.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/risk_badge.dart';
+import '../widgets/status_message.dart';
 import '../widgets/rig_trend_card.dart';
 
 /// Section 6.4: "Prominent four-level risk indicator for the user's own
@@ -481,13 +482,7 @@ class _LevelHero extends StatelessWidget {
   }
 }
 
-String _formatAgo(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  return '${diff.inDays}d ago';
-}
+String _formatAgo(DateTime time) => formatAgoShort(time);
 
 /// A small status line over the tiles: a green dot while the rig is sending, an orange one when it has gone quiet,
 /// so nobody mistakes old numbers for live ones.
@@ -500,10 +495,13 @@ class _LiveStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = reading;
     final live = r != null && !r.isStale;
-    final color = r == null ? AppColors.textSecondary : (live ? AppColors.normal : const Color(0xFFE8833A));
+    final forced = r != null && r.simulated; // a phase forced from Settings: say so, never pass it off as the rig
+    final color = r == null ? AppColors.textSecondary : (forced ? AppColors.accent : (live ? AppColors.normal : const Color(0xFFE8833A)));
     final text = r == null
         ? l10n.rigWaiting
-        : live
+        : forced
+            ? '${l10n.rigStatusSimulated}  ·  ${l10n.simulatingNow('${r.phase}')}'
+            : live
             ? '${l10n.rigStatusLive}  ·  ${l10n.benchSensorUpdated} ${_formatAgo(r.rowTime)}'
             : '${l10n.rigStatusOffline}  ·  ${l10n.rigLastData} ${_formatAgo(r.rowTime)}';
     return Row(
@@ -835,46 +833,17 @@ class _StatusPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title;
-    final String detail;
-    final Color color;
-    final IconData icon;
-    if (simulated) {
-      title = l10n.statusDemoT;
-      detail = l10n.simNoSensors;
-      color = AppColors.textSecondary;
-      icon = Icons.science_outlined;
-    } else if (waiting) {
-      title = l10n.statusWaitingT;
-      detail = l10n.statusWaitingD;
-      color = AppColors.textSecondary;
-      icon = Icons.hourglass_empty;
-    } else if (lastReading != null) {
-      title = l10n.statusOfflineT;
-      detail = l10n.statusOfflineD(_formatAgo(lastReading!));
-      color = const Color(0xFFE8833A);
-      icon = Icons.cloud_off;
-    } else {
-      color = riskStateColor(state);
-      switch (state) {
-        case RiskState.normal:
-          title = l10n.statusNormalT;
-          detail = l10n.statusNormalD;
-          icon = Icons.check_circle_outline;
-        case RiskState.watch:
-          title = l10n.statusWatchT;
-          detail = l10n.statusWatchD;
-          icon = Icons.visibility_outlined;
-        case RiskState.warning:
-          title = l10n.statusWarningT;
-          detail = l10n.statusWarningD;
-          icon = Icons.warning_amber_rounded;
-        case RiskState.evacuate:
-          title = l10n.statusEvacT;
-          detail = l10n.statusEvacD;
-          icon = Icons.crisis_alert;
-      }
-    }
+    final message = statusMessageFor(
+      l10n,
+      state: state,
+      noSensors: simulated,
+      waiting: waiting,
+      lastReading: lastReading,
+    );
+    final title = message.title;
+    final detail = message.detail;
+    final color = message.color;
+    final icon = message.icon;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       radius: AppRadius.md,

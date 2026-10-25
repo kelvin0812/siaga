@@ -500,7 +500,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get nodeSimulatedNote =>
-      'Disimulasikan untuk demonstrasi. Tahapnya mengikuti rig langsung, jadi anda boleh melihat amaran merebak di kawasan ini.';
+      'Disimulasikan untuk demonstrasi. Tahapnya mengikuti rig langsung.';
 
   @override
   String get mapLegendDemo => 'Nod demo (simulasi)';
@@ -590,4 +590,106 @@ class AppLocalizationsMs extends AppLocalizations {
   String statusOfflineD(String ago) {
     return 'Bacaan terakhir daripada rig ialah $ago. SIAGA tidak dapat memastikan keadaan sekarang.';
   }
+
+  @override
+  String get simRigOffline =>
+      'Rig langsung di luar talian, jadi nod demo kekal pada Normal.';
+
+  @override
+  String get popToggle => 'Penduduk';
+
+  @override
+  String get popLegendTitle => 'Penduduk setiap km²';
+
+  @override
+  String get popHigh => 'Tinggi';
+
+  @override
+  String get popMedium => 'Sederhana';
+
+  @override
+  String get popLow => 'Rendah';
+
+  @override
+  String get popSource => 'Anggaran penduduk: Kontur, CC BY 4.0';
+
+  @override
+  String get popDensityHigh => 'Kepadatan tinggi';
+
+  @override
+  String get popDensityMedium => 'Kepadatan sederhana';
+
+  @override
+  String get popDensityLow => 'Kepadatan rendah';
+
+  @override
+  String get popDensitySparse => 'Jarang penduduk';
+
+  @override
+  String popAround(String count, String km) {
+    return 'Anggaran $count penduduk dalam lingkungan $km km';
+  }
+
+  @override
+  String get settingsSectionDemo => 'Demonstrasi';
+
+  @override
+  String get settingsSectionDiagnostics => 'Diagnostik';
+
+  @override
+  String get settingsDiagnosticsHint =>
+      'Untuk pasukan: bacaan mentah rig dan semakan model.';
+
+  @override
+  String get simulatePhaseTitle => 'Simulasi fasa';
+
+  @override
+  String get simulatePhaseHint =>
+      'Paksa seluruh aplikasi ke satu fasa untuk melatih amaran. Peta, Risiko Saya dan amaran turut mengikutinya.';
+
+  @override
+  String get simulateLive => 'Langsung';
+
+  @override
+  String simulatingNow(String phase) {
+    return 'Mensimulasikan fasa $phase. Bacaan rig sebenar dijeda.';
+  }
+
+  @override
+  String get rigStatusSimulated => 'Simulasi';
+
+  @override
+  String get settingsLanguageAuto => 'Auto';
+
+  @override
+  String get settingsAboutTagline =>
+      'Amaran awal banjir kilat dan tanah runtuh.';
+
+  @override
+  String get settingsAboutCredits =>
+      'Data peta © penyumbang OpenStreetMap. Imej © Esri. Penduduk: Kontur (CC BY 4.0).';
+
+  @override
+  String get reportSubtitle =>
+      'Nampak sesuatu berhampiran sungai, parit atau cerun? Maklumkan pihak berkuasa dengan beberapa ketikan.';
+
+  @override
+  String get reportStepWhat => 'Apa yang anda lihat?';
+
+  @override
+  String get reportStepWhere => 'Di mana?';
+
+  @override
+  String get reportStepDetails => 'Ada apa-apa untuk ditambah?';
+
+  @override
+  String get reportPrivacy =>
+      'Hanya kod kawasan tempat ini dihantar, tidak sekali-kali kedudukan tepat anda.';
+
+  @override
+  String get reportNotePlaceholder =>
+      'cth. air melimpasi jalan berhampiran jambatan';
+
+  @override
+  String get reportCategoryLandslideShort => 'Tanah runtuh';
 }

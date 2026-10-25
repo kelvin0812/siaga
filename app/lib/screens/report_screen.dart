@@ -171,9 +171,14 @@ class _ReportScreenState extends State<ReportScreen> {
 
   String _categoryLabel(AppLocalizations l10n, _ReportCategory c) => switch (c) {
         _ReportCategory.flooding => l10n.reportCategoryFlooding,
-        _ReportCategory.landslide => l10n.reportCategoryLandslide,
+        _ReportCategory.landslide => l10n.reportCategoryLandslideShort,
         _ReportCategory.other => l10n.reportCategoryOther,
       };
+
+  Widget _fieldLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text, style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -185,78 +190,54 @@ class _ReportScreenState extends State<ReportScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 110), // clear of the floating nav bar
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(l10n.reportTitle, style: AppFonts.heading(fontSize: 26)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
+                  Text(l10n.reportSubtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.4)),
+                  const SizedBox(height: 22),
                   GlassCard(
+                    padding: const EdgeInsets.all(18),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          l10n.reportSectionDetails.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
+                        _StepHeader(number: 1, title: l10n.reportStepWhat),
                         const SizedBox(height: 14),
-                        Text(
-                          l10n.reportCategoryLabel,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
+                        Row(
+                          children: [
+                            for (final c in _ReportCategory.values) ...[
+                              if (c != _ReportCategory.values.first) const SizedBox(width: 8),
+                              Expanded(
+                                child: _CategoryTile(
+                                  icon: _categoryIcon(c),
+                                  label: _categoryLabel(l10n, c),
+                                  selected: _category == c,
+                                  onTap: () => setState(() => _category = c),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        _GlowField(
-                          child: DropdownButtonFormField<_ReportCategory>(
-                            initialValue: _category,
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
-                            dropdownColor: AppColors.surfaceRaised,
-                            decoration: const InputDecoration(prefixIcon: Icon(Icons.category_outlined)),
-                            items: _ReportCategory.values
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                    value: c,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(_categoryIcon(c), size: 18, color: AppColors.accent),
-                                        const SizedBox(width: 10),
-                                        Text(_categoryLabel(l10n, c)),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (c) {
-                              if (c != null) setState(() => _category = c);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          l10n.reportLocationLabel,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
+                        const _StepDivider(),
+                        _StepHeader(number: 2, title: l10n.reportStepWhere),
+                        const SizedBox(height: 14),
                         _GlowField(
                           child: DropdownButtonFormField<int?>(
                             initialValue: _locationNodeId,
+                            isExpanded: true,
                             style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
                             dropdownColor: AppColors.surfaceRaised,
-                            decoration: const InputDecoration(prefixIcon: Icon(Icons.place_outlined)),
+                            decoration: const InputDecoration(),
                             items: [
                               DropdownMenuItem<int?>(
                                 value: null,
                                 child: Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.my_location, size: 16, color: AppColors.accent),
                                     const SizedBox(width: 10),
-                                    Text(l10n.reportLocationCurrent),
+                                    Flexible(child: Text(l10n.reportLocationCurrent, overflow: TextOverflow.ellipsis)),
                                   ],
                                 ),
                               ),
@@ -264,7 +245,6 @@ class _ReportScreenState extends State<ReportScreen> {
                                 (n) => DropdownMenuItem<int?>(
                                   value: n.id,
                                   child: Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Icon(Icons.sensors, size: 16, color: AppColors.textSecondary),
                                       const SizedBox(width: 10),
@@ -277,21 +257,19 @@ class _ReportScreenState extends State<ReportScreen> {
                             onChanged: (id) => setState(() => _locationNodeId = id),
                           ),
                         ),
+                        const _StepDivider(),
+                        _StepHeader(number: 3, title: l10n.reportStepDetails),
                         const SizedBox(height: 14),
+                        _fieldLabel(l10n.reportNoteLabel),
                         _GlowField(
                           child: TextField(
                             controller: _noteController,
                             style: const TextStyle(color: AppColors.textPrimary),
-                            decoration: InputDecoration(labelText: l10n.reportNoteLabel),
+                            decoration: InputDecoration(hintText: l10n.reportNotePlaceholder),
                             maxLines: 3,
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          l10n.reportAddPhoto,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
                         _PhotoPicker(
                           bytes: _photoBytes,
                           uploading: _uploadingPhoto,
@@ -303,7 +281,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _SubmitButton(
                     submitting: _submitting,
                     label: l10n.reportSubmit,
@@ -328,9 +306,98 @@ class _ReportScreenState extends State<ReportScreen> {
                       ],
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1),
+                        child: Icon(Icons.lock_outline, size: 14, color: AppColors.textMuted),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(l10n.reportPrivacy, style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A numbered step title, so the form reads top to bottom as "what, where, details".
+class _StepHeader extends StatelessWidget {
+  final int number;
+  final String title;
+  const _StepHeader({required this.number, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.18), shape: BoxShape.circle),
+          child: Text('$number', style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w800, fontSize: 12.5)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15))),
+      ],
+    );
+  }
+}
+
+class _StepDivider extends StatelessWidget {
+  const _StepDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      const Padding(padding: EdgeInsets.symmetric(vertical: 18), child: Divider(height: 1, color: AppColors.hairline));
+}
+
+/// One tap picks the kind of hazard; the three choices are always visible, unlike a dropdown.
+class _CategoryTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CategoryTile({required this.icon, required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.accent : AppColors.textSecondary;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent.withValues(alpha: 0.16) : Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: selected ? AppColors.accent : AppColors.hairline, width: selected ? 1.5 : 1),
+            boxShadow: selected ? appGlow(AppColors.accent, alpha: 0.3, blur: 16) : null,
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 26),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label, maxLines: 1, style: TextStyle(color: selected ? AppColors.textPrimary : color, fontWeight: FontWeight.w700, fontSize: 13)),
+              ),
+            ],
           ),
         ),
       ),

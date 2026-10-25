@@ -1025,7 +1025,7 @@ abstract class AppLocalizations {
   /// No description provided for @nodeSimulatedNote.
   ///
   /// In en, this message translates to:
-  /// **'Simulated for the demonstration. Its level follows the live rig, so you can watch an alert spread across the area.'**
+  /// **'Simulated for the demonstration. Its level follows the live rig.'**
   String get nodeSimulatedNote;
 
   /// No description provided for @mapLegendDemo.
@@ -1189,6 +1189,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The last reading from the rig was {ago}. SIAGA cannot say how things look right now.'**
   String statusOfflineD(String ago);
+
+  /// No description provided for @simRigOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The live rig is offline, so demo nodes rest at Normal.'**
+  String get simRigOffline;
+
+  /// No description provided for @popToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Population'**
+  String get popToggle;
+
+  /// No description provided for @popLegendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People per km²'**
+  String get popLegendTitle;
+
+  /// No description provided for @popHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get popHigh;
+
+  /// No description provided for @popMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get popMedium;
+
+  /// No description provided for @popLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get popLow;
+
+  /// No description provided for @popSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Population estimate: Kontur, CC BY 4.0'**
+  String get popSource;
+
+  /// No description provided for @popDensityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High density'**
+  String get popDensityHigh;
+
+  /// No description provided for @popDensityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium density'**
+  String get popDensityMedium;
+
+  /// No description provided for @popDensityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low density'**
+  String get popDensityLow;
+
+  /// No description provided for @popDensitySparse.
+  ///
+  /// In en, this message translates to:
+  /// **'Sparsely populated'**
+  String get popDensitySparse;
+
+  /// No description provided for @popAround.
+  ///
+  /// In en, this message translates to:
+  /// **'About {count} people within {km} km'**
+  String popAround(String count, String km);
+
+  /// No description provided for @settingsSectionDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demonstration'**
+  String get settingsSectionDemo;
+
+  /// No description provided for @settingsSectionDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get settingsSectionDiagnostics;
+
+  /// No description provided for @settingsDiagnosticsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For the team: the rig\'s raw readings and a check of the model.'**
+  String get settingsDiagnosticsHint;
+
+  /// No description provided for @simulatePhaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate a phase'**
+  String get simulatePhaseTitle;
+
+  /// No description provided for @simulatePhaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Force the whole app to one phase to rehearse an alert. The map, My Risk and the alert all follow it.'**
+  String get simulatePhaseHint;
+
+  /// No description provided for @simulateLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get simulateLive;
+
+  /// No description provided for @simulatingNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulating phase {phase}. Real rig readings are paused.'**
+  String simulatingNow(String phase);
+
+  /// No description provided for @rigStatusSimulated.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated'**
+  String get rigStatusSimulated;
+
+  /// No description provided for @settingsLanguageAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get settingsLanguageAuto;
+
+  /// No description provided for @settingsAboutTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Early warning for flash floods and landslides.'**
+  String get settingsAboutTagline;
+
+  /// No description provided for @settingsAboutCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Map data © OpenStreetMap contributors. Imagery © Esri. Population: Kontur (CC BY 4.0).'**
+  String get settingsAboutCredits;
+
+  /// No description provided for @reportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See something near a river, drain or slope? Tell the authorities in a few taps.'**
+  String get reportSubtitle;
+
+  /// No description provided for @reportStepWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you see?'**
+  String get reportStepWhat;
+
+  /// No description provided for @reportStepWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is it?'**
+  String get reportStepWhere;
+
+  /// No description provided for @reportStepDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything to add?'**
+  String get reportStepDetails;
+
+  /// No description provided for @reportPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the area code of this place is sent, never your exact position.'**
+  String get reportPrivacy;
+
+  /// No description provided for @reportNotePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. water over the road near the bridge'**
+  String get reportNotePlaceholder;
+
+  /// No description provided for @reportCategoryLandslideShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Landslide'**
+  String get reportCategoryLandslideShort;
 }
 
 class _AppLocalizationsDelegate

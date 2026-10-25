@@ -497,7 +497,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nodeSimulatedNote =>
-      'Simulated for the demonstration. Its level follows the live rig, so you can watch an alert spread across the area.';
+      'Simulated for the demonstration. Its level follows the live rig.';
 
   @override
   String get mapLegendDemo => 'Demo node (simulated)';
@@ -587,4 +587,106 @@ class AppLocalizationsEn extends AppLocalizations {
   String statusOfflineD(String ago) {
     return 'The last reading from the rig was $ago. SIAGA cannot say how things look right now.';
   }
+
+  @override
+  String get simRigOffline =>
+      'The live rig is offline, so demo nodes rest at Normal.';
+
+  @override
+  String get popToggle => 'Population';
+
+  @override
+  String get popLegendTitle => 'People per km²';
+
+  @override
+  String get popHigh => 'High';
+
+  @override
+  String get popMedium => 'Medium';
+
+  @override
+  String get popLow => 'Low';
+
+  @override
+  String get popSource => 'Population estimate: Kontur, CC BY 4.0';
+
+  @override
+  String get popDensityHigh => 'High density';
+
+  @override
+  String get popDensityMedium => 'Medium density';
+
+  @override
+  String get popDensityLow => 'Low density';
+
+  @override
+  String get popDensitySparse => 'Sparsely populated';
+
+  @override
+  String popAround(String count, String km) {
+    return 'About $count people within $km km';
+  }
+
+  @override
+  String get settingsSectionDemo => 'Demonstration';
+
+  @override
+  String get settingsSectionDiagnostics => 'Diagnostics';
+
+  @override
+  String get settingsDiagnosticsHint =>
+      'For the team: the rig\'s raw readings and a check of the model.';
+
+  @override
+  String get simulatePhaseTitle => 'Simulate a phase';
+
+  @override
+  String get simulatePhaseHint =>
+      'Force the whole app to one phase to rehearse an alert. The map, My Risk and the alert all follow it.';
+
+  @override
+  String get simulateLive => 'Live';
+
+  @override
+  String simulatingNow(String phase) {
+    return 'Simulating phase $phase. Real rig readings are paused.';
+  }
+
+  @override
+  String get rigStatusSimulated => 'Simulated';
+
+  @override
+  String get settingsLanguageAuto => 'Auto';
+
+  @override
+  String get settingsAboutTagline =>
+      'Early warning for flash floods and landslides.';
+
+  @override
+  String get settingsAboutCredits =>
+      'Map data © OpenStreetMap contributors. Imagery © Esri. Population: Kontur (CC BY 4.0).';
+
+  @override
+  String get reportSubtitle =>
+      'See something near a river, drain or slope? Tell the authorities in a few taps.';
+
+  @override
+  String get reportStepWhat => 'What did you see?';
+
+  @override
+  String get reportStepWhere => 'Where is it?';
+
+  @override
+  String get reportStepDetails => 'Anything to add?';
+
+  @override
+  String get reportPrivacy =>
+      'Only the area code of this place is sent, never your exact position.';
+
+  @override
+  String get reportNotePlaceholder =>
+      'e.g. water over the road near the bridge';
+
+  @override
+  String get reportCategoryLandslideShort => 'Landslide';
 }

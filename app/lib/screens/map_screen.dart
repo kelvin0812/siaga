@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:collection/collection.dart';
@@ -11,11 +12,13 @@ import '../core/app_state.dart';
 import '../core/models.dart';
 import '../core/offline_cache.dart';
 import '../core/rig_controller.dart' show kVenueLat, kVenueLon;
+import '../core/population_service.dart';
 import '../core/route_service.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/demo_readout.dart';
 import '../widgets/rig_trend_card.dart';
+import '../widgets/status_message.dart';
 import '../widgets/node_history_chart.dart';
 import '../widgets/risk_badge.dart';
 
@@ -34,7 +37,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMixin {
+class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Position? _myPosition;
   int? _selectedNodeId;
   List<AssemblyPoint> _assemblyPoints = const [];
@@ -53,9 +56,17 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   /// The marker the floating place card is about: "n:" and a node id, or "a:" and an assembly point id.
   String? _focusKey;
 
+  // The population layer: an estimate of how many people live in each hexagon, drawn as high, medium and low areas.
+  PopulationGrid? _population;
+  List<Polygon> _popPolygons = const [];
+  bool _showPopulation = false;
+
   /// Eases the camera towards a tapped marker, a little at a time, instead of jumping.
   late final AnimationController _fly;
   VoidCallback? _flyListener;
+
+  /// Drives the motion along the route: arrows flowing towards the destination and a pulse travelling the line.
+  late final AnimationController _flow;
 
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
@@ -66,6 +77,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _fly = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _flow = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200));
     final appState = context.read<AppState>();
     final locationService = appState.locationService;
     _routes = RouteService(
@@ -75,6 +87,16 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     _myPosition = locationService.lastKnownPosition;
     locationService.positionUpdates.listen((position) {
       if (mounted) setState(() => _myPosition = position);
+    });
+    appState.cache.loadPopulation().then((grid) {
+      if (mounted) {
+        setState(() {
+          _population = grid;
+          _popPolygons = _populationPolygons(grid);
+        });
+      }
+    }).catchError((Object _) {
+      // The population layer is optional: without its data the map simply has no such layer.
     });
     appState.cache.loadAssemblyPoints().then((points) {
       if (mounted) setState(() => _assemblyPoints = points);
@@ -86,6 +108,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
+    _flow.dispose();
     _fly.dispose();
     _sheetController.dispose();
     _searchController.dispose();
@@ -167,7 +190,9 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     final zoom = cam.zoom < 15 ? 15.5 : cam.zoom;
     final end = CameraFit.coordinates(
       coordinates: [point],
-      padding: const EdgeInsets.fromLTRB(40, 140, 40, 330),
+      // The card is about 430 px tall and sits above the nav bar, so the node goes in the clear space above the card
+      // (and below the search bar), however tall the screen is.
+      padding: EdgeInsets.fromLTRB(40, 70, 40, cam.nonRotatedSize.height - math.max(cam.nonRotatedSize.height - 92 - 430 - 30, 110.0)),
       minZoom: zoom,
       maxZoom: zoom,
     ).fit(cam);
@@ -258,6 +283,60 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     return nearest;
   }
 
+  /// One polygon per populated hexagon, coloured by how crowded it is. Sparse areas are left clear so the layer stays
+  /// readable: the colour carries the message, the map shows through.
+  List<Polygon> _populationPolygons(PopulationGrid grid) {
+    final polygons = <Polygon>[];
+    for (final c in grid.cells) {
+      final k = grid.classOf(c);
+      if (k == DensityClass.sparse) continue;
+      final base = _kDensityColors[k]!;
+      polygons.add(Polygon(
+        points: c.vertices,
+        color: base.withValues(alpha: _kDensityFill[k]!),
+        borderColor: base.withValues(alpha: 0.28),
+        borderStrokeWidth: 0.5,
+      ));
+    }
+    return polygons;
+  }
+
+  /// Rounds a head count with thousands separators: 7100 becomes "7,100".
+  static String _thousands(int n) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+
+  /// "About 7,100 people within 1 km" and how crowded the spot is, for a place card. Empty where the data has nothing.
+  List<Widget> _populationLine(BuildContext context, ll.LatLng point) {
+    final grid = _population;
+    if (grid == null || !grid.covers(point)) return const [];
+    final l10n = AppLocalizations.of(context)!;
+    final people = PopulationGrid.roundForDisplay(grid.peopleWithin(point, 1.0));
+    final cell = grid.cellAt(point);
+    final k = cell == null ? null : grid.classOf(cell);
+    final label = switch (k) {
+      DensityClass.high => l10n.popDensityHigh,
+      DensityClass.medium => l10n.popDensityMedium,
+      DensityClass.low => l10n.popDensityLow,
+      DensityClass.sparse => l10n.popDensitySparse,
+      null => null,
+    };
+    return [
+      const SizedBox(height: 8),
+      Row(
+        children: [
+          const Icon(Icons.groups_2_outlined, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.popAround(_thousands(people), '1'),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (label != null && k != null) _DensityChip(label: label, color: _kDensityColors[k] ?? AppColors.textSecondary),
+        ],
+      ),
+    ];
+  }
+
   /// Plans the route when the start area or the destination has changed. Called after a frame, never during build.
   void _ensureRoute(ll.LatLng origin) {
     if (_assemblyPoints.isEmpty) return;
@@ -286,21 +365,6 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
         ));
       }
     });
-  }
-
-  List<Polyline> _routeLines(ll.LatLng origin, RoutePlan plan) {
-    final lines = <Polyline>[];
-    if (plan.byRoad) {
-      lines.add(Polyline(points: plan.points, color: Colors.white.withValues(alpha: 0.9), strokeWidth: 9));
-      lines.add(Polyline(points: plan.points, color: AppColors.accent, strokeWidth: 5));
-    } else {
-      lines.add(Polyline(points: plan.points, color: AppColors.accent, strokeWidth: 4, pattern: const StrokePattern.dotted()));
-    }
-    // The route starts from the person's area, not their exact spot: a short local connector joins the two.
-    if (RouteService.straightMeters(origin, plan.points.first) > 25) {
-      lines.add(Polyline(points: [origin, plan.points.first], color: AppColors.accent, strokeWidth: 3, pattern: const StrokePattern.dotted()));
-    }
-    return lines;
   }
 
   void _showMyLocationInfo(BuildContext context) {
@@ -350,6 +414,10 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     final rig = appState.rigMode ? appState.rigReading : null;
     final color = riskStateColor(node.state);
     final sim = node.simulated;
+    // What the node is saying, in the same words the My Risk screen uses. A demo node borrows the rig's state, so it
+    // never says the rig's readings are old; it only notes that the rig is offline.
+    final rigOffline = rig != null && rig.isStale;
+    final message = statusMessageFor(l10n, state: node.state, lastReading: !sim && rigOffline ? rig.rowTime : null);
     return _PlaceCard(
       point: ll.LatLng(node.lat, node.lon),
       accent: color,
@@ -364,18 +432,45 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             RiskBadge(state: node.state),
-            if (rig != null)
+            if (rig != null && !sim)
               Text(
-                rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
-                style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal, fontSize: 12.5, fontWeight: FontWeight.w700),
+                rig.simulated ? l10n.rigStatusSimulated : (rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive),
+                style: TextStyle(
+                  color: rig.simulated ? AppColors.accent : (rig.isStale ? const Color(0xFFE8833A) : AppColors.normal),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             if (node.lastSeen != null)
               Text(_agoLabel(node.lastSeen!), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
           ],
         ),
+        const SizedBox(height: 10),
+        // The message itself, readable here without leaving the map.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(message.icon, color: message.color, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message.title, style: AppFonts.heading(fontSize: 16.5, fontWeight: FontWeight.w700, letterSpacing: 0)),
+                  const SizedBox(height: 2),
+                  Text(message.detail, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5, height: 1.4)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        ..._populationLine(context, ll.LatLng(node.lat, node.lon)),
         if (sim) ...[
           const SizedBox(height: 8),
-          Text(l10n.nodeSimulatedNote, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4)),
+          Text(
+            rigOffline ? '${l10n.nodeSimulatedNote} ${l10n.simRigOffline}' : l10n.nodeSimulatedNote,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+          ),
         ],
         if (rig != null && !sim) ...[
           const SizedBox(height: 10),
@@ -441,9 +536,10 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             '${_formatDistance(RouteService.straightMeters(origin, ll.LatLng(point.lat, point.lon)))} ${l10n.mapAway}',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
+        ..._populationLine(context, ll.LatLng(point.lat, point.lon)),
         if (routeLine != null) ...[
           const SizedBox(height: 4),
-          Text(routeLine, style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700)),
+          Text(routeLine, style: const TextStyle(color: _kRouteColor, fontWeight: FontWeight.w700)),
         ],
       ],
       actions: [
@@ -509,6 +605,14 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     final hasCard = (focusNode != null || focusAssembly != null) && selectedNode == null;
     final showRouteCard = routeActive && selectedNode == null && !hasCard;
 
+    // The route moves while it is shown, unless the device is set to reduce motion.
+    final animateRoute = routeActive && _plan != null && !MediaQuery.of(context).disableAnimations;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (animateRoute && !_flow.isAnimating) _flow.repeat();
+      if (!animateRoute && _flow.isAnimating) _flow.stop();
+    });
+
     // Where each label goes, so labels never sit on top of other markers or labels.
     double labelWidth(String text) => (text.length * 6.4 + 24).clamp(84.0, 146.0);
     final pins = <_Pin>[
@@ -534,7 +638,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
       obstacles = [
         Rect.fromLTRB(12, 12, w - 12, 64),
         if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
-        if (!hasCard) Rect.fromLTRB(12, h - 228, 187, h - 104),
+        if (!hasCard) Rect.fromLTRB(12, h - (_showPopulation ? 270 : 228), _showPopulation ? 235 : 187, h - 104),
         Rect.fromLTRB(0, h - 92, w, h),
         if (showRouteCard) Rect.fromLTRB(2, h - 207, w - 2, h - 92),
       ];
@@ -575,7 +679,8 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.siaga.siaga_app',
                   ),
-                  if (routeActive && _plan != null) PolylineLayer(polylines: _routeLines(origin, _plan!)),
+                  if (_showPopulation && _popPolygons.isNotEmpty) PolygonLayer(polygons: _popPolygons),
+                  if (routeActive && _plan != null) _RouteLayer(points: _plan!.points, from: origin, flow: _flow),
                   MarkerLayer(
                     markers: [
                       ...nodes.map(
@@ -591,6 +696,13 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                           ),
                         ),
                       ),
+                      if (destination != null)
+                        Marker(
+                          point: ll.LatLng(destination.lat, destination.lon),
+                          width: 140,
+                          height: 140,
+                          child: const IgnorePointer(child: _PulseRing(color: _kSafeColor)),
+                        ),
                       ..._assemblyPoints.map(
                         (point) => Marker(
                           point: ll.LatLng(point.lat, point.lon),
@@ -647,11 +759,21 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
               onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
             ),
           ),
+        if (_population != null)
+          Positioned(
+            top: (appState.isOffline ? 44 : 12) + 68 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0),
+            right: 22,
+            child: _PopulationToggle(
+              active: _showPopulation,
+              label: l10n.popToggle,
+              onTap: () => setState(() => _showPopulation = !_showPopulation),
+            ),
+          ),
         if (!hasCard)
           Positioned(
             left: 22,
             bottom: showRouteCard ? 214 : 104,
-            child: const _MapLegend(),
+            child: _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
           ),
         if (hasCard)
           Positioned(
@@ -831,9 +953,9 @@ class _EvacRouteToggle extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.accent : Colors.black.withValues(alpha: 0.68),
+            color: active ? _kRouteColor : Colors.black.withValues(alpha: 0.68),
             borderRadius: BorderRadius.circular(999),
-            boxShadow: active ? appGlow(AppColors.accent, alpha: 0.4, blur: 14) : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
+            boxShadow: active ? appGlow(_kRouteColor, alpha: 0.55, blur: 16) : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -853,6 +975,23 @@ class _EvacRouteToggle extends StatelessWidget {
 }
 
 const _kAssemblyColor = Color(0xFF8B7CFF);
+
+/// The population layer is one hue (pink to deep magenta) getting stronger with density, which keeps it apart from the
+/// risk colours (green to red) and reads at a glance without a legend lookup.
+const _kDensityColors = <DensityClass, Color>{
+  DensityClass.low: Color(0xFFFF8FD0),
+  DensityClass.medium: Color(0xFFE0309F),
+  DensityClass.high: Color(0xFF8E0F52),
+};
+const _kDensityFill = <DensityClass, double>{
+  DensityClass.low: 0.11,
+  DensityClass.medium: 0.24,
+  DensityClass.high: 0.46,
+};
+
+/// The evacuation route is drawn in an emergency red, and the place it leads to in a safe green.
+const _kRouteColor = Color(0xFFFF3B30);
+const _kSafeColor = Color(0xFF2EE59D);
 const double _kMarkerW = 150;
 const double _kMarkerH = 120;
 
@@ -927,7 +1066,7 @@ class _RouteSummary extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.directions_walk, color: AppColors.accent, size: 24),
+              const Icon(Icons.directions_walk, color: _kRouteColor, size: 24),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1059,7 +1198,7 @@ class _AssemblyPointMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
-    final color = highlighted ? AppColors.accent : _kAssemblyColor;
+    final color = highlighted ? _kSafeColor : _kAssemblyColor;
     return _MarkerBox(
       iconSize: 38,
       accent: color,
@@ -1279,8 +1418,12 @@ class _NodeInfoPanel extends StatelessWidget {
             ),
           if (rig != null)
             Text(
-              rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
-              style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal, fontSize: 12.5, fontWeight: FontWeight.w700),
+              rig.simulated ? l10n.rigStatusSimulated : (rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive),
+              style: TextStyle(
+                color: rig.simulated ? AppColors.accent : (rig.isStale ? const Color(0xFFE8833A) : AppColors.normal),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           if (node.batteryVolts != null) Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
         ],
@@ -1599,7 +1742,7 @@ class _PlaceCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                height: 124,
+                height: 104,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1738,6 +1881,282 @@ class _PlacePicture extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The evacuation route, drawn to be seen at a glance: a glowing red line with a white edge, white arrows flowing
+/// towards the destination, and a bright pulse that travels the whole line. The line is drawn on a canvas of its own,
+/// from the map's camera, so it follows every pan and zoom without a delay.
+class _RouteLayer extends StatelessWidget {
+  final List<ll.LatLng> points;
+  final ll.LatLng? from;
+  final Animation<double> flow;
+  const _RouteLayer({required this.points, required this.from, required this.flow});
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: flow,
+        builder: (context, _) => CustomPaint(
+          size: Size.infinite,
+          painter: _RoutePainter(camera: camera, points: points, from: from, t: flow.value),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoutePainter extends CustomPainter {
+  final MapCamera camera;
+  final List<ll.LatLng> points;
+  final ll.LatLng? from;
+  final double t; // 0 to 1, repeating
+
+  _RoutePainter({required this.camera, required this.points, required this.from, required this.t});
+
+  Paint _stroke(Color color, double width, {double blur = 0}) => Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = width
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..color = color
+    ..maskFilter = blur > 0 ? MaskFilter.blur(BlurStyle.normal, blur) : null;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final offsets = [for (final p in points) camera.latLngToScreenOffset(p)];
+    final path = Path()..moveTo(offsets.first.dx, offsets.first.dy);
+    for (var i = 1; i < offsets.length; i++) {
+      path.lineTo(offsets[i].dx, offsets[i].dy);
+    }
+
+    // A short dotted link from where the person is to where the route starts.
+    if (from != null) {
+      final a = camera.latLngToScreenOffset(from!);
+      final link = Path()
+        ..moveTo(a.dx, a.dy)
+        ..lineTo(offsets.first.dx, offsets.first.dy);
+      for (final m in link.computeMetrics()) {
+        for (var d = 0.0; d < m.length; d += 12) {
+          canvas.drawPath(m.extractPath(d, math.min(d + 6, m.length)), _stroke(_kRouteColor, 4));
+        }
+      }
+    }
+
+    final pulse = (math.sin(t * 2 * math.pi * 3) + 1) / 2; // the glow breathes about once a second
+    canvas.drawPath(path, _stroke(_kRouteColor.withValues(alpha: 0.28 + 0.22 * pulse), 20 + 7 * pulse, blur: 9));
+    canvas.drawPath(path, _stroke(Colors.white, 11.5));
+    canvas.drawPath(path, _stroke(_kRouteColor, 7.5));
+
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    final total = metric.length;
+    if (total < 20) return;
+
+    // Arrows pointing the way, sliding along the line.
+    var spacing = 40.0;
+    if (total / spacing > 400) spacing = total / 400; // never an unreasonable number when the route is very long
+    final arrow = Paint()..color = Colors.white;
+    final shift = (t * 3 * spacing) % spacing;
+    final bounds = (Offset.zero & size).inflate(40);
+    for (var d = shift; d < total; d += spacing) {
+      final tangent = metric.getTangentForOffset(d);
+      if (tangent == null || !bounds.contains(tangent.position)) continue;
+      canvas.save();
+      canvas.translate(tangent.position.dx, tangent.position.dy);
+      canvas.rotate(math.atan2(tangent.vector.dy, tangent.vector.dx));
+      canvas.drawPath(
+        Path()
+          ..moveTo(5, 0)
+          ..lineTo(-3.2, -4.2)
+          ..lineTo(-0.6, 0)
+          ..lineTo(-3.2, 4.2)
+          ..close(),
+        arrow,
+      );
+      canvas.restore();
+    }
+
+    // A bright pulse running from the start to the destination, over and over.
+    final head = total * t;
+    final tail = math.max(0.0, head - 90);
+    canvas.drawPath(metric.extractPath(tail, head), _stroke(Colors.white.withValues(alpha: 0.9), 4.5, blur: 1.5));
+    final tip = metric.getTangentForOffset(head)?.position;
+    if (tip != null) {
+      canvas.drawCircle(tip, 13, Paint()..color = _kRouteColor.withValues(alpha: 0.55)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+      canvas.drawCircle(tip, 7.5, Paint()..color = Colors.white);
+      canvas.drawCircle(tip, 4.5, Paint()..color = _kRouteColor);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RoutePainter old) => true;
+}
+
+/// Rings that grow and fade, drawn under the destination so the eye is drawn to where the route ends.
+class _PulseRing extends StatefulWidget {
+  final Color color;
+  const _PulseRing({required this.color});
+
+  @override
+  State<_PulseRing> createState() => _PulseRingState();
+}
+
+class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        Widget ring(double phase) {
+          final v = (_c.value + phase) % 1.0;
+          final size = 46 + 84 * v;
+          return Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: widget.color.withValues(alpha: (1 - v) * 0.9), width: 3),
+              color: widget.color.withValues(alpha: (1 - v) * 0.12),
+            ),
+          );
+        }
+
+        return Center(child: Stack(alignment: Alignment.center, children: [ring(0), ring(0.5)]));
+      },
+    );
+  }
+}
+
+/// Switches the population layer on and off. It sits under the route button and takes the layer's own colour when on.
+class _PopulationToggle extends StatelessWidget {
+  final bool active;
+  final String label;
+  final VoidCallback onTap;
+  const _PopulationToggle({required this.active, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: active ? _kDensityColors[DensityClass.medium] : Colors.black.withValues(alpha: 0.68),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: active
+                ? appGlow(_kDensityColors[DensityClass.medium]!, alpha: 0.5, blur: 14)
+                : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.groups_2_outlined, color: Colors.white, size: 17),
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What the three colours mean, with the people-per-square-kilometre range of each, and where the data is from.
+class _PopulationLegend extends StatelessWidget {
+  final PopulationGrid grid;
+  const _PopulationLegend({required this.grid});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    Widget row(DensityClass k, String name, String range) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _kDensityColors[k]!.withValues(alpha: (_kDensityFill[k]! + 0.25).clamp(0.0, 1.0)),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: _kDensityColors[k]!, width: 1),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Text(name, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              const SizedBox(width: 8),
+              Text(range, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5)),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.74),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.popLegendTitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          row(DensityClass.high, l10n.popHigh, '4,000+'),
+          row(DensityClass.medium, l10n.popMedium, '1,000 to 4,000'),
+          row(DensityClass.low, l10n.popLow, '150 to 1,000'),
+          const SizedBox(height: 4),
+          Text(l10n.popSource, style: const TextStyle(color: AppColors.textMuted, fontSize: 9.5)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DensityChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _DensityChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.8)),
+      ),
+      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
     );
   }
 }
