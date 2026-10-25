@@ -45,12 +45,12 @@ class AppRadius {
 
 /// Command-center typography: exactly two families, each with one job.
 ///
-/// Plus Jakarta Sans is the ONLY sans in the app — every header, label,
+/// Manrope is the ONLY sans in the app — every header, label,
 /// button, hazard message and settings row uses it (via the global
 /// textTheme below, or AppFonts.heading() for display-weight text). It
-/// replaces an earlier mix of Manrope (body) and Rajdhani (headings),
-/// which was two typefaces doing the same job and reading as inconsistent
-/// rather than deliberate.
+/// replaces an earlier mix of two typefaces (a body face and Rajdhani
+/// headings), which was two typefaces doing the same job and reading as
+/// inconsistent rather than deliberate.
 ///
 /// JetBrains Mono is reserved *strictly* for live telemetry: sensor
 /// readings, coordinates, and timestamps — the numbers a district officer
@@ -67,7 +67,7 @@ class AppFonts {
     Color color = AppColors.textPrimary,
     double letterSpacing = 0.1,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.manrope(
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
@@ -115,7 +115,7 @@ class SiagaTheme {
       ),
     );
 
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    final textTheme = GoogleFonts.manropeTextTheme(base.textTheme).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
@@ -144,7 +144,7 @@ class SiagaTheme {
         indicatorColor: AppColors.accent.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.plusJakartaSans(
+          return GoogleFonts.manrope(
             fontSize: 11.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             letterSpacing: 0.2,
@@ -181,7 +181,7 @@ class SiagaTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
       switchTheme: SwitchThemeData(

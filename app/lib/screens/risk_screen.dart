@@ -18,9 +18,10 @@ import '../widgets/risk_gauge.dart';
 /// cell." Redesigned as a command-center dashboard: a telemetry-dial gauge
 /// for the at-a-glance read, a threat-level stepper, a grid of live
 /// micro-metrics around it, and a pulsing "active threat" banner when a
-/// hazard applies. On wide viewports (tablet/desktop — this screen also
-/// serves the web preview build) the gauge and metrics sit side by side
-/// instead of stacking into one narrow column with wasted margins.
+/// hazard applies. One column at every width, in reading order: the threat
+/// level first, then the live readings, then the trends behind them. On wide
+/// viewports (this screen also serves the web build) the column stays a
+/// readable width and only the trend charts split into two columns.
 class RiskScreen extends StatefulWidget {
   const RiskScreen({super.key});
 
@@ -149,53 +150,29 @@ class _RiskScreenState extends State<RiskScreen> {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            // Wide enough for two columns of trend charts; everything else is one column at every width.
             final wide = constraints.maxWidth >= _wideBreakpoint;
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 110), // clear of the floating nav bar
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
+                  constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (wide)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 5, child: gaugeColumn),
-                            const SizedBox(width: 28),
-                            Expanded(
-                              flex: 6,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  metrics,
-                                  const SizedBox(height: 16),
-                                  _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
-                                  const SizedBox(height: 16),
-                                  attribution,
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        gaugeColumn,
-                        const SizedBox(height: 24),
-                        metrics,
-                        const SizedBox(height: 16),
-                        _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
-                      ],
+                      gaugeColumn,
+                      const SizedBox(height: 24),
+                      metrics,
+                      const SizedBox(height: 16),
+                      _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
                       if (appState.rigMode) ...[
                         const SizedBox(height: 32),
                         _TrendsSection(appState: appState, l10n: l10n, wide: wide),
                         const SizedBox(height: 24),
                         _HowItWorks(l10n: l10n),
                       ],
-                      if (!wide) ...[
-                        const SizedBox(height: 16),
-                        attribution,
-                      ],
+                      const SizedBox(height: 16),
+                      attribution,
                     ],
                   ),
                 ),
