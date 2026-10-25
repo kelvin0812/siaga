@@ -6,6 +6,9 @@ import 'bench_sensor_service.dart';
 import 'models.dart';
 import 'phase_model.dart';
 
+/// The id of the live rig's node. The simulated demo nodes have other ids.
+const kRigNodeId = 998;
+
 /// A simulated neighbour of the live rig, so a demonstration shows a whole monitored area and an alert spreading
 /// through it. Its level follows the rig's with its own lag or sensitivity ([phaseFor] maps the rig's phase, 1 to
 /// 4, to this node's). It is never presented as real: SiagaNode.simulated is set and the app labels it a demo node.
@@ -52,7 +55,7 @@ class RigController {
     BenchSensorService? service,
     Future<String> Function()? loadModelJson,
     this.pollInterval = const Duration(seconds: 3),
-    this.nodeId = 998,
+    this.nodeId = kRigNodeId,
     this.nodeName = 'Bench rig (live)',
     // MMU Cyberjaya, where the competition demo runs.
     this.demoNodes = kCyberjayaDemoNodes,

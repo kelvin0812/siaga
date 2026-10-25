@@ -501,4 +501,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapLegendDemo => 'Demo node (simulated)';
+
+  @override
+  String get riskViewing => 'Data from';
+
+  @override
+  String get nodePickerTitle => 'Choose a node';
+
+  @override
+  String get nodePickerSearch => 'Search by name';
+
+  @override
+  String get nodeGroupSensor => 'Sensor nodes';
+
+  @override
+  String get nodeGroupDemo => 'Demo nodes (simulated)';
+
+  @override
+  String get nodeAutoPick => 'Nearest to me (automatic)';
+
+  @override
+  String get nodeNoMatch => 'No node matches that name.';
+
+  @override
+  String get simNoSensors =>
+      'This is a demo node, so it has no sensors. Its level follows the live rig.';
+
+  @override
+  String get simShowRig => 'Show the live rig';
+
+  @override
+  String get statusNormalT => 'All clear for now';
+
+  @override
+  String get statusNormalD => 'The water is at its usual level.';
+
+  @override
+  String get statusWatchT => 'Keep an eye on it';
+
+  @override
+  String get statusWatchD =>
+      'Readings are starting to change. Check back soon.';
+
+  @override
+  String get statusWarningT => 'Get ready to move';
+
+  @override
+  String get statusWarningD =>
+      'Water is rising towards a dangerous level. Know your way to higher ground.';
+
+  @override
+  String get statusEvacT => 'Move to higher ground now';
+
+  @override
+  String get statusEvacD =>
+      'Conditions are dangerous. Follow the route to the nearest assembly point.';
+
+  @override
+  String get statusOfflineT => 'No live readings';
+
+  @override
+  String get statusWaitingT => 'Waiting for the rig';
+
+  @override
+  String get statusWaitingD =>
+      'Nothing has arrived yet. Check that the rig is switched on and online.';
+
+  @override
+  String get statusDemoT => 'Demo node';
+
+  @override
+  String get openMapBtn => 'Open the map';
+
+  @override
+  String get howTitle2 => 'How is this decided?';
+
+  @override
+  String get howBody =>
+      'Four sensors on the rig feed a model trained on this rig\'s own test runs, and the water level counts the most. The siren on the rig runs the same model, so it shows the same level as this screen.';
+
+  @override
+  String get viewInRisk => 'Show in My Risk';
+
+  @override
+  String statusOfflineD(String ago) {
+    return 'The last reading from the rig was $ago. SIAGA cannot say how things look right now.';
+  }
 }

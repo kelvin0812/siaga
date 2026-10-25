@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
+import '../core/rig_controller.dart' show kRigNodeId;
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/active_threat_banner.dart';
@@ -33,38 +34,24 @@ class _RiskScreenState extends State<RiskScreen> {
     final l10n = AppLocalizations.of(context)!;
     final appState = context.watch<AppState>();
     final cellId = appState.currentCellId;
+    final nodes = appState.nodes;
 
-    // Mentor feedback: the risk indicator should be tied to a specific
-    // node, not only an automatic "nearest to my GPS" guess — resolved
-    // via AppState.lockedNodeId, settable here (dropdown) or from the map
-    // screen's "lock to this node" button; both write the same field.
-    // Falls back to nearest-by-GPS when nothing is locked (unchanged
-    // default), and auto-clears a lock whose node vanished from the last
-    // /nodes fetch rather than showing stale data.
-    final nearestByGps = _nearestNode(appState);
-    if (!appState.demoMode && appState.lockedNodeId != null &&
-        appState.nodes.every((n) => n.id != appState.lockedNodeId)) {
+    // Which node this screen shows: the one picked from the list (or from the map), else the live rig in a demo, else
+    // the node nearest to the phone. A pick that no longer exists falls back to that default.
+    final picked = appState.lockedNodeId == null ? null : nodes.where((n) => n.id == appState.lockedNodeId).firstOrNull;
+    if (!appState.demoMode && appState.lockedNodeId != null && picked == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) appState.setLockedNode(null);
       });
     }
-    // Demo mode has exactly one node (the simulated one) -- feed it to the
-    // metrics panel as `nearest` too, rather than leaving it null, so the
-    // Distance/Last Sync cards have something to show instead of "—"
-    // during a demo. (Real-mode locking/nearest-by-GPS logic below is
-    // unrelated and unaffected by this.)
+    final waitingForRig = appState.rigMode && appState.rigReading == null && picked == null;
     final focusedNode = appState.demoMode
-        ? appState.nodes.firstOrNull
-        : (appState.lockedNodeId != null
-            ? appState.nodes.where((n) => n.id == appState.lockedNodeId).firstOrNull
-            : null) ??
-            nearestByGps;
-
-    // Demo mode still drives the gauge from the demo hydrograph directly
-    // (its own well-defined single-node flow via Settings' state buttons);
-    // real mode now reads a node's own state/probability straight from the
-    // backend rather than the more fragile GPS-cell/hazard-polygon match.
-    final riskState = appState.demoMode ? appState.myRiskState : (focusedNode?.state ?? RiskState.normal);
+        ? (waitingForRig ? null : (picked ?? nodes.firstOrNull))
+        : (picked ?? _nearestNode(appState));
+    final isRigNode = appState.rigMode && focusedNode != null && focusedNode.id == kRigNodeId;
+    final simulated = focusedNode?.simulated ?? false;
+    final rig = isRigNode ? appState.rigReading : null;
+    final riskState = focusedNode?.state ?? RiskState.normal;
     final hasKnownArea = appState.demoMode || focusedNode != null;
 
     final relevantHazard = appState.demoMode
@@ -82,33 +69,26 @@ class _RiskScreenState extends State<RiskScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     final glowColor = hasKnownArea ? riskStateColor(riskState) : AppColors.accent;
 
-    final score = appState.demoMode ? appState.nodes.firstOrNull?.riskProbability : focusedNode?.riskProbability;
-    final scoreLabel = appState.rigMode
-        ? (appState.rigReading?.isStale ?? false ? l10n.rigStatusOffline : l10n.riskScoreLabel)
+    final score = focusedNode?.riskProbability;
+    final scoreLabel = isRigNode
+        ? (rig?.isStale ?? false ? l10n.rigStatusOffline : l10n.riskScoreLabel)
         : appState.demoMode
             ? 'Simulated severity'
             : 'Tier 2 probability';
 
-    // The first screenful: where the area stands, then every real sensor with its number and its last 10 minutes.
+    // The first screenful: which node this is, where it stands, then every real sensor with its number and its last
+    // 10 minutes.
     final top = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!appState.demoMode && appState.nodes.length > 1) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${l10n.riskSelectorLabel}: ',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              _NodeSelector(
-                nodes: appState.nodes,
-                selectedNodeId: appState.lockedNodeId,
-                onChanged: appState.setLockedNode,
-              ),
-            ],
+        if (nodes.isNotEmpty) ...[
+          _NodeBar(
+            node: focusedNode,
+            automatic: !appState.demoMode && picked == null,
+            l10n: l10n,
+            onTap: () => _pickNode(context, appState, focusedNode),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
         ],
         if (!hasKnownArea)
           GlassCard(
@@ -126,54 +106,85 @@ class _RiskScreenState extends State<RiskScreen> {
             state: riskState,
             score: score,
             scoreLabel: scoreLabel,
-            rig: appState.rigMode ? appState.rigReading : null,
-            showStatus: appState.rigMode,
+            rig: rig,
+            showStatus: isRigNode,
             l10n: l10n,
           ),
-        const SizedBox(height: 20),
-        _SectionTitle(title: l10n.riskTrendsTitle, subtitle: l10n.riskTrendsSubtitle),
-        const SizedBox(height: 12),
-        _SensorGrid(appState: appState, l10n: l10n),
+        if (isRigNode || !appState.rigMode || waitingForRig) ...[
+          const SizedBox(height: 20),
+          _SectionTitle(title: l10n.riskTrendsTitle, subtitle: l10n.riskTrendsSubtitle),
+          const SizedBox(height: 12),
+          _SensorGrid(appState: appState, l10n: l10n),
+        ],
       ],
     );
-
-    final attribution = _Attribution(l10n: l10n, offline: appState.isOffline, showSourceLine: relevantHazard == null);
 
     return CommandBackground(
       glow: glowColor,
       child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 110), // clear of the floating nav bar
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      top,
-                      if (appState.rigMode) ...[
-                        const SizedBox(height: 12),
-                        _RiskHistory(appState: appState, l10n: l10n),
-                        const SizedBox(height: 16),
-                        _SummaryCard(state: riskState, stale: appState.rigReading?.isStale ?? true, l10n: l10n),
-                      ],
-                      const SizedBox(height: 16),
-                      _ThreatOrAllClear(hazard: relevantHazard, locale: locale),
-                      if (appState.rigMode) ...[
-                        const SizedBox(height: 24),
-                        _HowItWorks(l10n: l10n),
-                      ],
-                      const SizedBox(height: 16),
-                      attribution,
-                    ],
-                  ),
-                ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 110), // clear of the floating nav bar
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  top,
+                  if (isRigNode) ...[
+                    const SizedBox(height: 12),
+                    _RiskHistory(appState: appState, l10n: l10n),
+                  ],
+                  if (appState.rigMode || hasKnownArea) ...[
+                    const SizedBox(height: 16),
+                    _StatusPanel(
+                      state: riskState,
+                      simulated: simulated,
+                      waiting: waitingForRig,
+                      lastReading: rig != null && rig.isStale ? rig.rowTime : null,
+                      onOpenMap: riskState.index >= RiskState.warning.index && !simulated && !(rig?.isStale ?? false)
+                          ? () => appState.openTab(0)
+                          : null,
+                      onShowRig: simulated ? () => appState.setLockedNode(null) : null,
+                      l10n: l10n,
+                    ),
+                  ],
+                  if (relevantHazard != null && !appState.rigMode) ...[
+                    const SizedBox(height: 16),
+                    ActiveThreatBanner(hazard: relevantHazard, message: relevantHazard.messageFor(locale)),
+                  ],
+                  if (appState.rigMode) ...[
+                    const SizedBox(height: 12),
+                    _AboutReading(l10n: l10n),
+                  ],
+                  if (appState.isOffline) ...[
+                    const SizedBox(height: 16),
+                    Center(child: _OfflinePill(text: l10n.offlineBanner)),
+                  ],
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _pickNode(BuildContext context, AppState appState, SiagaNode? current) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (sheetContext) => _NodePicker(
+        nodes: appState.nodes,
+        selectedId: current?.id,
+        allowAutomatic: !appState.demoMode,
+        automaticSelected: !appState.demoMode && appState.lockedNodeId == null,
+        onPick: (id) {
+          appState.setLockedNode(id);
+          Navigator.of(sheetContext).pop();
+        },
       ),
     );
   }
@@ -193,67 +204,6 @@ class _RiskScreenState extends State<RiskScreen> {
     });
   }
 
-}
-
-/// Dropdown letting the resident explicitly pick which node's risk level
-/// to view — the same underlying selection as the map screen's "lock to
-/// this node" button (AppState.lockedNodeId). Null stays "Auto," the
-/// original nearest-by-GPS behaviour.
-class _NodeSelector extends StatelessWidget {
-  final List<SiagaNode> nodes;
-  final int? selectedNodeId;
-  final ValueChanged<int?> onChanged;
-
-  const _NodeSelector({required this.nodes, required this.selectedNodeId, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceRaised,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.hairline),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: selectedNodeId != null && nodes.any((n) => n.id == selectedNodeId) ? selectedNodeId : null,
-          isDense: true,
-          icon: const Icon(Icons.expand_more, color: AppColors.textSecondary, size: 18),
-          dropdownColor: AppColors.surfaceRaised,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.my_location, size: 14, color: AppColors.accent),
-                  const SizedBox(width: 6),
-                  Text(l10n.riskSelectorAuto),
-                ],
-              ),
-            ),
-            ...nodes.map(
-              (n) => DropdownMenuItem<int?>(
-                value: n.id,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.lock, size: 13, color: riskStateColor(n.state)),
-                    const SizedBox(width: 6),
-                    Text(n.name, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
 }
 
 /// The four RiskStates laid out as a horizontal stepper — every level is
@@ -576,153 +526,6 @@ class _LiveStatus extends StatelessWidget {
   }
 }
 
-/// One plain sentence on what the current level means for a resident, so the colours do not need explaining.
-class _SummaryCard extends StatelessWidget {
-  final RiskState state;
-  final bool stale;
-  final AppLocalizations l10n;
-  const _SummaryCard({required this.state, required this.stale, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = stale ? AppColors.textSecondary : riskStateColor(state);
-    final text = stale
-        ? l10n.riskSummaryOffline
-        : switch (state) {
-            RiskState.normal => l10n.riskSummaryNormal,
-            RiskState.watch => l10n.riskSummaryWatch,
-            RiskState.warning => l10n.riskSummaryWarning,
-            RiskState.evacuate => l10n.riskSummaryEvacuate,
-          };
-    return GlassCard(
-      padding: const EdgeInsets.all(18),
-      radius: AppRadius.md,
-      glowColor: color,
-      glowAlpha: 0.12,
-      glowBlur: 20,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, size: 20, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.riskSummaryTitle.toUpperCase(),
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
-                ),
-                const SizedBox(height: 6),
-                Text(text, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.4, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Three short steps on how a reading becomes a warning, for anyone seeing SIAGA for the first time.
-class _HowItWorks extends StatelessWidget {
-  final AppLocalizations l10n;
-  const _HowItWorks({required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final steps = [l10n.howStep1, l10n.howStep2, l10n.howStep3];
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
-      radius: AppRadius.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.howTitle.toUpperCase(),
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
-          ),
-          const SizedBox(height: 14),
-          for (var i = 0; i < steps.length; i++)
-            Padding(
-              padding: EdgeInsets.only(bottom: i == steps.length - 1 ? 0 : 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.accent.withValues(alpha: 0.18)),
-                    child: Text('${i + 1}', style: const TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w800)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(steps[i], style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.45))),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreatOrAllClear extends StatelessWidget {
-  final Hazard? hazard;
-  final String locale;
-  const _ThreatOrAllClear({required this.hazard, required this.locale});
-
-  @override
-  Widget build(BuildContext context) {
-    if (hazard != null) {
-      return ActiveThreatBanner(hazard: hazard!, message: hazard!.messageFor(locale));
-    }
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: AppColors.normal, size: 18),
-          const SizedBox(width: 10),
-          Text(
-            'NO ACTIVE THREATS',
-            style: AppFonts.mono(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.normal, letterSpacing: 0.8),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Attribution extends StatelessWidget {
-  final AppLocalizations l10n;
-  final bool offline;
-  // False when ActiveThreatBanner is already showing (mentor feedback:
-  // its message already ends with this exact sourceAttribution string —
-  // see fcm.py's templates / demo_controller.dart's _alertCopyFor — so
-  // repeating it here in faint muted text right underneath was a
-  // duplicate, not a second piece of information, and read as clutter).
-  final bool showSourceLine;
-  const _Attribution({required this.l10n, required this.offline, required this.showSourceLine});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (showSourceLine)
-          Text(
-            l10n.sourceAttribution,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45, fontWeight: FontWeight.w500),
-          ),
-        if (offline) ...[
-          if (showSourceLine) const SizedBox(height: 12),
-          _OfflinePill(text: l10n.offlineBanner),
-        ],
-      ],
-    );
-  }
-}
-
 class _OfflinePill extends StatelessWidget {
   final String text;
   const _OfflinePill({required this.text});
@@ -743,6 +546,398 @@ class _OfflinePill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(text, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+}
+
+/// Which node the screen is showing, as a bar you tap to choose another. It sits above everything so the source of
+/// every number below it is never in doubt.
+class _NodeBar extends StatelessWidget {
+  final SiagaNode? node;
+  final bool automatic;
+  final AppLocalizations l10n;
+  final VoidCallback onTap;
+  const _NodeBar({required this.node, required this.automatic, required this.l10n, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final n = node;
+    final color = n == null ? AppColors.textSecondary : riskStateColor(n.state);
+    final kind = n == null ? '' : (n.simulated ? l10n.nodeKindDemo : l10n.nodeKindSensor);
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      radius: AppRadius.md,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.16),
+                    border: Border.all(color: color.withValues(alpha: 0.7)),
+                  ),
+                  child: Icon(n?.simulated == true ? Icons.science_outlined : Icons.sensors, color: color, size: 19),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.riskViewing, style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5)),
+                      Text(
+                        n?.name ?? '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700),
+                      ),
+                      if (n != null)
+                        Text(
+                          '$kind  ·  ${n.lat.toStringAsFixed(4)}, ${n.lon.toStringAsFixed(4)}${automatic ? '  ·  ${l10n.riskSelectorAuto}' : ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.unfold_more, color: AppColors.textSecondary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The list of every node, to pick the one the screen should show. Searchable, because an authority may be looking
+/// across many nodes. Real sensors come first, then the simulated demo nodes, each group with the most severe first.
+class _NodePicker extends StatefulWidget {
+  final List<SiagaNode> nodes;
+  final int? selectedId;
+  final bool allowAutomatic;
+  final bool automaticSelected;
+  final ValueChanged<int?> onPick;
+  const _NodePicker({
+    required this.nodes,
+    required this.selectedId,
+    required this.allowAutomatic,
+    required this.automaticSelected,
+    required this.onPick,
+  });
+
+  @override
+  State<_NodePicker> createState() => _NodePickerState();
+}
+
+class _NodePickerState extends State<_NodePicker> {
+  final _query = TextEditingController();
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  int _bySeverity(SiagaNode a, SiagaNode b) {
+    final c = b.state.index.compareTo(a.state.index);
+    return c != 0 ? c : a.name.compareTo(b.name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final q = _query.text.trim().toLowerCase();
+    final matches = widget.nodes.where((n) => q.isEmpty || n.name.toLowerCase().contains(q)).toList();
+    final real = matches.where((n) => !n.simulated).toList()..sort(_bySeverity);
+    final demo = matches.where((n) => n.simulated).toList()..sort(_bySeverity);
+
+    Widget group(String title) => Padding(
+          padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
+          child: Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        );
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(l10n.nodePickerTitle, style: Theme.of(context).textTheme.titleLarge),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: TextField(
+                  controller: _query,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: l10n.nodePickerSearch,
+                    isDense: true,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                  children: [
+                    if (widget.allowAutomatic && q.isEmpty)
+                      _PickerRow(
+                        icon: Icons.my_location,
+                        color: AppColors.accent,
+                        title: l10n.nodeAutoPick,
+                        subtitle: null,
+                        trailing: null,
+                        selected: widget.automaticSelected,
+                        onTap: () => widget.onPick(null),
+                      ),
+                    if (real.isNotEmpty) ...[
+                      group('${l10n.nodeGroupSensor} (${real.length})'),
+                      for (final n in real) _row(context, n),
+                    ],
+                    if (demo.isNotEmpty) ...[
+                      group('${l10n.nodeGroupDemo} (${demo.length})'),
+                      for (final n in demo) _row(context, n),
+                    ],
+                    if (matches.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(l10n.nodeNoMatch, style: const TextStyle(color: AppColors.textSecondary)),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, SiagaNode n) {
+    final l10n = AppLocalizations.of(context)!;
+    final color = riskStateColor(n.state);
+    final kind = n.simulated ? l10n.nodeKindDemo : l10n.nodeKindSensor;
+    return _PickerRow(
+      icon: n.simulated ? Icons.science_outlined : Icons.sensors,
+      color: color,
+      title: n.name,
+      subtitle: n.lastSeen != null ? '$kind  ·  ${_formatAgo(n.lastSeen!)}' : kind,
+      trailing: riskStateLabel(context, n.state),
+      selected: widget.automaticSelected ? false : n.id == widget.selectedId,
+      onTap: () => widget.onPick(n.id),
+    );
+  }
+}
+
+class _PickerRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String? subtitle;
+  final String? trailing;
+  final bool selected;
+  final VoidCallback onTap;
+  const _PickerRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            color: selected ? color.withValues(alpha: 0.12) : null,
+            border: selected ? Border.all(color: color.withValues(alpha: 0.6)) : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.16),
+                  border: Border.all(color: color.withValues(alpha: 0.7)),
+                ),
+                child: Icon(icon, color: color, size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
+                    if (subtitle != null)
+                      Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (trailing != null) Text(trailing!, style: TextStyle(color: color, fontSize: 12.5, fontWeight: FontWeight.w700)),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.check_circle, color: color, size: 20),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What the current level means in plain words, with the one thing worth doing about it. A single card replaces the
+/// separate "what this means", "no active threats" and numbered-steps cards.
+class _StatusPanel extends StatelessWidget {
+  final RiskState state;
+  final bool simulated;
+  final bool waiting;
+  final DateTime? lastReading;
+  final VoidCallback? onOpenMap;
+  final VoidCallback? onShowRig;
+  final AppLocalizations l10n;
+  const _StatusPanel({
+    required this.state,
+    required this.simulated,
+    required this.waiting,
+    required this.lastReading,
+    required this.onOpenMap,
+    required this.onShowRig,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String title;
+    final String detail;
+    final Color color;
+    final IconData icon;
+    if (simulated) {
+      title = l10n.statusDemoT;
+      detail = l10n.simNoSensors;
+      color = AppColors.textSecondary;
+      icon = Icons.science_outlined;
+    } else if (waiting) {
+      title = l10n.statusWaitingT;
+      detail = l10n.statusWaitingD;
+      color = AppColors.textSecondary;
+      icon = Icons.hourglass_empty;
+    } else if (lastReading != null) {
+      title = l10n.statusOfflineT;
+      detail = l10n.statusOfflineD(_formatAgo(lastReading!));
+      color = const Color(0xFFE8833A);
+      icon = Icons.cloud_off;
+    } else {
+      color = riskStateColor(state);
+      switch (state) {
+        case RiskState.normal:
+          title = l10n.statusNormalT;
+          detail = l10n.statusNormalD;
+          icon = Icons.check_circle_outline;
+        case RiskState.watch:
+          title = l10n.statusWatchT;
+          detail = l10n.statusWatchD;
+          icon = Icons.visibility_outlined;
+        case RiskState.warning:
+          title = l10n.statusWarningT;
+          detail = l10n.statusWarningD;
+          icon = Icons.warning_amber_rounded;
+        case RiskState.evacuate:
+          title = l10n.statusEvacT;
+          detail = l10n.statusEvacD;
+          icon = Icons.crisis_alert;
+      }
+    }
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      radius: AppRadius.md,
+      glowColor: color,
+      glowAlpha: 0.12,
+      glowBlur: 20,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.15)),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppFonts.heading(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: 0)),
+                const SizedBox(height: 4),
+                Text(detail, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14.5, height: 1.45)),
+                if (onOpenMap != null || onShowRig != null) ...[
+                  const SizedBox(height: 10),
+                  FilledButton.tonalIcon(
+                    onPressed: onOpenMap ?? onShowRig,
+                    icon: Icon(onOpenMap != null ? Icons.map_outlined : Icons.sensors, size: 18),
+                    label: Text(onOpenMap != null ? l10n.openMapBtn : l10n.simShowRig),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How the level is decided, tucked away until someone wants it.
+class _AboutReading extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _AboutReading({required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      radius: AppRadius.md,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 18),
+          childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          iconColor: AppColors.textSecondary,
+          collapsedIconColor: AppColors.textSecondary,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          title: Text(l10n.howTitle2, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w600)),
+          children: [Text(l10n.howBody, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5))],
+        ),
       ),
     );
   }

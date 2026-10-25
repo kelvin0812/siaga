@@ -153,6 +153,14 @@ class _HomeShellState extends State<_HomeShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final wanted = context.watch<AppState>().pendingTab;
+    if (wanted != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _index = wanted);
+        context.read<AppState>().clearPendingTab();
+      });
+    }
     return Scaffold(
       extendBody: true,
       appBar: AppBar(title: const _Brand()),

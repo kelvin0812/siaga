@@ -1033,6 +1033,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Demo node (simulated)'**
   String get mapLegendDemo;
+
+  /// No description provided for @riskViewing.
+  ///
+  /// In en, this message translates to:
+  /// **'Data from'**
+  String get riskViewing;
+
+  /// No description provided for @nodePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a node'**
+  String get nodePickerTitle;
+
+  /// No description provided for @nodePickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name'**
+  String get nodePickerSearch;
+
+  /// No description provided for @nodeGroupSensor.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor nodes'**
+  String get nodeGroupSensor;
+
+  /// No description provided for @nodeGroupDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo nodes (simulated)'**
+  String get nodeGroupDemo;
+
+  /// No description provided for @nodeAutoPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest to me (automatic)'**
+  String get nodeAutoPick;
+
+  /// No description provided for @nodeNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No node matches that name.'**
+  String get nodeNoMatch;
+
+  /// No description provided for @simNoSensors.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a demo node, so it has no sensors. Its level follows the live rig.'**
+  String get simNoSensors;
+
+  /// No description provided for @simShowRig.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the live rig'**
+  String get simShowRig;
+
+  /// No description provided for @statusNormalT.
+  ///
+  /// In en, this message translates to:
+  /// **'All clear for now'**
+  String get statusNormalT;
+
+  /// No description provided for @statusNormalD.
+  ///
+  /// In en, this message translates to:
+  /// **'The water is at its usual level.'**
+  String get statusNormalD;
+
+  /// No description provided for @statusWatchT.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep an eye on it'**
+  String get statusWatchT;
+
+  /// No description provided for @statusWatchD.
+  ///
+  /// In en, this message translates to:
+  /// **'Readings are starting to change. Check back soon.'**
+  String get statusWatchD;
+
+  /// No description provided for @statusWarningT.
+  ///
+  /// In en, this message translates to:
+  /// **'Get ready to move'**
+  String get statusWarningT;
+
+  /// No description provided for @statusWarningD.
+  ///
+  /// In en, this message translates to:
+  /// **'Water is rising towards a dangerous level. Know your way to higher ground.'**
+  String get statusWarningD;
+
+  /// No description provided for @statusEvacT.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to higher ground now'**
+  String get statusEvacT;
+
+  /// No description provided for @statusEvacD.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions are dangerous. Follow the route to the nearest assembly point.'**
+  String get statusEvacD;
+
+  /// No description provided for @statusOfflineT.
+  ///
+  /// In en, this message translates to:
+  /// **'No live readings'**
+  String get statusOfflineT;
+
+  /// No description provided for @statusWaitingT.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the rig'**
+  String get statusWaitingT;
+
+  /// No description provided for @statusWaitingD.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has arrived yet. Check that the rig is switched on and online.'**
+  String get statusWaitingD;
+
+  /// No description provided for @statusDemoT.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo node'**
+  String get statusDemoT;
+
+  /// No description provided for @openMapBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the map'**
+  String get openMapBtn;
+
+  /// No description provided for @howTitle2.
+  ///
+  /// In en, this message translates to:
+  /// **'How is this decided?'**
+  String get howTitle2;
+
+  /// No description provided for @howBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Four sensors on the rig feed a model trained on this rig\'s own test runs, and the water level counts the most. The siren on the rig runs the same model, so it shows the same level as this screen.'**
+  String get howBody;
+
+  /// No description provided for @viewInRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in My Risk'**
+  String get viewInRisk;
+
+  /// No description provided for @statusOfflineD.
+  ///
+  /// In en, this message translates to:
+  /// **'The last reading from the rig was {ago}. SIAGA cannot say how things look right now.'**
+  String statusOfflineD(String ago);
 }
 
 class _AppLocalizationsDelegate

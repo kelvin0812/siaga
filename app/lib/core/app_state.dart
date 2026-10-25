@@ -38,6 +38,16 @@ class AppState extends ChangeNotifier {
   /// from a later /nodes fetch, by whichever screen notices it.
   int? lockedNodeId;
 
+  /// A request from one screen to show another tab (0 map, 1 My Risk, 2 report, 3 settings). The home screen acts on
+  /// it and clears it.
+  int? pendingTab;
+  void openTab(int index) {
+    pendingTab = index;
+    notifyListeners();
+  }
+
+  void clearPendingTab() => pendingTab = null;
+
   AppState({
     required this.api,
     required this.cache,

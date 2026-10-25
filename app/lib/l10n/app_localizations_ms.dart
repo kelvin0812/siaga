@@ -504,4 +504,90 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get mapLegendDemo => 'Nod demo (simulasi)';
+
+  @override
+  String get riskViewing => 'Data daripada';
+
+  @override
+  String get nodePickerTitle => 'Pilih nod';
+
+  @override
+  String get nodePickerSearch => 'Cari ikut nama';
+
+  @override
+  String get nodeGroupSensor => 'Nod sensor';
+
+  @override
+  String get nodeGroupDemo => 'Nod demo (simulasi)';
+
+  @override
+  String get nodeAutoPick => 'Paling dekat dengan saya (automatik)';
+
+  @override
+  String get nodeNoMatch => 'Tiada nod yang sepadan.';
+
+  @override
+  String get simNoSensors =>
+      'Ini nod demo, jadi ia tiada sensor. Tahapnya mengikuti rig langsung.';
+
+  @override
+  String get simShowRig => 'Tunjuk rig langsung';
+
+  @override
+  String get statusNormalT => 'Selamat buat masa ini';
+
+  @override
+  String get statusNormalD => 'Air berada pada paras biasa.';
+
+  @override
+  String get statusWatchT => 'Pantau keadaan';
+
+  @override
+  String get statusWatchD =>
+      'Bacaan mula berubah. Semak semula tidak lama lagi.';
+
+  @override
+  String get statusWarningT => 'Bersedia untuk berpindah';
+
+  @override
+  String get statusWarningD =>
+      'Air meningkat menghampiri paras berbahaya. Ketahui jalan ke kawasan yang lebih tinggi.';
+
+  @override
+  String get statusEvacT => 'Berpindah ke kawasan tinggi sekarang';
+
+  @override
+  String get statusEvacD =>
+      'Keadaan berbahaya. Ikut laluan ke tempat berkumpul terdekat.';
+
+  @override
+  String get statusOfflineT => 'Tiada bacaan langsung';
+
+  @override
+  String get statusWaitingT => 'Menunggu rig';
+
+  @override
+  String get statusWaitingD =>
+      'Belum ada data. Pastikan rig dihidupkan dan dalam talian.';
+
+  @override
+  String get statusDemoT => 'Nod demo';
+
+  @override
+  String get openMapBtn => 'Buka peta';
+
+  @override
+  String get howTitle2 => 'Bagaimana ini ditentukan?';
+
+  @override
+  String get howBody =>
+      'Empat sensor pada rig memberi data kepada model yang dilatih menggunakan larian ujian rig ini sendiri, dan paras air paling diutamakan. Siren pada rig menjalankan model yang sama, jadi ia menunjukkan tahap yang sama seperti skrin ini.';
+
+  @override
+  String get viewInRisk => 'Tunjuk dalam Risiko Saya';
+
+  @override
+  String statusOfflineD(String ago) {
+    return 'Bacaan terakhir daripada rig ialah $ago. SIAGA tidak dapat memastikan keadaan sekarang.';
+  }
 }

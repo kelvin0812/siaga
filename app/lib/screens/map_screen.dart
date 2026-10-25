@@ -392,6 +392,15 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
         ],
       ],
       actions: [
+        OutlinedButton.icon(
+          onPressed: () {
+            appState.setLockedNode(node.id);
+            setState(() => _focusKey = null);
+            appState.openTab(1);
+          },
+          icon: const Icon(Icons.shield_outlined, size: 18),
+          label: Text(l10n.viewInRisk),
+        ),
         if (!sim)
           FilledButton.icon(
             onPressed: () => setState(() {
