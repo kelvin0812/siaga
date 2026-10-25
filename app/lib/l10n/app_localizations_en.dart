@@ -821,4 +821,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get merangAiTag =>
       'Written by AI (Gemini). Check the official channels.';
+
+  @override
+  String get merangInputHint => 'Ask Merang about this reading…';
+
+  @override
+  String get merangSend => 'Send';
+
+  @override
+  String get merangHello =>
+      'Hi, I am Merang! Tap a question below, or type your own.';
+
+  @override
+  String get merangNoAi =>
+      'I cannot reach my AI brain right now, so I can only answer the questions below. Please tap one of them.';
+
+  @override
+  String get merangTypedNote =>
+      'Typed questions are sent to Google Gemini to be answered. Please do not type personal details.';
 }

@@ -255,5 +255,10 @@
   "merangDataSim": "This node is simulated for the demo, so there is no sensor behind it.",
   "merangDataOther": "These readings come from our sensor nodes, through our backend.",
   "merangHow": "I am Merang. I read the same numbers you see and put them into plain words. I run on your phone, so I work offline and your location never leaves it. The sensors and the rules decide the alert, not me.",
-  "merangAiTag": "Written by AI (Gemini). Check the official channels."
+  "merangAiTag": "Written by AI (Gemini). Check the official channels.",
+  "merangInputHint": "Ask Merang about this reading…",
+  "merangSend": "Send",
+  "merangHello": "Hi, I am Merang! Tap a question below, or type your own.",
+  "merangNoAi": "I cannot reach my AI brain right now, so I can only answer the questions below. Please tap one of them.",
+  "merangTypedNote": "Typed questions are sent to Google Gemini to be answered. Please do not type personal details."
 }

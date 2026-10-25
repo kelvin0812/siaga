@@ -173,6 +173,7 @@ void main() {
 
     testWidgets('a tapped question is answered after a short pause', (tester) async {
       await open(tester);
+      await tester.ensureVisible(find.widgetWithText(ActionChip, 'What should I do?'));
       await tester.tap(find.widgetWithText(ActionChip, 'What should I do?'));
       await tester.pump();
       expect(find.widgetWithText(ActionChip, 'What should I do?').evaluate().isNotEmpty, isTrue);
@@ -227,6 +228,7 @@ void main() {
 
     testWidgets('fits a small phone without overflowing', (tester) async {
       await open(tester, size: const Size(320, 640));
+      await tester.ensureVisible(find.widgetWithText(ActionChip, 'How do you work?'));
       await tester.tap(find.widgetWithText(ActionChip, 'How do you work?'));
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
       expect(tester.takeException(), isNull);

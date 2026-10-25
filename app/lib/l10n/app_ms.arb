@@ -255,5 +255,10 @@
   "merangDataSim": "Nod ini disimulasikan untuk demo, jadi tiada sensor di belakangnya.",
   "merangDataOther": "Bacaan ini datang daripada nod sensor kami, melalui bahagian belakang kami.",
   "merangHow": "Saya Merang. Saya membaca nombor yang sama seperti anda dan menukarnya kepada kata-kata mudah. Saya berjalan pada telefon anda, jadi saya berfungsi tanpa talian dan lokasi anda tidak pernah keluar. Sensor dan peraturan yang memutuskan amaran, bukan saya.",
-  "merangAiTag": "Ditulis oleh AI (Gemini). Semak saluran rasmi."
+  "merangAiTag": "Ditulis oleh AI (Gemini). Semak saluran rasmi.",
+  "merangInputHint": "Tanya Merang tentang bacaan ini…",
+  "merangSend": "Hantar",
+  "merangHello": "Hai, saya Merang! Tekan satu soalan di bawah, atau taip soalan anda sendiri.",
+  "merangNoAi": "Saya tidak dapat menghubungi otak AI saya sekarang, jadi saya hanya boleh menjawab soalan di bawah. Sila tekan salah satu.",
+  "merangTypedNote": "Soalan yang ditaip dihantar kepada Google Gemini untuk dijawab. Sila jangan taip butiran peribadi."
 }

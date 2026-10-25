@@ -6,6 +6,34 @@ import 'rig_controller.dart' show kRigNodeId;
 /// What Merang can be asked.
 enum MerangQuestion { why, next, data, how }
 
+/// What a typed question is really about.
+enum MerangIntent { safety, how, data, why, other }
+
+/// Works out what a typed question is about, in English and Bahasa Malaysia. Questions about what to DO or whether it is
+/// SAFE are recognised first, and always get the fixed "what should I do" wording, never a model's opinion.
+MerangIntent intentFor(String text) {
+  final t = text.toLowerCase();
+  bool has(String pattern) => RegExp(pattern).hasMatch(t);
+  if (has(r'evacuat|\bleave\b|\bgo now\b|should i (go|stay|move|run|leave)|\bsafe\b|\bsafety\b|danger|what (should|do|can) i do|what to do|\bmove out\b|\brun\b|berpindah|pindah|keluar|selamat|bahaya|apa (yang )?(patut|perlu|harus) (saya )?(buat|lakukan)|patut saya|perlu saya')) {
+    return MerangIntent.safety;
+  }
+  if (has(r'how (do|does|did) (you|merang)|who are you|are you (an )?ai|what are you|bagaimana (anda|kamu|awak) berfungsi|siapa (anda|kamu|awak)|adakah (anda|kamu|awak) ai')) {
+    return MerangIntent.how;
+  }
+  if (has(r'where.*(data|number|reading|come)|data source|\bsource\b|sensor|supabase|esp32|dari mana|sumber')) return MerangIntent.data;
+  if (has(r'\bwhy\b|how come|\breason\b|explain|kenapa|mengapa|sebab|terang')) return MerangIntent.why;
+  return MerangIntent.other;
+}
+
+/// The fixed question a typed one maps to, or null when it is something else entirely.
+MerangQuestion? questionForIntent(MerangIntent i) => switch (i) {
+      MerangIntent.safety => MerangQuestion.next,
+      MerangIntent.how => MerangQuestion.how,
+      MerangIntent.data => MerangQuestion.data,
+      MerangIntent.why => MerangQuestion.why,
+      MerangIntent.other => null,
+    };
+
 /// Everything the explainer is allowed to know: the numbers the screens already show. It is deliberately a small,
 /// read-only snapshot with no location in it, so whatever sits behind [Explainer] (today fixed wording, later perhaps a
 /// language model reached through our backend) cannot see or do more than the person looking at the screen.
@@ -93,6 +121,10 @@ class ExplainAnswer {
 /// answer it falls back to the fixed wording.
 abstract class AsyncExplainer {
   Future<ExplainAnswer> ask(MerangQuestion q, ExplainFacts facts, AppLocalizations l10n, String phaseLabel);
+
+  /// A question the resident typed. Questions about what to do or whether it is safe are always answered with the fixed
+  /// wording, whatever implements this.
+  Future<ExplainAnswer> askText(String text, ExplainFacts facts, AppLocalizations l10n, String phaseLabel);
 }
 
 /// Turns [ExplainFacts] into plain words. Today this is fixed wording filled with the real numbers, so it works offline
@@ -175,4 +207,12 @@ class LocalAsyncExplainer implements AsyncExplainer {
   @override
   Future<ExplainAnswer> ask(MerangQuestion q, ExplainFacts facts, AppLocalizations l10n, String phaseLabel) async =>
       ExplainAnswer(local.answer(q, facts, l10n, phaseLabel));
+
+  /// Without a model, a typed question is matched to the closest fixed answer, or Merang says it can only answer those.
+  @override
+  Future<ExplainAnswer> askText(String text, ExplainFacts facts, AppLocalizations l10n, String phaseLabel) async {
+    final q = questionForIntent(intentFor(text));
+    if (q == null) return ExplainAnswer([l10n.merangNoAi]);
+    return ask(q, facts, l10n, phaseLabel);
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../core/explainer_service.dart';
 import '../core/models.dart';
@@ -116,10 +118,18 @@ Future<void> showMerang(BuildContext context, ExplainFacts facts, {AsyncExplaine
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     constraints: const BoxConstraints(maxWidth: 640),
-    builder: (_) => FractionallySizedBox(
-      heightFactor: 0.86,
-      child: MerangSheet(facts: facts, explainer: explainer, typingDelay: typingDelay),
-    ),
+    builder: (sheetContext) {
+      // Rises above the on-screen keyboard: the sheet is padded by the keyboard's height and shrinks to the room that is left.
+      final m = MediaQuery.of(sheetContext);
+      final room = m.size.height - m.viewInsets.bottom - m.padding.top - 8;
+      return Padding(
+        padding: EdgeInsets.only(bottom: m.viewInsets.bottom),
+        child: SizedBox(
+          height: math.min(m.size.height * 0.86, room),
+          child: MerangSheet(facts: facts, explainer: explainer, typingDelay: typingDelay),
+        ),
+      );
+    },
   );
 }
 
@@ -143,6 +153,8 @@ class MerangSheet extends StatefulWidget {
 class _MerangSheetState extends State<MerangSheet> {
   final _messages = <_Msg>[];
   final _scroll = ScrollController();
+  final _input = TextEditingController();
+  final _focus = FocusNode();
   bool _typing = false;
   bool _started = false;
 
@@ -151,17 +163,20 @@ class _MerangSheetState extends State<MerangSheet> {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // Open with the question people most want answered, so the sheet is useful the moment it appears.
     final l10n = AppLocalizations.of(context)!;
     final phase = riskStateLabel(context, widget.facts.state);
+    // A greeting, then the question people most want answered, so the sheet is useful the moment it appears.
+    _messages.add(_Msg(true, l10n.merangHello));
     _messages.add(_Msg(false, l10n.merangQWhy(phase)));
     _typing = true;
-    _respond(MerangQuestion.why, l10n, phase);
+    _deliver(() => widget.explainer.ask(MerangQuestion.why, widget.facts, l10n, phase));
   }
 
   @override
   void dispose() {
     _scroll.dispose();
+    _input.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -181,12 +196,28 @@ class _MerangSheetState extends State<MerangSheet> {
       _typing = true;
     });
     _toEnd();
-    await _respond(q, l10n, phase);
+    await _deliver(() => widget.explainer.ask(q, widget.facts, l10n, phase));
   }
 
-  /// Asks the explainer (which may be a model on the network) and shows the answer after at least a short "typing" pause.
-  Future<void> _respond(MerangQuestion q, AppLocalizations l10n, String phase) async {
-    final both = await Future.wait<Object?>([widget.explainer.ask(q, widget.facts, l10n, phase), Future<void>.delayed(widget.typingDelay)]);
+  /// Sends what was typed. The explainer decides how to answer; safety questions always get the fixed wording.
+  Future<void> _send() async {
+    final text = _input.text.trim();
+    if (text.isEmpty || _typing) return;
+    final l10n = AppLocalizations.of(context)!;
+    final phase = riskStateLabel(context, widget.facts.state);
+    _input.clear();
+    setState(() {
+      _messages.add(_Msg(false, text));
+      _typing = true;
+    });
+    _toEnd();
+    await _deliver(() => widget.explainer.askText(text, widget.facts, l10n, phase));
+    if (mounted) _focus.requestFocus();
+  }
+
+  /// Shows the answer after at least a short "typing" pause, even when it is ready at once.
+  Future<void> _deliver(Future<ExplainAnswer> Function() fetch) async {
+    final both = await Future.wait<Object?>([fetch(), Future<void>.delayed(widget.typingDelay)]);
     final answer = both.first as ExplainAnswer;
     if (!mounted) return;
     setState(() {
@@ -209,6 +240,9 @@ class _MerangSheetState extends State<MerangSheet> {
     final l10n = AppLocalizations.of(context)!;
     final mood = merangMoodFor(widget.facts);
     final phase = riskStateLabel(context, widget.facts.state);
+    // With the keyboard up there is little room, so the header shrinks and the small print waits.
+    final compact = MediaQuery.of(context).viewInsets.bottom > 0;
+    final canSend = !_typing && _input.text.trim().isNotEmpty;
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -219,19 +253,22 @@ class _MerangSheetState extends State<MerangSheet> {
         top: false,
         child: Column(
           children: [
+            Container(width: 40, height: 4, margin: const EdgeInsets.only(top: 8), decoration: BoxDecoration(color: AppColors.hairline, borderRadius: BorderRadius.circular(2))),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 8, 6),
+              padding: EdgeInsets.fromLTRB(18, compact ? 6 : 10, 8, compact ? 4 : 8),
               child: Row(
                 children: [
-                  MerangAvatar(mood: mood, size: 64),
+                  MerangAvatar(mood: mood, size: compact ? 44 : 64),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.merangName, style: AppFonts.heading(fontSize: 24)),
-                        const SizedBox(height: 2),
-                        Text(l10n.merangTagline, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.3)),
+                        Text(l10n.merangName, style: AppFonts.heading(fontSize: compact ? 20 : 24)),
+                        if (!compact) ...[
+                          const SizedBox(height: 2),
+                          Text(l10n.merangTagline, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.3)),
+                        ],
                       ],
                     ),
                   ),
@@ -246,37 +283,84 @@ class _MerangSheetState extends State<MerangSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 children: [
                   for (final m in _messages) _Bubble(msg: m, mood: mood),
-                  if (_typing) _Bubble(msg: const _Msg(true, '…'), mood: mood),
+                  if (_typing) _TypingBubble(mood: mood),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final q in MerangQuestion.values)
-                    ActionChip(
-                      label: Text(_label(q, l10n, phase), style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
-                      backgroundColor: AppColors.surfaceRaised,
-                      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.45)),
-                      onPressed: _typing ? null : () => _ask(q),
-                    ),
-                ],
+            SizedBox(
+              height: 44,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    for (final q in MerangQuestion.values) ...[
+                      ActionChip(
+                        label: Text(_label(q, l10n, phase), style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                        backgroundColor: AppColors.surfaceRaised,
+                        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.45)),
+                        onPressed: _typing ? null : () => _ask(q),
+                      ),
+                      if (q != MerangQuestion.values.last) const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 2, 18, 12),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.info_outline, size: 14, color: AppColors.textMuted)),
+                  Expanded(
+                    child: TextField(
+                      controller: _input,
+                      focusNode: _focus,
+                      maxLength: 200,
+                      maxLines: 1,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      onChanged: (_) => setState(() {}),
+                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: l10n.merangInputHint,
+                        counterText: '',
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: const BorderSide(color: AppColors.hairline)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(l10n.merangDisclaimer, style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, height: 1.4))),
+                  IconButton.filled(
+                    onPressed: canSend ? _send : null,
+                    tooltip: l10n.merangSend,
+                    icon: const Icon(Icons.arrow_upward_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.surfaceRaised,
+                      disabledForegroundColor: AppColors.textMuted,
+                      minimumSize: const Size(50, 50),
+                    ),
+                  ),
                 ],
               ),
             ),
+            if (!compact)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.info_outline, size: 14, color: AppColors.textMuted)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('${l10n.merangDisclaimer} ${l10n.merangTypedNote}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, height: 1.4)),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -292,12 +376,14 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mine = !msg.fromMerang;
+    const r = Radius.circular(AppRadius.md);
+    const tail = Radius.circular(4);
     final bubble = Container(
       constraints: const BoxConstraints(maxWidth: 480),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: mine ? AppColors.accent.withValues(alpha: 0.2) : AppColors.surfaceRaised,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.only(topLeft: r, topRight: r, bottomLeft: mine ? r : tail, bottomRight: mine ? tail : r),
         border: Border.all(color: mine ? AppColors.accent.withValues(alpha: 0.5) : AppColors.hairline),
       ),
       child: Column(
@@ -327,6 +413,72 @@ class _Bubble extends StatelessWidget {
         children: [
           if (!mine) ...[MerangAvatar(mood: mood, size: 34), const SizedBox(width: 8)],
           Flexible(child: bubble),
+        ],
+      ),
+    );
+  }
+}
+
+/// Three soft dots while Merang is "typing". With reduce-motion on they stand still, as an ellipsis.
+class _TypingBubble extends StatefulWidget {
+  final MerangMood mood;
+  const _TypingBubble({required this.mood});
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final still = MediaQuery.of(context).disableAnimations;
+    if (still) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+    final dots = still
+        ? const Text('…', style: TextStyle(color: AppColors.textSecondary, fontSize: 20, height: 1))
+        : AnimatedBuilder(
+            animation: _c,
+            builder: (context, child) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < 3; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Opacity(
+                      opacity: 0.35 + 0.65 * math.max(0.0, math.sin((_c.value - i * 0.18) * 2 * math.pi)),
+                      child: const CircleAvatar(radius: 4, backgroundColor: AppColors.textSecondary),
+                    ),
+                  ),
+              ],
+            ),
+          );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          MerangAvatar(mood: widget.mood, size: 34),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceRaised,
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppRadius.md), topRight: Radius.circular(AppRadius.md), bottomRight: Radius.circular(AppRadius.md), bottomLeft: Radius.circular(4)),
+              border: Border.all(color: AppColors.hairline),
+            ),
+            child: dots,
+          ),
         ],
       ),
     );

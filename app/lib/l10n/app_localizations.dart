@@ -1573,6 +1573,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Written by AI (Gemini). Check the official channels.'**
   String get merangAiTag;
+
+  /// No description provided for @merangInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Merang about this reading…'**
+  String get merangInputHint;
+
+  /// No description provided for @merangSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get merangSend;
+
+  /// No description provided for @merangHello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, I am Merang! Tap a question below, or type your own.'**
+  String get merangHello;
+
+  /// No description provided for @merangNoAi.
+  ///
+  /// In en, this message translates to:
+  /// **'I cannot reach my AI brain right now, so I can only answer the questions below. Please tap one of them.'**
+  String get merangNoAi;
+
+  /// No description provided for @merangTypedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed questions are sent to Google Gemini to be answered. Please do not type personal details.'**
+  String get merangTypedNote;
 }
 
 class _AppLocalizationsDelegate
