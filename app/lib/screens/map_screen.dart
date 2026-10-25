@@ -1126,9 +1126,9 @@ class _MapLegend extends StatelessWidget {
   }
 }
 
-/// Draggable bottom panel for a node. It opens with the node's name, state and live readings already in view, and
-/// can be dragged (with a finger or the mouse) or tapped at the handle to open it fully for the trend charts. It sits
-/// in the same Stack as the map rather than replacing it, and its content scrolls clear of the floating nav bar.
+/// The full details of a node. On a wide screen it is a tall panel fixed at the side of the map, with everything in
+/// view and nothing to drag. On a phone it is a bottom sheet that opens most of the way up and can be dragged (with a
+/// finger or the mouse) or tapped at the handle to open fully. Its content scrolls clear of the floating nav bar.
 class _NodeInfoPanel extends StatelessWidget {
   final SiagaNode node;
   final DemoReading? demoReading;
@@ -1139,8 +1139,9 @@ class _NodeInfoPanel extends StatelessWidget {
   final bool locked;
   final VoidCallback onToggleLock;
 
-  static const _openSize = 0.42;
-  static const _fullSize = 0.9;
+  static const _openSize = 0.64;
+  static const _fullSize = 0.92;
+  static const _sideBreakpoint = 760.0;
 
   const _NodeInfoPanel({
     required this.node,
@@ -1155,13 +1156,36 @@ class _NodeInfoPanel extends StatelessWidget {
 
   void _toggle() {
     if (!controller.isAttached) return;
-    controller.animateTo(controller.size > 0.65 ? _openSize : _fullSize, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+    controller.animateTo(controller.size > 0.78 ? _openSize : _fullSize, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
   }
+
+  BoxDecoration _decoration(BuildContext context, {required bool side}) => BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: side ? BorderRadius.circular(20) : const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: AppColors.hairline),
+        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 18)],
+      );
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final rig = rigReading;
+    final side = MediaQuery.of(context).size.width >= _sideBreakpoint;
+    if (side) {
+      // A tall box beside the map: below the search bar, above the nav bar, nothing to drag.
+      return Positioned(
+        top: 132,
+        right: 22,
+        bottom: 100,
+        width: 420,
+        child: Container(
+          decoration: _decoration(context, side: true),
+          clipBehavior: Clip.antiAlias,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            children: _items(context, side: true),
+          ),
+        ),
+      );
+    }
     return DraggableScrollableSheet(
       key: ValueKey(node.id),
       controller: controller,
@@ -1172,12 +1196,7 @@ class _NodeInfoPanel extends StatelessWidget {
       snapSizes: const [_openSize, _fullSize],
       builder: (context, scrollController) {
         return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: AppColors.hairline),
-            boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 18)],
-          ),
+          decoration: _decoration(context, side: false),
           // Flutter on the web does not let a mouse drag a scrollable by default, so allow it here.
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(context).copyWith(
@@ -1201,137 +1220,152 @@ class _NodeInfoPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                Row(
-                  children: [
-                    Expanded(child: Text(node.name, style: Theme.of(context).textTheme.titleLarge)),
-                    IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                  ],
-                ),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.normal.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.normal.withValues(alpha: 0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.sensors, size: 14, color: AppColors.normal),
-                          const SizedBox(width: 5),
-                          Text(
-                            l10n.nodeKindSensor.toUpperCase(),
-                            style: const TextStyle(color: AppColors.normal, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
-                          ),
-                        ],
-                      ),
-                    ),
-                    RiskBadge(state: node.state),
-                    if (node.riskProbability != null)
-                      Text(
-                        '${(node.riskProbability! * 100).round()}%',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: riskStateColor(node.state)),
-                      ),
-                    if (rig != null)
-                      Text(
-                        rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
-                        style: TextStyle(
-                          color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    if (node.batteryVolts != null) Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
-                  ],
-                ),
-                if (rig != null) ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _ReadingTile(label: l10n.rigMetricLevel, value: rig.heightCm.toStringAsFixed(1), unit: 'cm', color: AppColors.watch),
-                      const SizedBox(width: 8),
-                      _ReadingTile(label: l10n.rigMetricFlow, value: rig.flow.toStringAsFixed(0), unit: '', color: AppColors.accent),
-                      const SizedBox(width: 8),
-                      _ReadingTile(label: l10n.rigMetricSoil, value: rig.soilRaw.toStringAsFixed(0), unit: '', color: const Color(0xFFA78BFA)),
-                      const SizedBox(width: 8),
-                      _ReadingTile(label: l10n.rigMetricTilt, value: rig.tiltDeg.toStringAsFixed(1), unit: '°', color: AppColors.normal),
-                    ],
-                  ),
-                ],
-                if (node.lastSeen != null) ...[
-                  const SizedBox(height: 10),
-                  Text('${l10n.nodeLastSeen}: ${_agoLabel(node.lastSeen!)}', style: Theme.of(context).textTheme.bodySmall),
-                ],
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: onToggleLock,
-                      icon: Icon(locked ? Icons.lock : Icons.lock_open_outlined, size: 16),
-                      label: Text(locked ? l10n.mapUnlockNode : l10n.mapLockNode),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: locked ? AppColors.accent : AppColors.textSecondary,
-                        backgroundColor: locked ? AppColors.accent.withValues(alpha: 0.14) : null,
-                        side: BorderSide(color: locked ? AppColors.accent : AppColors.hairline),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
-                      ),
-                    ),
-                    if (locked) ...[
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(l10n.mapLockedHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 11))),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.place_outlined, size: 14, color: Color(0xFF97A2B8)),
-                    const SizedBox(width: 4),
-                    Text('${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}', style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                if (rig != null) ...[
-                  RigTrendCard(
-                    icon: Icons.waves,
-                    title: l10n.rigMetricLevel,
-                    help: l10n.trendLevelHelp,
-                    color: AppColors.watch,
-                    points: trend,
-                    valueOf: (p) => p.heightCm,
-                    latestText: '${rig.heightCm.toStringAsFixed(1)} cm',
-                    unit: 'cm',
-                    minSpan: 2,
-                  ),
-                  const SizedBox(height: 12),
-                  RigTrendCard(
-                    icon: Icons.shield_outlined,
-                    title: l10n.trendRisk,
-                    help: l10n.trendRiskHelp,
-                    color: riskStateColor(node.state),
-                    points: trend,
-                    valueOf: (p) => p.phase.toDouble(),
-                    latestText: riskStateLabel(context, RiskState.values[rig.phase - 1]),
-                    phaseAxis: true,
-                  ),
-                ] else if (demoReading != null) ...[
-                  DemoReadout(reading: demoReading!),
-                ] else ...[
-                  Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  SizedBox(height: 220, child: NodeHistoryChart(nodeId: node.id)),
-                ],
+                ..._items(context, side: false),
               ],
             ),
           ),
         );
       },
     );
+  }
+
+  List<Widget> _items(BuildContext context, {required bool side}) {
+    final l10n = AppLocalizations.of(context)!;
+    final rig = rigReading;
+    final tiles = rig == null
+        ? const <Widget>[]
+        : [
+            _ReadingTile(label: l10n.rigMetricLevel, value: rig.heightCm.toStringAsFixed(1), unit: 'cm', color: AppColors.watch),
+            _ReadingTile(label: l10n.rigMetricFlow, value: rig.flow.toStringAsFixed(0), unit: '', color: AppColors.accent),
+            _ReadingTile(label: l10n.rigMetricSoil, value: rig.soilRaw.toStringAsFixed(0), unit: '', color: const Color(0xFFA78BFA)),
+            _ReadingTile(label: l10n.rigMetricTilt, value: rig.tiltDeg.toStringAsFixed(1), unit: '°', color: AppColors.normal),
+          ];
+    return [
+      Row(
+        children: [
+          Expanded(child: Text(node.name, style: Theme.of(context).textTheme.titleLarge)),
+          IconButton(icon: const Icon(Icons.close), onPressed: onClose),
+        ],
+      ),
+      Wrap(
+        spacing: 10,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.normal.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.normal.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.sensors, size: 14, color: AppColors.normal),
+                const SizedBox(width: 5),
+                Text(
+                  l10n.nodeKindSensor.toUpperCase(),
+                  style: const TextStyle(color: AppColors.normal, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
+                ),
+              ],
+            ),
+          ),
+          RiskBadge(state: node.state),
+          if (node.riskProbability != null)
+            Text(
+              '${(node.riskProbability! * 100).round()}%',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: riskStateColor(node.state)),
+            ),
+          if (rig != null)
+            Text(
+              rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
+              style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          if (node.batteryVolts != null) Text('${l10n.nodeBattery}: ${node.batteryVolts!.toStringAsFixed(2)}V'),
+        ],
+      ),
+      if (tiles.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        // Two by two in the side panel, where four in a row would be too narrow; four in a row on a phone.
+        if (side) ...[
+          Row(children: [tiles[0], const SizedBox(width: 8), tiles[1]]),
+          const SizedBox(height: 8),
+          Row(children: [tiles[2], const SizedBox(width: 8), tiles[3]]),
+        ] else
+          Row(children: [for (var i = 0; i < tiles.length; i++) ...[if (i > 0) const SizedBox(width: 8), tiles[i]]]),
+      ],
+      if (node.lastSeen != null) ...[
+        const SizedBox(height: 10),
+        Text('${l10n.nodeLastSeen}: ${_agoLabel(node.lastSeen!)}', style: Theme.of(context).textTheme.bodySmall),
+      ],
+      const SizedBox(height: 10),
+      Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: onToggleLock,
+            icon: Icon(locked ? Icons.lock : Icons.lock_open_outlined, size: 16),
+            label: Text(locked ? l10n.mapUnlockNode : l10n.mapLockNode),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: locked ? AppColors.accent : AppColors.textSecondary,
+              backgroundColor: locked ? AppColors.accent.withValues(alpha: 0.14) : null,
+              side: BorderSide(color: locked ? AppColors.accent : AppColors.hairline),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
+            ),
+          ),
+          if (locked) ...[
+            const SizedBox(width: 8),
+            Expanded(child: Text(l10n.mapLockedHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 11))),
+          ],
+        ],
+      ),
+      const SizedBox(height: 4),
+      Row(
+        children: [
+          const Icon(Icons.place_outlined, size: 14, color: Color(0xFF97A2B8)),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              '${l10n.nodeGpsLabel}: ${node.lat.toStringAsFixed(5)}, ${node.lon.toStringAsFixed(5)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
+      if (rig != null) ...[
+        RigTrendCard(
+          icon: Icons.waves,
+          title: l10n.rigMetricLevel,
+          help: l10n.trendLevelHelp,
+          color: AppColors.watch,
+          points: trend,
+          valueOf: (p) => p.heightCm,
+          latestText: '${rig.heightCm.toStringAsFixed(1)} cm',
+          unit: 'cm',
+          minSpan: 2,
+        ),
+        const SizedBox(height: 12),
+        RigTrendCard(
+          icon: Icons.shield_outlined,
+          title: l10n.trendRisk,
+          help: l10n.trendRiskHelp,
+          color: riskStateColor(node.state),
+          points: trend,
+          valueOf: (p) => p.phase.toDouble(),
+          latestText: riskStateLabel(context, RiskState.values[rig.phase - 1]),
+          phaseAxis: true,
+        ),
+      ] else if (demoReading != null) ...[
+        DemoReadout(reading: demoReading!),
+      ] else ...[
+        Text(l10n.nodeHistoryTitle, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        SizedBox(height: 220, child: NodeHistoryChart(nodeId: node.id)),
+      ],
+    ];
   }
 }
 
