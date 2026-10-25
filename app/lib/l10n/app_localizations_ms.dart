@@ -692,4 +692,136 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get reportCategoryLandslideShort => 'Tanah runtuh';
+
+  @override
+  String get merangName => 'Merang';
+
+  @override
+  String get merangTagline =>
+      'Kawan sungai anda. Saya terangkan apa yang aplikasi tunjukkan.';
+
+  @override
+  String get merangAsk => 'Tanya Merang';
+
+  @override
+  String get merangAskHint => 'Kenapa tahap ini? Apa patut saya buat?';
+
+  @override
+  String get merangHi => 'Hai, saya Merang!';
+
+  @override
+  String get merangDisclaimer =>
+      'Saya hanya menerangkan apa yang aplikasi sudah tunjukkan. Saya tidak memutuskan atau menghantar amaran. Semak NADMA, MetMalaysia dan JPS untuk amaran rasmi.';
+
+  @override
+  String merangQWhy(String phase) {
+    return 'Mengapa tahapnya $phase?';
+  }
+
+  @override
+  String get merangQNext => 'Apa yang patut saya buat?';
+
+  @override
+  String get merangQData => 'Dari mana data ini datang?';
+
+  @override
+  String get merangQHow => 'Bagaimana anda berfungsi?';
+
+  @override
+  String merangWhyLevel(String height) {
+    return 'Air berada $height cm di atas paras normalnya.';
+  }
+
+  @override
+  String get merangWhyLevelNormal => 'Air berada pada paras normal.';
+
+  @override
+  String merangRiseFast(String rate) {
+    return 'Air sedang naik, kira-kira $rate cm setiap minit.';
+  }
+
+  @override
+  String get merangRiseSlow => 'Air naik perlahan-lahan.';
+
+  @override
+  String get merangRiseSteady => 'Air stabil buat masa ini.';
+
+  @override
+  String merangFalling(String rate) {
+    return 'Air sedang surut, kira-kira $rate cm setiap minit.';
+  }
+
+  @override
+  String get merangWhyBands =>
+      'Pada rig ujian kami, Perhatian bermula sekitar 0.8 cm, Amaran sekitar 2.2 cm dan Berpindah sekitar 3.6 cm di atas paras normal.';
+
+  @override
+  String get merangWhyOthers =>
+      'Aliran, tanah dan kecondongan juga dikira, tetapi paras air paling penting.';
+
+  @override
+  String merangWhyNoRig(String node, String phase) {
+    return '$node berada pada tahap $phase. Saya hanya ada ringkasannya di sini, bukan bacaan sensor mentah.';
+  }
+
+  @override
+  String merangWhyStale(String ago) {
+    return 'Rig tidak menghantar apa-apa selama $ago, jadi tiada bacaan baharu. Aplikasi menunjukkan Normal dan tidak mengeluarkan amaran daripada data lama.';
+  }
+
+  @override
+  String get merangWhySimulated =>
+      'Tahap ini ditetapkan secara manual di Tetapan untuk demonstrasi. Nombor ialah nilai biasa bagi tahap itu, bukan bacaan langsung.';
+
+  @override
+  String get merangWhyDemoNode =>
+      'Ini nod demo. Tahapnya mengikut rig langsung.';
+
+  @override
+  String get merangNextNormal =>
+      'Tiada apa-apa untuk dibuat sekarang. Biarkan notifikasi hidup, dan semak semula jika hujan lebat bermula.';
+
+  @override
+  String get merangNextWatch =>
+      'Berwaspada. Pantau aplikasi dan cuaca, dan kumpulkan barang penting anda.';
+
+  @override
+  String get merangNextWarning =>
+      'Bersedia untuk berpindah. Tahu laluan anda, cas telefon, dan buka peta untuk mencari tempat berkumpul terdekat.';
+
+  @override
+  String get merangNextEvacuate =>
+      'Berpindah sekarang. Ikut laluan ke tempat berkumpul terdekat dan dengar arahan rasmi.';
+
+  @override
+  String get merangNextStale =>
+      'Data ini sudah lama, jadi jangan bergantung padanya. Semak saluran rasmi.';
+
+  @override
+  String get merangNextOfficial =>
+      'Sentiasa sahkan dengan NADMA, MetMalaysia atau JPS. SIAGA membantu anda membuat keputusan; ia bukan amaran rasmi.';
+
+  @override
+  String get merangDataRig =>
+      'Nombor ini datang daripada rig ujian kami. Sensornya menghantar data kepada ESP32, yang menyimpan setiap bacaan ke jadual dalam talian kami (Supabase). Aplikasi menyemak baris baharu setiap 3 saat.';
+
+  @override
+  String merangDataAgo(String ago) {
+    return 'Bacaan terakhir ialah $ago yang lalu.';
+  }
+
+  @override
+  String get merangDataSim =>
+      'Nod ini disimulasikan untuk demo, jadi tiada sensor di belakangnya.';
+
+  @override
+  String get merangDataOther =>
+      'Bacaan ini datang daripada nod sensor kami, melalui bahagian belakang kami.';
+
+  @override
+  String get merangHow =>
+      'Saya Merang. Saya membaca nombor yang sama seperti anda dan menukarnya kepada kata-kata mudah. Saya berjalan pada telefon anda, jadi saya berfungsi tanpa talian dan lokasi anda tidak pernah keluar. Sensor dan peraturan yang memutuskan amaran, bukan saya.';
+
+  @override
+  String get merangAiTag => 'Ditulis oleh AI (Gemini). Semak saluran rasmi.';
 }

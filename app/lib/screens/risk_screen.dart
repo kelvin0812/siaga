@@ -1,8 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
+import '../core/focus_node.dart';
 import '../core/models.dart';
 import '../core/rig_controller.dart' show kRigNodeId;
 import '../core/theme.dart';
@@ -46,9 +46,7 @@ class _RiskScreenState extends State<RiskScreen> {
       });
     }
     final waitingForRig = appState.rigMode && appState.rigReading == null && picked == null;
-    final focusedNode = appState.demoMode
-        ? (waitingForRig ? null : (picked ?? nodes.firstOrNull))
-        : (picked ?? _nearestNode(appState));
+    final focusedNode = focusedNodeFor(appState);
     final isRigNode = appState.rigMode && focusedNode != null && focusedNode.id == kRigNodeId;
     final simulated = focusedNode?.simulated ?? false;
     final rig = isRigNode ? appState.rigReading : null;
@@ -194,17 +192,6 @@ class _RiskScreenState extends State<RiskScreen> {
   /// position; falls back to the first node when position isn't known yet
   /// (still real telemetry, just not distance-ranked) or in demo mode
   /// (exactly one node exists).
-  SiagaNode? _nearestNode(AppState appState) {
-    if (appState.nodes.isEmpty) return null;
-    final position = appState.locationService.lastKnownPosition;
-    if (position == null) return appState.nodes.first;
-    return appState.nodes.reduce((a, b) {
-      final da = Geolocator.distanceBetween(position.latitude, position.longitude, a.lat, a.lon);
-      final db = Geolocator.distanceBetween(position.latitude, position.longitude, b.lat, b.lon);
-      return da <= db ? a : b;
-    });
-  }
-
 }
 
 /// The four RiskStates laid out as a horizontal stepper — every level is

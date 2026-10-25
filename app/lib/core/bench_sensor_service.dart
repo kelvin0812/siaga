@@ -62,6 +62,10 @@ class BenchSensorService {
   static const _anonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xc2RvdWJtenprZmdjdnZzYmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MzQxNTksImV4cCI6MjEwMjIxMDE1OX0.QizwV00qxMexZNUKVQ7V7LOCBBBNe3CfdzvBVohjOb8';
 
+  /// The project address and its public (anon) key, shared with the other Supabase calls. Row-level security protects the data; this key is meant to be public.
+  static const baseUrl = _baseUrl;
+  static const anonKey = _anonKey;
+
   final http.Client _client;
   BenchSensorService({http.Client? client}) : _client = client ?? http.Client();
 

@@ -1369,6 +1369,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Landslide'**
   String get reportCategoryLandslideShort;
+
+  /// No description provided for @merangName.
+  ///
+  /// In en, this message translates to:
+  /// **'Merang'**
+  String get merangName;
+
+  /// No description provided for @merangTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your river buddy. I explain what the app shows.'**
+  String get merangTagline;
+
+  /// No description provided for @merangAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Merang'**
+  String get merangAsk;
+
+  /// No description provided for @merangAskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this level? What should I do?'**
+  String get merangAskHint;
+
+  /// No description provided for @merangHi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, I am Merang!'**
+  String get merangHi;
+
+  /// No description provided for @merangDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'I only explain what the app already shows. I do not decide or send alerts. Check NADMA, MetMalaysia and JPS for official warnings.'**
+  String get merangDisclaimer;
+
+  /// No description provided for @merangQWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is it {phase}?'**
+  String merangQWhy(String phase);
+
+  /// No description provided for @merangQNext.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I do?'**
+  String get merangQNext;
+
+  /// No description provided for @merangQData.
+  ///
+  /// In en, this message translates to:
+  /// **'Where does this data come from?'**
+  String get merangQData;
+
+  /// No description provided for @merangQHow.
+  ///
+  /// In en, this message translates to:
+  /// **'How do you work?'**
+  String get merangQHow;
+
+  /// No description provided for @merangWhyLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'The water is {height} cm above its normal level.'**
+  String merangWhyLevel(String height);
+
+  /// No description provided for @merangWhyLevelNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'The water is at its normal level.'**
+  String get merangWhyLevelNormal;
+
+  /// No description provided for @merangRiseFast.
+  ///
+  /// In en, this message translates to:
+  /// **'It is rising, about {rate} cm every minute.'**
+  String merangRiseFast(String rate);
+
+  /// No description provided for @merangRiseSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'It is rising slowly.'**
+  String get merangRiseSlow;
+
+  /// No description provided for @merangRiseSteady.
+  ///
+  /// In en, this message translates to:
+  /// **'It is steady right now.'**
+  String get merangRiseSteady;
+
+  /// No description provided for @merangFalling.
+  ///
+  /// In en, this message translates to:
+  /// **'It is going down, about {rate} cm every minute.'**
+  String merangFalling(String rate);
+
+  /// No description provided for @merangWhyBands.
+  ///
+  /// In en, this message translates to:
+  /// **'On our bench rig, Watch starts near 0.8 cm, Warning near 2.2 cm and Evacuate near 3.6 cm above normal.'**
+  String get merangWhyBands;
+
+  /// No description provided for @merangWhyOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Flow, soil and tilt count too, but the water level matters most.'**
+  String get merangWhyOthers;
+
+  /// No description provided for @merangWhyNoRig.
+  ///
+  /// In en, this message translates to:
+  /// **'{node} is at {phase}. I only have its summary here, not the raw sensor readings.'**
+  String merangWhyNoRig(String node, String phase);
+
+  /// No description provided for @merangWhyStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The rig has not sent anything for {ago}, so there is no fresh reading. The app shows Normal rather than raising an alert from old data.'**
+  String merangWhyStale(String ago);
+
+  /// No description provided for @merangWhySimulated.
+  ///
+  /// In en, this message translates to:
+  /// **'This level was set by hand in Settings for a demonstration. The numbers are typical values for that level, not live readings.'**
+  String get merangWhySimulated;
+
+  /// No description provided for @merangWhyDemoNode.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a demo node. Its level follows the live rig.'**
+  String get merangWhyDemoNode;
+
+  /// No description provided for @merangNextNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do right now. Keep notifications on, and check again if heavy rain starts.'**
+  String get merangNextNormal;
+
+  /// No description provided for @merangNextWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay alert. Keep an eye on the app and the weather, and get your important things together.'**
+  String get merangNextWatch;
+
+  /// No description provided for @merangNextWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Get ready to move. Know your route, charge your phone, and open the map to find the nearest assembly point.'**
+  String get merangNextWarning;
+
+  /// No description provided for @merangNextEvacuate.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave now. Follow the route to the nearest assembly point and listen to official instructions.'**
+  String get merangNextEvacuate;
+
+  /// No description provided for @merangNextStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The data is old, so do not rely on it. Check the official channels.'**
+  String get merangNextStale;
+
+  /// No description provided for @merangNextOfficial.
+  ///
+  /// In en, this message translates to:
+  /// **'Always confirm with NADMA, MetMalaysia or JPS. SIAGA helps you decide; it is not an official warning.'**
+  String get merangNextOfficial;
+
+  /// No description provided for @merangDataRig.
+  ///
+  /// In en, this message translates to:
+  /// **'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 3 seconds.'**
+  String get merangDataRig;
+
+  /// No description provided for @merangDataAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'The last reading was {ago} ago.'**
+  String merangDataAgo(String ago);
+
+  /// No description provided for @merangDataSim.
+  ///
+  /// In en, this message translates to:
+  /// **'This node is simulated for the demo, so there is no sensor behind it.'**
+  String get merangDataSim;
+
+  /// No description provided for @merangDataOther.
+  ///
+  /// In en, this message translates to:
+  /// **'These readings come from our sensor nodes, through our backend.'**
+  String get merangDataOther;
+
+  /// No description provided for @merangHow.
+  ///
+  /// In en, this message translates to:
+  /// **'I am Merang. I read the same numbers you see and put them into plain words. I run on your phone, so I work offline and your location never leaves it. The sensors and the rules decide the alert, not me.'**
+  String get merangHow;
+
+  /// No description provided for @merangAiTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by AI (Gemini). Check the official channels.'**
+  String get merangAiTag;
 }
 
 class _AppLocalizationsDelegate

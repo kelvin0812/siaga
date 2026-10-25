@@ -689,4 +689,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportCategoryLandslideShort => 'Landslide';
+
+  @override
+  String get merangName => 'Merang';
+
+  @override
+  String get merangTagline => 'Your river buddy. I explain what the app shows.';
+
+  @override
+  String get merangAsk => 'Ask Merang';
+
+  @override
+  String get merangAskHint => 'Why this level? What should I do?';
+
+  @override
+  String get merangHi => 'Hi, I am Merang!';
+
+  @override
+  String get merangDisclaimer =>
+      'I only explain what the app already shows. I do not decide or send alerts. Check NADMA, MetMalaysia and JPS for official warnings.';
+
+  @override
+  String merangQWhy(String phase) {
+    return 'Why is it $phase?';
+  }
+
+  @override
+  String get merangQNext => 'What should I do?';
+
+  @override
+  String get merangQData => 'Where does this data come from?';
+
+  @override
+  String get merangQHow => 'How do you work?';
+
+  @override
+  String merangWhyLevel(String height) {
+    return 'The water is $height cm above its normal level.';
+  }
+
+  @override
+  String get merangWhyLevelNormal => 'The water is at its normal level.';
+
+  @override
+  String merangRiseFast(String rate) {
+    return 'It is rising, about $rate cm every minute.';
+  }
+
+  @override
+  String get merangRiseSlow => 'It is rising slowly.';
+
+  @override
+  String get merangRiseSteady => 'It is steady right now.';
+
+  @override
+  String merangFalling(String rate) {
+    return 'It is going down, about $rate cm every minute.';
+  }
+
+  @override
+  String get merangWhyBands =>
+      'On our bench rig, Watch starts near 0.8 cm, Warning near 2.2 cm and Evacuate near 3.6 cm above normal.';
+
+  @override
+  String get merangWhyOthers =>
+      'Flow, soil and tilt count too, but the water level matters most.';
+
+  @override
+  String merangWhyNoRig(String node, String phase) {
+    return '$node is at $phase. I only have its summary here, not the raw sensor readings.';
+  }
+
+  @override
+  String merangWhyStale(String ago) {
+    return 'The rig has not sent anything for $ago, so there is no fresh reading. The app shows Normal rather than raising an alert from old data.';
+  }
+
+  @override
+  String get merangWhySimulated =>
+      'This level was set by hand in Settings for a demonstration. The numbers are typical values for that level, not live readings.';
+
+  @override
+  String get merangWhyDemoNode =>
+      'This is a demo node. Its level follows the live rig.';
+
+  @override
+  String get merangNextNormal =>
+      'Nothing to do right now. Keep notifications on, and check again if heavy rain starts.';
+
+  @override
+  String get merangNextWatch =>
+      'Stay alert. Keep an eye on the app and the weather, and get your important things together.';
+
+  @override
+  String get merangNextWarning =>
+      'Get ready to move. Know your route, charge your phone, and open the map to find the nearest assembly point.';
+
+  @override
+  String get merangNextEvacuate =>
+      'Leave now. Follow the route to the nearest assembly point and listen to official instructions.';
+
+  @override
+  String get merangNextStale =>
+      'The data is old, so do not rely on it. Check the official channels.';
+
+  @override
+  String get merangNextOfficial =>
+      'Always confirm with NADMA, MetMalaysia or JPS. SIAGA helps you decide; it is not an official warning.';
+
+  @override
+  String get merangDataRig =>
+      'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 3 seconds.';
+
+  @override
+  String merangDataAgo(String ago) {
+    return 'The last reading was $ago ago.';
+  }
+
+  @override
+  String get merangDataSim =>
+      'This node is simulated for the demo, so there is no sensor behind it.';
+
+  @override
+  String get merangDataOther =>
+      'These readings come from our sensor nodes, through our backend.';
+
+  @override
+  String get merangHow =>
+      'I am Merang. I read the same numbers you see and put them into plain words. I run on your phone, so I work offline and your location never leaves it. The sensors and the rules decide the alert, not me.';
+
+  @override
+  String get merangAiTag =>
+      'Written by AI (Gemini). Check the official channels.';
 }

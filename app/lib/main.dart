@@ -16,12 +16,16 @@ import 'core/offline_cache.dart';
 import 'core/theme.dart';
 import 'demo/demo_controller.dart';
 import 'core/rig_controller.dart';
+import 'core/explainer_service.dart';
+import 'core/gemini_explainer.dart';
+import 'core/focus_node.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/evacuate_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/risk_screen.dart';
 import 'screens/settings_screen.dart';
+import 'widgets/merang_sheet.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -147,13 +151,15 @@ class _HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<_HomeShell> {
   int _index = 0;
+  final _merang = GeminiExplainer();
 
   static const _screens = [MapScreen(), RiskScreen(), ReportScreen(), SettingsScreen()];
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final wanted = context.watch<AppState>().pendingTab;
+    final app = context.watch<AppState>();
+    final wanted = app.pendingTab;
     if (wanted != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -165,6 +171,9 @@ class _HomeShellState extends State<_HomeShell> {
       extendBody: true,
       appBar: AppBar(title: const _Brand()),
       body: IndexedStack(index: _index, children: _screens),
+      // Merang, on every page: one tap away whenever you want something explained.
+      floatingActionButton: MerangButton(facts: ExplainFacts.from(app, focusedNodeFor(app)), explainer: _merang),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _FloatingNavBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
