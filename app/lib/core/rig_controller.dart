@@ -6,6 +6,10 @@ import 'bench_sensor_service.dart';
 import 'models.dart';
 import 'phase_model.dart';
 
+/// Where the competition demo runs: the MMU Cyberjaya campus. The live rig sits here, and the map opens here.
+const kVenueLat = 2.92791;
+const kVenueLon = 101.64179;
+
 /// The id of the live rig's node. The simulated demo nodes have other ids.
 const kRigNodeId = 998;
 
@@ -59,8 +63,8 @@ class RigController {
     this.nodeName = 'Bench rig (live)',
     // MMU Cyberjaya, where the competition demo runs.
     this.demoNodes = kCyberjayaDemoNodes,
-    this.nodeLat = 2.92791,
-    this.nodeLon = 101.64179,
+    this.nodeLat = kVenueLat,
+    this.nodeLon = kVenueLon,
   })  : service = service ?? BenchSensorService(),
         loadModelJson = loadModelJson ?? (() => rootBundle.loadString('assets/phase_model.json'));
 

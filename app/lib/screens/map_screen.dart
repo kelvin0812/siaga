@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/models.dart';
 import '../core/offline_cache.dart';
+import '../core/rig_controller.dart' show kVenueLat, kVenueLon;
 import '../core/route_service.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
@@ -469,9 +470,13 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
 
+    // With the live rig in use the map opens on the venue. Nodes saved from an earlier session (possibly a different
+    // place) must not decide where it opens.
     final center = _myPosition != null
         ? ll.LatLng(_myPosition!.latitude, _myPosition!.longitude)
-        : nodes.isNotEmpty
+        : appState.rigMode
+            ? const ll.LatLng(kVenueLat, kVenueLon)
+            : nodes.isNotEmpty
             ? ll.LatLng(nodes.first.lat, nodes.first.lon)
             : const ll.LatLng(2.92791, 101.64179); // MMU Cyberjaya, where the competition demo runs
 
