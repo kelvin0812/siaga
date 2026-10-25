@@ -6,6 +6,30 @@ import 'bench_sensor_service.dart';
 import 'models.dart';
 import 'phase_model.dart';
 
+/// A simulated neighbour of the live rig, so a demonstration shows a whole monitored area and an alert spreading
+/// through it. Its level follows the rig's with its own lag or sensitivity ([phaseFor] maps the rig's phase, 1 to
+/// 4, to this node's). It is never presented as real: SiagaNode.simulated is set and the app labels it a demo node.
+class DemoNodeSpec {
+  final int id;
+  final String name;
+  final double lat;
+  final double lon;
+  final int Function(int rigPhase) phaseFor;
+  const DemoNodeSpec(this.id, this.name, this.lat, this.lon, this.phaseFor);
+}
+
+int _sameAsRig(int p) => p;
+int _oneBehind(int p) => p > 1 ? p - 1 : 1;
+int _onlyWhenSevere(int p) => p >= 3 ? 2 : 1;
+
+/// Demonstration nodes around MMU Cyberjaya, where the competition demo is run. The places are real, the sensors are
+/// not.
+const kCyberjayaDemoNodes = <DemoNodeSpec>[
+  DemoNodeSpec(991, 'Lake bank (demo)', 2.93775, 101.64303, _sameAsRig),
+  DemoNodeSpec(992, 'Campus drain (demo)', 2.92680, 101.64050, _oneBehind),
+  DemoNodeSpec(993, 'Road embankment (demo)', 2.92150, 101.64720, _onlyWhenSevere),
+];
+
 /// Live rig mode: reads the bench rig's real sensor rows from Supabase, runs the phase model on them in the
 /// app, and pushes the result into AppState so the existing screens (risk level, map, evacuation alert) show it.
 ///
@@ -21,6 +45,7 @@ class RigController {
   final String nodeName;
   final double nodeLat;
   final double nodeLon;
+  final List<DemoNodeSpec> demoNodes;
 
   RigController({
     required this.appState,
@@ -29,9 +54,10 @@ class RigController {
     this.pollInterval = const Duration(seconds: 3),
     this.nodeId = 998,
     this.nodeName = 'Bench rig (live)',
-    // Same river fix the demo node uses, so the rig appears on the map with the other nodes.
-    this.nodeLat = 4.8189,
-    this.nodeLon = 100.7289,
+    // MMU Cyberjaya, where the competition demo runs.
+    this.demoNodes = kCyberjayaDemoNodes,
+    this.nodeLat = 2.92791,
+    this.nodeLon = 101.64179,
   })  : service = service ?? BenchSensorService(),
         loadModelJson = loadModelJson ?? (() => rootBundle.loadString('assets/phase_model.json'));
 
@@ -145,11 +171,26 @@ class RigController {
     }
   }
 
+  /// The simulated neighbours. With no live phase (no data yet, or the rig gone quiet) they all read Normal.
+  List<SiagaNode> _demoNodeList(int? rigPhase) => [
+        for (final d in demoNodes)
+          SiagaNode(
+            id: d.id,
+            name: d.name,
+            lat: d.lat,
+            lon: d.lon,
+            state: rigPhase == null ? RiskState.normal : RiskState.values[d.phaseFor(rigPhase) - 1],
+            lastSeen: null,
+            batteryVolts: null,
+            simulated: true,
+          ),
+      ];
+
   void _publish() {
     final result = _last;
     final row = _lastRow;
     if (result == null || row == null) {
-      appState.applyRigState(nodes: const [], hazards: const [], reading: null);
+      appState.applyRigState(nodes: _demoNodeList(null), hazards: const [], reading: null);
       return;
     }
     // If the rig has gone quiet, what we have is old. Showing an old EVACUATE as a live emergency would be a
@@ -182,7 +223,7 @@ class RigController {
       ));
     }
     appState.applyRigState(
-      nodes: [node],
+      nodes: [node, ..._demoNodeList(stale ? null : result.phase)],
       hazards: hazards,
       reading: RigReading(
         phase: result.phase,

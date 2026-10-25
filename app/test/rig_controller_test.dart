@@ -91,7 +91,10 @@ void main() {
     await controller.start();
 
     expect(appState.rigMode, isTrue);
-    expect(appState.nodes, hasLength(1));
+    // The live rig comes first, followed by the simulated demo nodes around it.
+    expect(appState.nodes, hasLength(1 + kCyberjayaDemoNodes.length));
+    expect(appState.nodes.first.simulated, isFalse);
+    expect(appState.nodes.skip(1).every((n) => n.simulated), isTrue);
     expect(appState.nodes.first.state, RiskState.normal);
     expect(appState.rigReading, isNotNull);
     expect(appState.rigReading!.phase, 1);
@@ -143,7 +146,51 @@ void main() {
     await controller.start();
     controller.stop();
     expect(appState.rigReading, isNull);
-    expect(appState.nodes, isEmpty);
+    // No made-up reading, so no rig node. The demo nodes are still on the map, all Normal and all marked simulated.
+    expect(appState.nodes, hasLength(kCyberjayaDemoNodes.length));
+    expect(appState.nodes.every((n) => n.simulated && n.state == RiskState.normal), isTrue);
+  });
+
+  test('the demo nodes follow the live rig, each in its own way, and are never presented as real', () async {
+    final service = _FakeService(rows)..served = rows.length; // fresh rows, ending at a raised phase
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+
+    final rig = appState.nodes.first;
+    expect(rig.state.index, greaterThanOrEqualTo(RiskState.watch.index));
+    final lake = appState.nodes.firstWhere((n) => n.id == 991);
+    final drain = appState.nodes.firstWhere((n) => n.id == 992);
+    final embankment = appState.nodes.firstWhere((n) => n.id == 993);
+    expect(lake.state, rig.state); // the same as the rig
+    expect(drain.state.index, rig.state.index - 1); // one level behind
+    expect(embankment.state.index, rig.state.index >= RiskState.warning.index ? 1 : 0); // only reacts when severe
+    for (final n in [lake, drain, embankment]) {
+      expect(n.simulated, isTrue);
+      expect(n.lastSeen, isNull); // no real reading ever reached it
+      expect(n.riskProbability, isNull);
+    }
+  });
+
+  test('when the rig goes quiet the demo nodes go back to Normal too', () async {
+    final service = _FakeService(_rowsEndingAt(sourceRows, DateTime.now().subtract(const Duration(hours: 1))));
+    service.served = service.rows.length;
+    final controller = controllerFor(service);
+    appState.setRigMode(true);
+    await controller.start();
+    controller.stop();
+    expect(appState.nodes.every((n) => n.state == RiskState.normal), isTrue);
+  });
+
+  test('the live rig is placed at MMU Cyberjaya', () {
+    final controller = controllerFor(_FakeService(rows));
+    expect(controller.nodeLat, closeTo(2.9279, 0.001));
+    expect(controller.nodeLon, closeTo(101.6418, 0.001));
+    for (final d in kCyberjayaDemoNodes) {
+      expect(d.lat, inInclusiveRange(2.90, 2.95)); // all within Cyberjaya
+      expect(d.lon, inInclusiveRange(101.62, 101.67));
+    }
   });
 
   test('the charts get the recent readings, oldest first, capped at the last 10 minutes', () async {

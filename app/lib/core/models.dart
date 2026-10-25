@@ -47,6 +47,9 @@ class SiagaNode {
   // probability can legitimately disagree while a dwell timer is pending).
   final double? riskProbability;
 
+  /// True for the demonstration nodes: they are not real sensors and the app says so wherever it shows one.
+  final bool simulated;
+
   const SiagaNode({
     required this.id,
     required this.name,
@@ -56,6 +59,7 @@ class SiagaNode {
     required this.lastSeen,
     required this.batteryVolts,
     this.riskProbability,
+    this.simulated = false,
   });
 
   factory SiagaNode.fromJson(Map<String, dynamic> json) => SiagaNode(

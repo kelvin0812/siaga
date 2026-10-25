@@ -1015,6 +1015,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Details and trends'**
   String get placeDetails;
+
+  /// No description provided for @nodeKindDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo node'**
+  String get nodeKindDemo;
+
+  /// No description provided for @nodeSimulatedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated for the demonstration. Its level follows the live rig, so you can watch an alert spread across the area.'**
+  String get nodeSimulatedNote;
+
+  /// No description provided for @mapLegendDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo node (simulated)'**
+  String get mapLegendDemo;
 }
 
 class _AppLocalizationsDelegate

@@ -152,5 +152,8 @@
   "nodeKindSensor": "Nod sensor",
   "nodeKindAssembly": "Tempat berkumpul",
   "mapAway": "jarak garis lurus",
-  "placeDetails": "Butiran dan trend"
+  "placeDetails": "Butiran dan trend",
+  "nodeKindDemo": "Nod demo",
+  "nodeSimulatedNote": "Disimulasikan untuk demonstrasi. Tahapnya mengikuti rig langsung, jadi anda boleh melihat amaran merebak di kawasan ini.",
+  "mapLegendDemo": "Nod demo (simulasi)"
 }

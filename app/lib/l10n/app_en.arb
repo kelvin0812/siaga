@@ -152,5 +152,8 @@
   "nodeKindSensor": "Sensor node",
   "nodeKindAssembly": "Assembly point",
   "mapAway": "away in a straight line",
-  "placeDetails": "Details and trends"
+  "placeDetails": "Details and trends",
+  "nodeKindDemo": "Demo node",
+  "nodeSimulatedNote": "Simulated for the demonstration. Its level follows the live rig, so you can watch an alert spread across the area.",
+  "mapLegendDemo": "Demo node (simulated)"
 }

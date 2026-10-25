@@ -494,4 +494,14 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get placeDetails => 'Butiran dan trend';
+
+  @override
+  String get nodeKindDemo => 'Nod demo';
+
+  @override
+  String get nodeSimulatedNote =>
+      'Disimulasikan untuk demonstrasi. Tahapnya mengikuti rig langsung, jadi anda boleh melihat amaran merebak di kawasan ini.';
+
+  @override
+  String get mapLegendDemo => 'Nod demo (simulasi)';
 }

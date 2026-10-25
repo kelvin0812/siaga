@@ -27,7 +27,7 @@
       "nameEn": "SK Changkat Larut (near Sungai Larut Downstream Node)",
       "nameMs": "SK Changkat Larut (berhampiran Nod Hiliran Sungai Larut)",
       "lat": 4.8046,
-      "lon": 100.7420
+      "lon": 100.742
     },
     {
       "id": "ap-5",
@@ -42,6 +42,35 @@
       "nameMs": "Surau Al Ersyad (berhampiran Nod Sungai Mas)",
       "lat": 4.8133,
       "lon": 100.7286
+    },
+    {
+      "id": "ap-7",
+      "nameEn": "MMU Stadium, Cyberjaya",
+      "nameMs": "Stadium MMU, Cyberjaya",
+      "lat": 2.92786,
+      "lon": 101.6442
+    },
+    {
+      "id": "ap-8",
+      "nameEn": "Dewan Tun Canselor, MMU Cyberjaya",
+      "nameMs": "Dewan Tun Canselor, MMU Cyberjaya",
+      "lat": 2.92896,
+      "lon": 101.64199
+    },
+    {
+      "id": "ap-9",
+      "nameEn": "Masjid Raja Haji Fi Sabilillah, Cyberjaya",
+      "nameMs": "Masjid Raja Haji Fi Sabilillah, Cyberjaya",
+      "lat": 2.93219,
+      "lon": 101.64783
+    },
+    {
+      "id": "ap-10",
+      "nameEn": "SJK (C) Union Cyberjaya School Grounds",
+      "nameMs": "Kawasan Sekolah SJK (C) Union Cyberjaya",
+      "lat": 2.92634,
+      "lon": 101.6302
     }
-  ]
+  ],
+  "_comment_cyberjaya": "ap-7 to ap-10 are real places around MMU Cyberjaya (where the competition demo runs), with coordinates taken from OpenStreetMap. Like the rest of this list they are placeholders for an authority-managed source: whether a place is an approved assembly point must be confirmed with the local authority."
 }

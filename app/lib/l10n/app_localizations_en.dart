@@ -491,4 +491,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeDetails => 'Details and trends';
+
+  @override
+  String get nodeKindDemo => 'Demo node';
+
+  @override
+  String get nodeSimulatedNote =>
+      'Simulated for the demonstration. Its level follows the live rig, so you can watch an alert spread across the area.';
+
+  @override
+  String get mapLegendDemo => 'Demo node (simulated)';
 }

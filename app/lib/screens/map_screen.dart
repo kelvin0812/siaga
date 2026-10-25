@@ -348,11 +348,12 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     final l10n = AppLocalizations.of(context)!;
     final rig = appState.rigMode ? appState.rigReading : null;
     final color = riskStateColor(node.state);
+    final sim = node.simulated;
     return _PlaceCard(
       point: ll.LatLng(node.lat, node.lon),
       accent: color,
-      kind: l10n.nodeKindSensor,
-      kindIcon: Icons.sensors,
+      kind: sim ? l10n.nodeKindDemo : l10n.nodeKindSensor,
+      kindIcon: sim ? Icons.science_outlined : Icons.sensors,
       title: node.name,
       onClose: () => setState(() => _focusKey = null),
       body: [
@@ -371,7 +372,11 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
               Text(_agoLabel(node.lastSeen!), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
           ],
         ),
-        if (rig != null) ...[
+        if (sim) ...[
+          const SizedBox(height: 8),
+          Text(l10n.nodeSimulatedNote, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4)),
+        ],
+        if (rig != null && !sim) ...[
           const SizedBox(height: 10),
           Row(
             children: [
@@ -387,14 +392,15 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
         ],
       ],
       actions: [
-        FilledButton.icon(
-          onPressed: () => setState(() {
-            _selectedNodeId = node.id;
-            _focusKey = null;
-          }),
-          icon: const Icon(Icons.show_chart, size: 18),
-          label: Text(l10n.placeDetails),
-        ),
+        if (!sim)
+          FilledButton.icon(
+            onPressed: () => setState(() {
+              _selectedNodeId = node.id;
+              _focusKey = null;
+            }),
+            icon: const Icon(Icons.show_chart, size: 18),
+            label: Text(l10n.placeDetails),
+          ),
       ],
     );
   }
@@ -458,7 +464,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
         ? ll.LatLng(_myPosition!.latitude, _myPosition!.longitude)
         : nodes.isNotEmpty
             ? ll.LatLng(nodes.first.lat, nodes.first.lon)
-            : const ll.LatLng(4.85, 100.74); // Taiping, Perak — demo default
+            : const ll.LatLng(2.92791, 101.64179); // MMU Cyberjaya, where the competition demo runs
 
     final selectedNode =
         _selectedNodeId == null ? null : nodes.where((n) => n.id == _selectedNodeId).firstOrNull;
@@ -514,7 +520,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
       obstacles = [
         Rect.fromLTRB(12, 12, w - 12, 64),
         if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
-        if (!hasCard) Rect.fromLTRB(12, h - 204, 187, h - 104),
+        if (!hasCard) Rect.fromLTRB(12, h - 228, 187, h - 104),
         Rect.fromLTRB(0, h - 92, w, h),
         if (showRouteCard) Rect.fromLTRB(2, h - 207, w - 2, h - 92),
       ];
@@ -1097,6 +1103,7 @@ class _MapLegend extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           row(Container(width: 15, height: 15, decoration: const BoxDecoration(color: AppColors.normal, shape: BoxShape.circle)), l10n.mapLegendNode),
+          row(Container(width: 15, height: 15, decoration: BoxDecoration(border: Border.all(color: AppColors.normal, width: 2), shape: BoxShape.circle)), l10n.mapLegendDemo),
           row(Container(width: 15, height: 15, decoration: BoxDecoration(color: _kAssemblyColor, borderRadius: BorderRadius.circular(5))), l10n.mapLegendAssembly),
           row(Container(width: 15, height: 15, decoration: const BoxDecoration(color: Color(0xFF3D8BFF), shape: BoxShape.circle)), l10n.mapLegendYou),
         ],
@@ -1475,7 +1482,7 @@ class _NodeMarker extends StatelessWidget {
     return _MarkerBox(
       iconSize: 42,
       accent: color,
-      kind: slot == _LabelSlot.hidden ? null : l10n.nodeKindSensor,
+      kind: slot == _LabelSlot.hidden ? null : (node.simulated ? l10n.nodeKindDemo : l10n.nodeKindSensor),
       name: slot == _LabelSlot.hidden ? null : node.name,
       labelAbove: slot == _LabelSlot.above,
       icon: GestureDetector(
@@ -1486,7 +1493,8 @@ class _NodeMarker extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: color,
+              // A simulated node is drawn lighter, so it reads as different from a real sensor at a glance.
+              color: node.simulated ? color.withValues(alpha: 0.62) : color,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: focused ? 4 : 2.5),
               boxShadow: appGlow(color, alpha: focused ? 0.8 : 0.5, blur: focused ? 20 : 14),
