@@ -488,4 +488,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapAway => 'away in a straight line';
+
+  @override
+  String get placeDetails => 'Details and trends';
 }

@@ -151,5 +151,6 @@
   "routeNearest": "Kembali ke laluan terpendek",
   "nodeKindSensor": "Nod sensor",
   "nodeKindAssembly": "Tempat berkumpul",
-  "mapAway": "jarak garis lurus"
+  "mapAway": "jarak garis lurus",
+  "placeDetails": "Butiran dan trend"
 }

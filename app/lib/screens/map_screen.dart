@@ -33,7 +33,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMixin {
   Position? _myPosition;
   int? _selectedNodeId;
   List<AssemblyPoint> _assemblyPoints = const [];
@@ -49,6 +49,13 @@ class _MapScreenState extends State<MapScreen> {
   double _zoom = 13;
   final DraggableScrollableController _sheetController = DraggableScrollableController();
 
+  /// The marker the floating place card is about: "n:" and a node id, or "a:" and an assembly point id.
+  String? _focusKey;
+
+  /// Eases the camera towards a tapped marker, a little at a time, instead of jumping.
+  late final AnimationController _fly;
+  VoidCallback? _flyListener;
+
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -57,6 +64,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    _fly = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     final appState = context.read<AppState>();
     final locationService = appState.locationService;
     _routes = RouteService(
@@ -77,6 +85,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _fly.dispose();
     _sheetController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -97,6 +106,7 @@ class _MapScreenState extends State<MapScreen> {
               point: ll.LatLng(n.lat, n.lon),
               isNode: true,
               nodeId: n.id,
+              assemblyId: null,
             ),
           ),
       ..._assemblyPoints
@@ -107,6 +117,7 @@ class _MapScreenState extends State<MapScreen> {
               point: ll.LatLng(p.lat, p.lon),
               isNode: false,
               nodeId: null,
+              assemblyId: p.id,
             ),
           ),
     ];
@@ -114,10 +125,108 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _selectSearchResult(_SearchResult result) {
-    _mapController.move(result.point, 15);
     _searchController.clear();
     _searchFocusNode.unfocus();
-    setState(() => _selectedNodeId = result.nodeId);
+    final appState = context.read<AppState>();
+    if (result.isNode) {
+      final node = appState.nodes.where((n) => n.id == result.nodeId).firstOrNull;
+      if (node != null) _focusNode(node);
+    } else {
+      final point = _assemblyPoints.where((p) => p.id == result.assemblyId).firstOrNull;
+      if (point != null) _focusAssembly(point);
+    }
+  }
+
+  void _focusNode(SiagaNode node) {
+    setState(() {
+      _focusKey = 'n:${node.id}';
+      _selectedNodeId = null; // the card comes first; "Details and trends" opens the full panel
+    });
+    _flyTo(ll.LatLng(node.lat, node.lon));
+  }
+
+  void _focusAssembly(AssemblyPoint point) {
+    setState(() {
+      _focusKey = 'a:${point.id}';
+      _selectedNodeId = null;
+    });
+    _flyTo(ll.LatLng(point.lat, point.lon));
+  }
+
+  /// Zooms in a little (to about street level, never closer than needed) and puts the point in the upper part of the
+  /// map, clear of the place card that opens along the bottom.
+  void _flyTo(ll.LatLng point) {
+    final MapCamera cam;
+    try {
+      cam = _mapController.camera;
+    } catch (_) {
+      _mapController.move(point, 15.5);
+      return;
+    }
+    final zoom = cam.zoom < 15 ? 15.5 : cam.zoom;
+    final end = CameraFit.coordinates(
+      coordinates: [point],
+      padding: const EdgeInsets.fromLTRB(40, 140, 40, 330),
+      minZoom: zoom,
+      maxZoom: zoom,
+    ).fit(cam);
+    final from = cam.center;
+    final fromZoom = cam.zoom;
+    if (_flyListener != null) _fly.removeListener(_flyListener!);
+    _flyListener = () {
+      final t = Curves.easeInOutCubic.transform(_fly.value);
+      _mapController.move(
+        ll.LatLng(
+          from.latitude + (end.center.latitude - from.latitude) * t,
+          from.longitude + (end.center.longitude - from.longitude) * t,
+        ),
+        fromZoom + (end.zoom - fromZoom) * t,
+      );
+    };
+    _fly.addListener(_flyListener!);
+    _fly.forward(from: 0).whenComplete(() {
+      if (mounted) setState(() => _zoom = end.zoom); // label placement depends on the final zoom
+    });
+  }
+
+  /// Decides, for every marker, whether its label sits below, above, or is left out, so that no label covers another
+  /// label or any marker. Markers are placed in order of importance: the one in focus, you, sensor nodes, the route's
+  /// destination, then the other assembly points. A marker that is left without a label is still tappable.
+  Map<String, _LabelSlot> _placeLabels(List<_Pin> pins, List<Rect> obstacles) {
+    final MapCamera camera;
+    try {
+      camera = _mapController.camera;
+    } catch (_) {
+      return {for (final p in pins) p.id: p.wantLabel ? _LabelSlot.below : _LabelSlot.hidden};
+    }
+    final centers = {for (final p in pins) p.id: camera.latLngToScreenOffset(p.point)};
+    final iconRects = [
+      for (final p in pins) Rect.fromCenter(center: centers[p.id]!, width: p.iconSize + 6, height: p.iconSize + 6),
+    ];
+    final placed = <Rect>[];
+    final out = <String, _LabelSlot>{};
+    const labelH = 36.0;
+    bool free(Rect r) => !iconRects.any((i) => i.overlaps(r)) && !obstacles.any((o) => o.overlaps(r)) && !placed.any((l) => l.overlaps(r.inflate(2)));
+    final order = [...pins]..sort((a, b) => a.priority.compareTo(b.priority));
+    for (final p in order) {
+      if (!p.wantLabel) {
+        out[p.id] = _LabelSlot.hidden;
+        continue;
+      }
+      final c = centers[p.id]!;
+      final below = Rect.fromLTWH(c.dx - p.labelW / 2, c.dy + p.iconSize / 2 + 4, p.labelW, labelH);
+      final above = Rect.fromLTWH(c.dx - p.labelW / 2, c.dy - p.iconSize / 2 - 4 - labelH, p.labelW, labelH);
+      if (free(below)) {
+        placed.add(below);
+        out[p.id] = _LabelSlot.below;
+      } else if (free(above)) {
+        placed.add(above);
+        out[p.id] = _LabelSlot.above;
+      } else {
+        out[p.id] = _LabelSlot.hidden;
+      }
+    }
+    return out;
   }
 
   /// Where to route FROM: the device's own position when known, else — in
@@ -164,9 +273,14 @@ class _MapScreenState extends State<MapScreen> {
       });
       // Bring the whole route into view, clear of the search bar above and the route card and nav bar below.
       if (plan != null) {
+        double height = 600;
+        try {
+          height = _mapController.camera.nonRotatedSize.height;
+        } catch (_) {}
         _mapController.fitCamera(CameraFit.coordinates(
           coordinates: [origin, ...plan.points],
-          padding: const EdgeInsets.fromLTRB(48, 150, 48, 270),
+          // Room for the search bar above and the route card with the nav bar below, scaled to the map's height.
+          padding: EdgeInsets.fromLTRB(48, height * 0.25 < 150 ? height * 0.25 : 150, 48, height * 0.42 < 270 ? height * 0.42 : 270),
           maxZoom: 16,
         ));
       }
@@ -186,58 +300,6 @@ class _MapScreenState extends State<MapScreen> {
       lines.add(Polyline(points: [origin, plan.points.first], color: AppColors.accent, strokeWidth: 3, pattern: const StrokePattern.dotted()));
     }
     return lines;
-  }
-
-  void _showAssemblyInfo(BuildContext context, AssemblyPoint point, ll.LatLng? origin) {
-    final l10n = AppLocalizations.of(context)!;
-    final locale = Localizations.localeOf(context).languageCode;
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.nodeKindAssembly.toUpperCase(),
-                style: const TextStyle(color: _kAssemblyColor, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
-            const SizedBox(height: 4),
-            Text(point.nameFor(locale), style: Theme.of(context).textTheme.titleLarge),
-            if (origin != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${_formatDistance(RouteService.straightMeters(origin, ll.LatLng(point.lat, point.lon)))} ${l10n.mapAway}',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (origin != null)
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  setState(() {
-                    _chosen = point;
-                    _showEvacRoute = true;
-                  });
-                },
-                icon: const Icon(Icons.directions_walk),
-                label: Text(l10n.routeHere),
-              ),
-            if (_chosen != null) ...[
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  setState(() => _chosen = null);
-                },
-                child: Text(l10n.routeNearest),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 
   void _showMyLocationInfo(BuildContext context) {
@@ -282,10 +344,115 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _nodeCard(BuildContext context, AppState appState, SiagaNode node) {
+    final l10n = AppLocalizations.of(context)!;
+    final rig = appState.rigMode ? appState.rigReading : null;
+    final color = riskStateColor(node.state);
+    return _PlaceCard(
+      point: ll.LatLng(node.lat, node.lon),
+      accent: color,
+      kind: l10n.nodeKindSensor,
+      kindIcon: Icons.sensors,
+      title: node.name,
+      onClose: () => setState(() => _focusKey = null),
+      body: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            RiskBadge(state: node.state),
+            if (rig != null)
+              Text(
+                rig.isStale ? l10n.rigStatusOffline : l10n.rigStatusLive,
+                style: TextStyle(color: rig.isStale ? const Color(0xFFE8833A) : AppColors.normal, fontSize: 12.5, fontWeight: FontWeight.w700),
+              ),
+            if (node.lastSeen != null)
+              Text(_agoLabel(node.lastSeen!), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
+          ],
+        ),
+        if (rig != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _ReadingTile(label: l10n.rigMetricLevel, value: rig.heightCm.toStringAsFixed(1), unit: 'cm', color: AppColors.watch),
+              const SizedBox(width: 8),
+              _ReadingTile(label: l10n.rigMetricFlow, value: rig.flow.toStringAsFixed(0), unit: '', color: AppColors.accent),
+              const SizedBox(width: 8),
+              _ReadingTile(label: l10n.rigMetricSoil, value: rig.soilRaw.toStringAsFixed(0), unit: '', color: const Color(0xFFA78BFA)),
+              const SizedBox(width: 8),
+              _ReadingTile(label: l10n.rigMetricTilt, value: rig.tiltDeg.toStringAsFixed(1), unit: '°', color: AppColors.normal),
+            ],
+          ),
+        ],
+      ],
+      actions: [
+        FilledButton.icon(
+          onPressed: () => setState(() {
+            _selectedNodeId = node.id;
+            _focusKey = null;
+          }),
+          icon: const Icon(Icons.show_chart, size: 18),
+          label: Text(l10n.placeDetails),
+        ),
+      ],
+    );
+  }
+
+  Widget _assemblyCard(BuildContext context, AssemblyPoint point, ll.LatLng? origin, RoutePlan? plan) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    final here = plan != null && plan.assembly.id == point.id ? plan : null;
+    String? routeLine;
+    if (here != null) {
+      routeLine = [
+        _formatDistance(here.distanceM),
+        here.byRoad ? (here.fromCache ? l10n.routeSaved : l10n.routeByRoad) : l10n.routeStraight,
+        if (here.durationS != null) '${_formatDuration(here.durationS!)} ${l10n.routeWalk}',
+      ].join(' · ');
+    }
+    return _PlaceCard(
+      point: ll.LatLng(point.lat, point.lon),
+      photo: point.photo,
+      accent: _kAssemblyColor,
+      kind: l10n.nodeKindAssembly,
+      kindIcon: Icons.groups,
+      title: point.nameFor(locale),
+      onClose: () => setState(() => _focusKey = null),
+      body: [
+        if (origin != null)
+          Text(
+            '${_formatDistance(RouteService.straightMeters(origin, ll.LatLng(point.lat, point.lon)))} ${l10n.mapAway}',
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        if (routeLine != null) ...[
+          const SizedBox(height: 4),
+          Text(routeLine, style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700)),
+        ],
+      ],
+      actions: [
+        if (origin != null)
+          FilledButton.icon(
+            onPressed: () => setState(() {
+              _chosen = point;
+              _showEvacRoute = true;
+              _focusKey = null; // the route card takes over, and the map shows the whole route
+            }),
+            icon: const Icon(Icons.directions_walk, size: 18),
+            label: Text(l10n.routeHere),
+          ),
+        if (_chosen != null)
+          OutlinedButton(onPressed: () => setState(() => _chosen = null), child: Text(l10n.routeNearest)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final nodes = appState.nodes;
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
 
     final center = _myPosition != null
         ? ll.LatLng(_myPosition!.latitude, _myPosition!.longitude)
@@ -312,7 +479,47 @@ class _MapScreenState extends State<MapScreen> {
         if (mounted) _ensureRoute(origin);
       });
     }
-    final showRouteCard = routeActive && selectedNode == null;
+    // The place card for the marker in focus. If that node or assembly point no longer exists, there is no card.
+    final focusNode = _focusKey != null && _focusKey!.startsWith('n:')
+        ? nodes.where((n) => 'n:${n.id}' == _focusKey).firstOrNull
+        : null;
+    final focusAssembly = _focusKey != null && _focusKey!.startsWith('a:')
+        ? _assemblyPoints.where((a) => 'a:${a.id}' == _focusKey).firstOrNull
+        : null;
+    final hasCard = (focusNode != null || focusAssembly != null) && selectedNode == null;
+    final showRouteCard = routeActive && selectedNode == null && !hasCard;
+
+    // Where each label goes, so labels never sit on top of other markers or labels.
+    double labelWidth(String text) => (text.length * 6.4 + 24).clamp(84.0, 146.0);
+    final pins = <_Pin>[
+      for (final n in nodes)
+        _Pin('n:${n.id}', ll.LatLng(n.lat, n.lon), 46, labelWidth(n.name), true, _focusKey == 'n:${n.id}' ? 0 : 2),
+      for (final a in _assemblyPoints)
+        _Pin(
+          'a:${a.id}',
+          ll.LatLng(a.lat, a.lon),
+          40,
+          labelWidth(a.nameFor(locale)),
+          _zoom >= 14 || _focusKey == 'a:${a.id}' || (destination != null && a.id == destination.id),
+          _focusKey == 'a:${a.id}' ? 0 : (destination != null && a.id == destination.id ? 3 : 4),
+        ),
+      if (_myPosition != null) _Pin('me', ll.LatLng(_myPosition!.latitude, _myPosition!.longitude), 30, 52, true, 1),
+    ];
+    // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend, the nav bar
+    // and the route card. A label that would sit under one of them moves or is left out.
+    var obstacles = <Rect>[];
+    try {
+      final size = _mapController.camera.nonRotatedSize;
+      final w = size.width, h = size.height;
+      obstacles = [
+        Rect.fromLTRB(12, 12, w - 12, 64),
+        if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
+        if (!hasCard) Rect.fromLTRB(12, h - 204, 187, h - 104),
+        Rect.fromLTRB(0, h - 92, w, h),
+        if (showRouteCard) Rect.fromLTRB(2, h - 207, w - 2, h - 92),
+      ];
+    } catch (_) {}
+    final slots = _placeLabels(pins, obstacles);
 
     final searchResults = _searchResults();
 
@@ -356,7 +563,12 @@ class _MapScreenState extends State<MapScreen> {
                           point: ll.LatLng(node.lat, node.lon),
                           width: _kMarkerW,
                           height: _kMarkerH,
-                          child: _NodeMarker(node: node, onTap: () => setState(() => _selectedNodeId = node.id)),
+                          child: _NodeMarker(
+                            node: node,
+                            slot: slots['n:${node.id}'] ?? _LabelSlot.below,
+                            focused: _focusKey == 'n:${node.id}',
+                            onTap: () => _focusNode(node),
+                          ),
                         ),
                       ),
                       ..._assemblyPoints.map(
@@ -367,8 +579,9 @@ class _MapScreenState extends State<MapScreen> {
                           child: _AssemblyPointMarker(
                             point: point,
                             highlighted: destination != null && point.id == destination.id,
-                            showName: _zoom >= 14 || (destination != null && point.id == destination.id),
-                            onTap: () => _showAssemblyInfo(context, point, origin),
+                            slot: slots['a:${point.id}'] ?? _LabelSlot.hidden,
+                            focused: _focusKey == 'a:${point.id}',
+                            onTap: () => _focusAssembly(point),
                           ),
                         ),
                       ),
@@ -380,7 +593,8 @@ class _MapScreenState extends State<MapScreen> {
                           child: _MarkerBox(
                             iconSize: 54,
                             icon: _MyLocationMarker(onTap: () => _showMyLocationInfo(context)),
-                            name: AppLocalizations.of(context)!.mapLegendYou,
+                            name: (slots['me'] ?? _LabelSlot.below) == _LabelSlot.hidden ? null : l10n.mapLegendYou,
+                            labelAbove: slots['me'] == _LabelSlot.above,
                             accent: const Color(0xFF3D8BFF),
                           ),
                         ),
@@ -413,11 +627,23 @@ class _MapScreenState extends State<MapScreen> {
               onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
             ),
           ),
-        Positioned(
-          left: 22,
-          bottom: showRouteCard ? 214 : 104,
-          child: const _MapLegend(),
-        ),
+        if (!hasCard)
+          Positioned(
+            left: 22,
+            bottom: showRouteCard ? 214 : 104,
+            child: const _MapLegend(),
+          ),
+        if (hasCard)
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 92,
+            child: Center(
+              child: focusNode != null
+                  ? _nodeCard(context, appState, focusNode)
+                  : _assemblyCard(context, focusAssembly!, origin, destination != null && _plan != null ? _plan : null),
+            ),
+          ),
         if (showRouteCard)
           Positioned(
             left: 12,
@@ -455,7 +681,14 @@ class _SearchResult {
   final ll.LatLng point;
   final bool isNode;
   final int? nodeId;
-  const _SearchResult({required this.label, required this.point, required this.isNode, required this.nodeId});
+  final String? assemblyId;
+  const _SearchResult({
+    required this.label,
+    required this.point,
+    required this.isNode,
+    required this.nodeId,
+    required this.assemblyId,
+  });
 }
 
 /// Floating search field over the map (mentor feedback: let a resident find
@@ -721,13 +954,27 @@ class _RouteSummary extends StatelessWidget {
 
 /// A map marker with a label under it saying what kind of thing it is and its name. The marker's own point is the
 /// centre of the icon, so the label hangs below without moving where the marker sits on the map.
+enum _LabelSlot { below, above, hidden }
+
+/// What label placement needs to know about one marker.
+class _Pin {
+  final String id;
+  final ll.LatLng point;
+  final double iconSize;
+  final double labelW;
+  final bool wantLabel;
+  final int priority;
+  const _Pin(this.id, this.point, this.iconSize, this.labelW, this.wantLabel, this.priority);
+}
+
 class _MarkerBox extends StatelessWidget {
   final Widget icon;
   final double iconSize;
   final String? kind;
   final String? name;
+  final bool labelAbove;
   final Color accent;
-  const _MarkerBox({required this.icon, required this.iconSize, required this.accent, this.kind, this.name});
+  const _MarkerBox({required this.icon, required this.iconSize, required this.accent, this.kind, this.name, this.labelAbove = false});
 
   @override
   Widget build(BuildContext context) {
@@ -740,7 +987,8 @@ class _MarkerBox extends StatelessWidget {
           icon,
           if (name != null)
             Positioned(
-              top: _kMarkerH / 2 + iconSize / 2 + 4,
+              top: labelAbove ? null : _kMarkerH / 2 + iconSize / 2 + 4,
+              bottom: labelAbove ? _kMarkerH / 2 + iconSize / 2 + 4 : null,
               child: Container(
                 constraints: const BoxConstraints(maxWidth: _kMarkerW - 4),
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -776,9 +1024,16 @@ class _MarkerBox extends StatelessWidget {
 class _AssemblyPointMarker extends StatelessWidget {
   final AssemblyPoint point;
   final bool highlighted;
-  final bool showName;
+  final _LabelSlot slot;
+  final bool focused;
   final VoidCallback onTap;
-  const _AssemblyPointMarker({required this.point, required this.highlighted, required this.showName, required this.onTap});
+  const _AssemblyPointMarker({
+    required this.point,
+    required this.highlighted,
+    required this.slot,
+    required this.focused,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -788,8 +1043,9 @@ class _AssemblyPointMarker extends StatelessWidget {
     return _MarkerBox(
       iconSize: 38,
       accent: color,
-      kind: showName ? l10n.nodeKindAssembly : null,
-      name: showName ? point.nameFor(locale) : null,
+      kind: slot == _LabelSlot.hidden ? null : l10n.nodeKindAssembly,
+      name: slot == _LabelSlot.hidden ? null : point.nameFor(locale),
+      labelAbove: slot == _LabelSlot.above,
       icon: GestureDetector(
         onTap: onTap,
         child: Tooltip(
@@ -800,8 +1056,8 @@ class _AssemblyPointMarker extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(11),
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: highlighted ? appGlow(color, alpha: 0.6, blur: 14) : const [BoxShadow(color: Colors.black38, blurRadius: 5)],
+              border: Border.all(color: Colors.white, width: focused ? 3.5 : 2),
+              boxShadow: highlighted || focused ? appGlow(color, alpha: 0.75, blur: 18) : const [BoxShadow(color: Colors.black38, blurRadius: 5)],
             ),
             child: const Icon(Icons.groups, color: Colors.white, size: 21),
           ),
@@ -1207,8 +1463,10 @@ class _InfoRow extends StatelessWidget {
 
 class _NodeMarker extends StatelessWidget {
   final SiagaNode node;
+  final _LabelSlot slot;
+  final bool focused;
   final VoidCallback onTap;
-  const _NodeMarker({required this.node, required this.onTap});
+  const _NodeMarker({required this.node, required this.slot, required this.focused, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1217,8 +1475,9 @@ class _NodeMarker extends StatelessWidget {
     return _MarkerBox(
       iconSize: 42,
       accent: color,
-      kind: l10n.nodeKindSensor,
-      name: node.name,
+      kind: slot == _LabelSlot.hidden ? null : l10n.nodeKindSensor,
+      name: slot == _LabelSlot.hidden ? null : node.name,
+      labelAbove: slot == _LabelSlot.above,
       icon: GestureDetector(
         onTap: onTap,
         child: Tooltip(
@@ -1229,13 +1488,200 @@ class _NodeMarker extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.5),
-              boxShadow: appGlow(color, alpha: 0.5, blur: 14),
+              border: Border.all(color: Colors.white, width: focused ? 4 : 2.5),
+              boxShadow: appGlow(color, alpha: focused ? 0.8 : 0.5, blur: focused ? 20 : 14),
             ),
             child: Icon(Icons.sensors, color: node.state == RiskState.watch ? const Color(0xFF12202F) : Colors.white, size: 22),
           ),
         ),
       ),
+    );
+  }
+}
+
+const _kSatelliteTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+/// The floating window for a tapped marker, in the style of a maps app's place card: a picture of the place at the top,
+/// then its name, what it is, a few facts, and what you can do with it.
+class _PlaceCard extends StatelessWidget {
+  final ll.LatLng point;
+  final String? photo;
+  final Color accent;
+  final String kind;
+  final IconData kindIcon;
+  final String title;
+  final List<Widget> body;
+  final List<Widget> actions;
+  final VoidCallback onClose;
+  const _PlaceCard({
+    required this.point,
+    required this.accent,
+    required this.kind,
+    required this.kindIcon,
+    required this.title,
+    required this.body,
+    required this.actions,
+    required this.onClose,
+    this.photo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.97),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.hairline),
+          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 22, offset: Offset(0, 8))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: 124,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _PlacePicture(point: point, photo: photo, accent: accent),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Material(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: onClose,
+                          child: const SizedBox(width: 44, height: 44, child: Icon(Icons.close, color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 12,
+                      bottom: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(8)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(kindIcon, size: 14, color: accent),
+                            const SizedBox(width: 6),
+                            Text(
+                              kind.toUpperCase(),
+                              style: TextStyle(color: accent, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 6),
+                    ...body,
+                    if (actions.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(spacing: 8, runSpacing: 8, children: actions),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The picture at the top of a place card. A photo bundled with the app wins; otherwise it is a satellite view of the
+/// exact spot, so the person can see what the place looks like from above.
+class _PlacePicture extends StatelessWidget {
+  final ll.LatLng point;
+  final String? photo;
+  final Color accent;
+  const _PlacePicture({required this.point, required this.photo, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final satellite = Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(
+          child: FlutterMap(
+            key: ValueKey('${point.latitude},${point.longitude}'),
+            options: MapOptions(
+              initialCenter: point,
+              initialZoom: 17.6,
+              backgroundColor: Colors.transparent,
+              interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+            ),
+            children: [
+              TileLayer(urlTemplate: _kSatelliteTiles, userAgentPackageName: 'com.siaga.siaga_app'),
+              MarkerLayer(markers: [
+                Marker(
+                  point: point,
+                  width: 26,
+                  height: 26,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 6)],
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        ),
+        const Positioned(
+          right: 8,
+          bottom: 6,
+          child: Text('Imagery © Esri, Maxar', style: TextStyle(color: Colors.white70, fontSize: 8.5, shadows: [Shadow(blurRadius: 3)])),
+        ),
+      ],
+    );
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Shown while the picture loads, and when there is no connection.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [accent.withValues(alpha: 0.35), const Color(0xFF0E1A2D)],
+            ),
+          ),
+          child: Center(child: Icon(Icons.image_outlined, color: Colors.white.withValues(alpha: 0.18), size: 40)),
+        ),
+        photo != null ? Image.asset(photo!, fit: BoxFit.cover, errorBuilder: (context, error, stack) => satellite) : satellite,
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Color(0x66000000)],
+              stops: [0.55, 1],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

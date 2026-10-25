@@ -491,4 +491,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get mapAway => 'jarak garis lurus';
+
+  @override
+  String get placeDetails => 'Butiran dan trend';
 }

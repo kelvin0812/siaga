@@ -151,5 +151,6 @@
   "routeNearest": "Back to the shortest route",
   "nodeKindSensor": "Sensor node",
   "nodeKindAssembly": "Assembly point",
-  "mapAway": "away in a straight line"
+  "mapAway": "away in a straight line",
+  "placeDetails": "Details and trends"
 }

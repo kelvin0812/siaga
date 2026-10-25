@@ -10,12 +10,16 @@ class AssemblyPoint {
   final double lat;
   final double lon;
 
+  /// Optional picture bundled with the app (an asset path, set as "photo" in assets/assembly_points.json).
+  final String? photo;
+
   const AssemblyPoint({
     required this.id,
     required this.nameEn,
     required this.nameMs,
     required this.lat,
     required this.lon,
+    this.photo,
   });
 
   factory AssemblyPoint.fromJson(Map<String, dynamic> json) => AssemblyPoint(
@@ -24,6 +28,7 @@ class AssemblyPoint {
         nameMs: json['nameMs'] as String,
         lat: (json['lat'] as num).toDouble(),
         lon: (json['lon'] as num).toDouble(),
+        photo: json['photo'] as String?,
       );
 
   String nameFor(String languageCode) => languageCode == 'ms' ? nameMs : nameEn;

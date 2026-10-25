@@ -1009,6 +1009,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'away in a straight line'**
   String get mapAway;
+
+  /// No description provided for @placeDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details and trends'**
+  String get placeDetails;
 }
 
 class _AppLocalizationsDelegate
