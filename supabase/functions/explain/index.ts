@@ -5,8 +5,9 @@
 //   GEMINI_MODEL              optional, the first model to try (default gemini-3.5-flash-lite)
 //   GEMINI_FALLBACK_MODELS    optional, comma separated, tried in order when the first is busy or out of quota
 //
-// The app sends a small read-only snapshot of numbers (see core.ts). It cannot send free text to the model. If anything
-// goes wrong we answer with an error and the app falls back to its own fixed wording, so Merang never goes silent.
+// The app sends a small read-only snapshot of numbers, plus, for a typed question, the cleaned and length-limited text
+// (see core.ts). If anything goes wrong we answer with an error and the app falls back to its own fixed wording, so
+// Merang never goes silent.
 import { buildPrompt, parseGeminiResponse, parseRequest, Throttle } from './core.ts';
 
 const clean = (m: string) => m.trim().replace(/^models\//, '');
