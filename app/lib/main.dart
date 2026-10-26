@@ -169,17 +169,11 @@ class _HomeShellState extends State<_HomeShell> {
     }
     return Scaffold(
       extendBody: true,
-      // Merang lives in the header: always one tap away, and it never covers a chart, a card or a text box.
-      appBar: AppBar(
-        title: const _Brand(),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: MerangButton(compact: true, facts: ExplainFacts.from(app, focusedNodeFor(app)), explainer: _merang),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const _Brand()),
       body: IndexedStack(index: _index, children: _screens),
+      // Merang, on every page: one tap away whenever you want something explained.
+      floatingActionButton: MerangButton(facts: ExplainFacts.from(app, focusedNodeFor(app)), explainer: _merang),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _FloatingNavBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

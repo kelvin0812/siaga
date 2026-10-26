@@ -2,19 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:siaga_app/core/api_client.dart';
-import 'package:siaga_app/core/app_state.dart';
-import 'package:siaga_app/core/fcm_service.dart';
-import 'package:siaga_app/core/h3_service.dart';
-import 'package:siaga_app/core/location_service.dart';
-import 'package:siaga_app/core/offline_cache.dart';
 import 'package:siaga_app/core/theme.dart';
-import 'package:siaga_app/l10n/app_localizations.dart';
-import 'package:siaga_app/core/explainer_service.dart';
-import 'package:siaga_app/core/models.dart';
-import 'package:siaga_app/widgets/merang_sheet.dart';
 
 /// WCAG contrast ratio between two colours.
 double _contrast(Color a, Color b) {
@@ -26,13 +14,6 @@ double _contrast(Color a, Color b) {
   final l1 = lum(a), l2 = lum(b);
   return (math.max(l1, l2) + 0.05) / (math.min(l1, l2) + 0.05);
 }
-
-class _Cells implements CellComputer {
-  @override
-  String cellForPoint(double lat, double lon) => 'cellA';
-}
-
-const _facts = ExplainFacts(state: RiskState.warning);
 
 void main() {
   group('text on the dark surfaces is readable outdoors', () {
@@ -51,39 +32,5 @@ void main() {
       expect(_contrast(AppColors.textPrimary, onCard), greaterThan(_contrast(AppColors.textSecondary, onCard)));
       expect(_contrast(AppColors.textSecondary, onCard), greaterThan(_contrast(AppColors.textMuted, onCard)));
     });
-  });
-
-  testWidgets('Merang sits in the header, not floating over the page', (tester) async {
-    tester.view.physicalSize = const Size(430, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final app = AppState(
-      api: ApiClient(),
-      cache: OfflineCache(prefs),
-      locationService: LocationService(h3Service: _Cells(), fcmService: FcmService(), prefs: prefs),
-    );
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: app,
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: SiagaTheme.dark(),
-          builder: (c, child) => MediaQuery(data: MediaQuery.of(c).copyWith(disableAnimations: true), child: child!),
-          home: Scaffold(
-            appBar: AppBar(title: const Text('SIAGA'), actions: [Padding(padding: const EdgeInsets.only(right: 12), child: MerangButton(compact: true, facts: _facts))]),
-            body: const SizedBox.expand(),
-          ),
-        ),
-      ),
-    );
-    final box = tester.getRect(find.byType(MerangButton));
-    expect(box.top, greaterThanOrEqualTo(0));
-    expect(box.bottom, lessThanOrEqualTo(kToolbarHeight)); // inside the title bar
-    expect(box.width, lessThan(52)); // compact: it does not take over the bar
-    expect(box.right, closeTo(430 - 12, 1));
-    expect(tester.takeException(), isNull);
   });
 }

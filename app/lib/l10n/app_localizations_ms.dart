@@ -907,10 +907,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get riskStaleHelp =>
-      'Tiada bacaan terkini, jadi SIAGA tidak dapat menyatakan keadaan sekarang. Semak NADMA, MetMalaysia dan JPS.';
-
-  @override
   String get riskTrendsStale => 'Bacaan terakhir sebelum rig senyap';
 
   @override

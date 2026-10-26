@@ -904,10 +904,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get riskStaleHelp =>
-      'There is no fresh reading, so SIAGA cannot say how things look right now. Check NADMA, MetMalaysia and JPS.';
-
-  @override
   String get riskTrendsStale => 'The last readings before the rig went quiet';
 
   @override

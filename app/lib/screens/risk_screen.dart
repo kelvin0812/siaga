@@ -478,8 +478,8 @@ String _formatAgo(DateTime time) => formatAgoShort(time);
 const _kStaleColor = Color(0xFFE8833A);
 
 /// What My Risk shows instead of the level when the rig has gone quiet. The green "NORMAL" is a claim about the river,
-/// and old data cannot back it up, so the warning comes first, the word is neutral, and the last known level is small
-/// and dimmed. (The app still never raises an alert from old data.)
+/// and old data cannot back it up, so the word is neutral, the last known level is small and dimmed, and the status line
+/// says how old the data is. (The app still never raises an alert from old data.)
 class _StaleHero extends StatelessWidget {
   final RiskState state;
   final RigReading rig;
@@ -489,7 +489,7 @@ class _StaleHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       radius: AppRadius.lg,
       glowColor: _kStaleColor,
       glowAlpha: 0.10,
@@ -497,35 +497,6 @@ class _StaleHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
-            decoration: BoxDecoration(
-              color: _kStaleColor.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _kStaleColor.withValues(alpha: 0.7), width: 1.5),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.sensors_off, color: _kStaleColor, size: 24)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${l10n.rigStatusOffline}  ·  ${l10n.rigLastData} ${_formatAgo(rig.rowTime)}',
-                        style: const TextStyle(color: Color(0xFFFFB27A), fontSize: 16, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(l10n.riskStaleHelp, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, height: 1.4)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
           Row(
             children: [
               SizedBox(
@@ -569,6 +540,9 @@ class _StaleHero extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Opacity(opacity: 0.35, child: _ThreatStepper(current: state)),
+          const SizedBox(height: 12),
+          // One quiet line says the rig is offline and for how long (orange, like the status on every other page).
+          _LiveStatus(reading: rig, l10n: l10n),
         ],
       ),
     );

@@ -279,7 +279,6 @@
   "riskNoLive": "TIADA DATA LANGSUNG",
   "riskLastKnown": "Terakhir diketahui: {level}",
   "@riskLastKnown": {"placeholders": {"level": {"type": "String"}}},
-  "riskStaleHelp": "Tiada bacaan terkini, jadi SIAGA tidak dapat menyatakan keadaan sekarang. Semak NADMA, MetMalaysia dan JPS.",
   "riskTrendsStale": "Bacaan terakhir sebelum rig senyap",
   "mapKey": "Kunci peta"
 }

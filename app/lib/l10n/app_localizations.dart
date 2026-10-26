@@ -1706,12 +1706,6 @@ abstract class AppLocalizations {
   /// **'Last known: {level}'**
   String riskLastKnown(String level);
 
-  /// No description provided for @riskStaleHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'There is no fresh reading, so SIAGA cannot say how things look right now. Check NADMA, MetMalaysia and JPS.'**
-  String get riskStaleHelp;
-
   /// No description provided for @riskTrendsStale.
   ///
   /// In en, this message translates to:

@@ -279,7 +279,6 @@
   "riskNoLive": "NO LIVE DATA",
   "riskLastKnown": "Last known: {level}",
   "@riskLastKnown": {"placeholders": {"level": {"type": "String"}}},
-  "riskStaleHelp": "There is no fresh reading, so SIAGA cannot say how things look right now. Check NADMA, MetMalaysia and JPS.",
   "riskTrendsStale": "The last readings before the rig went quiet",
   "mapKey": "Map key"
 }
