@@ -5,13 +5,16 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import 'risk_badge.dart';
 
-/// A news-style strip under the title bar that names the places at Warning or Evacuate, scrolling slowly. It is not
-/// there at all while every place is Normal or Watch, so it only ever means something. Tap it to open the map.
-/// With "reduce motion" on, it stands still and shows the most serious places first.
+/// A news-style strip under the title bar. When some place is at Warning or Evacuate it names those places, scrolling
+/// slowly. Otherwise it is a calm one-line "nothing at high risk" (or, when the rig has gone quiet, an honest "offline":
+/// it never says all is well on old data). Tap it to open the map. With "reduce motion" on, it stands still.
 class LiveBanner extends StatefulWidget {
   final List<SiagaNode> nodes;
   final VoidCallback? onTap;
-  const LiveBanner({super.key, required this.nodes, this.onTap});
+
+  /// The live rig is not sending, so a quiet strip must not read as "all clear".
+  final bool rigOffline;
+  const LiveBanner({super.key, required this.nodes, this.onTap, this.rigOffline = false});
 
   /// The places worth a headline: Warning and Evacuate, the most serious first.
   static List<SiagaNode> atRisk(List<SiagaNode> nodes) {
@@ -39,6 +42,47 @@ class _LiveBannerState extends State<LiveBanner> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  /// The calm line: nothing is at Warning or Evacuate (or the rig is offline, which is said plainly, not as "all clear").
+  Widget _quiet(BuildContext context, AppLocalizations l10n) {
+    final offline = widget.rigOffline;
+    final tint = offline ? const Color(0xFFE8833A) : AppColors.normal;
+    final text = offline ? l10n.liveQuietOffline : l10n.liveQuiet;
+    final tag = offline ? l10n.liveOffline : l10n.liveTag;
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      button: widget.onTap != null,
+      label: '$tag. $text',
+      child: Material(
+        color: Color.alphaBlend(tint.withValues(alpha: 0.12), AppColors.surface),
+        child: InkWell(
+          onTap: widget.onTap,
+          child: SizedBox(
+            height: 34,
+            child: Row(
+              children: [
+                Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  color: offline ? const Color(0xFF7A4A22) : const Color(0xFF1F7A55),
+                  child: ExcludeSemantics(child: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 1))),
+                ),
+                Expanded(
+                  child: ExcludeSemantics(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5, fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final risky = LiveBanner.atRisk(widget.nodes);
@@ -48,9 +92,9 @@ class _LiveBannerState extends State<LiveBanner> with SingleTickerProviderStateM
     } else if (!_ticker.isActive) {
       _ticker.start();
     }
-    if (risky.isEmpty) return const SizedBox.shrink();
-
     final l10n = AppLocalizations.of(context)!;
+    if (risky.isEmpty) return _quiet(context, l10n);
+
     final worst = riskStateColor(risky.first.state);
     final spoken = risky.map((n) => '${riskStateLabel(context, n.state)}: ${n.name}').join('. ');
     return Semantics(

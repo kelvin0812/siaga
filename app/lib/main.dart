@@ -182,8 +182,12 @@ class _HomeShellState extends State<_HomeShell> {
       ),
       body: Column(
         children: [
-          // Only there while some place is at Warning or Evacuate.
-          LiveBanner(nodes: app.nodes, onTap: () => context.read<AppState>().openTab(0)),
+          // Names the places at Warning or Evacuate; a calm line otherwise (and "offline" when the rig is quiet).
+          LiveBanner(
+            nodes: app.nodes,
+            rigOffline: app.rigMode && (app.rigReading?.isStale ?? false) && !(app.rigReading?.simulated ?? false),
+            onTap: () => context.read<AppState>().openTab(0),
+          ),
           Expanded(child: IndexedStack(index: _index, children: _screens)),
         ],
       ),

@@ -285,5 +285,8 @@
   "riskLastHeard": "Last heard from the rig {ago}",
   "@riskLastHeard": {"placeholders": {"ago": {"type": "String"}}},
   "riskLevelOf": "Level {n} of 4",
-  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}}
+  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}},
+  "liveQuiet": "No place is at high risk right now",
+  "liveQuietOffline": "The rig is offline, so there is no live reading",
+  "liveOffline": "OFFLINE"
 }

@@ -1735,6 +1735,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Level {n} of 4'**
   String riskLevelOf(String n);
+
+  /// No description provided for @liveQuiet.
+  ///
+  /// In en, this message translates to:
+  /// **'No place is at high risk right now'**
+  String get liveQuiet;
+
+  /// No description provided for @liveQuietOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The rig is offline, so there is no live reading'**
+  String get liveQuietOffline;
+
+  /// No description provided for @liveOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'OFFLINE'**
+  String get liveOffline;
 }
 
 class _AppLocalizationsDelegate

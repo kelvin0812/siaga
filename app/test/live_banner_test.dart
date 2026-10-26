@@ -35,10 +35,30 @@ void main() {
     expect(risky.map((n) => n.name), ['Flooding', 'Rising']);
   });
 
-  testWidgets('nothing is shown while every place is Normal or Watch', (tester) async {
+  testWidgets('with every place Normal or Watch it is one calm line, not a scrolling list', (tester) async {
     await show(tester, [_node(1, 'Calm', RiskState.normal), _node(2, 'Watched', RiskState.watch)]);
-    expect(find.text('LIVE'), findsNothing);
+    expect(find.text('LIVE'), findsOneWidget);
+    expect(find.text('No place is at high risk right now'), findsOneWidget);
     expect(find.byType(ListView), findsNothing);
+    expect(find.text('Watched'), findsNothing);
+  });
+
+  testWidgets('when the rig is offline it says so, never "all clear"', (tester) async {
+    tester.view.physicalSize = const Size(430, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: SiagaTheme.dark(),
+        home: Scaffold(body: LiveBanner(nodes: [_node(1, 'Bench rig (live)', RiskState.normal)], rigOffline: true)),
+      ),
+    );
+    expect(find.text('OFFLINE'), findsOneWidget);
+    expect(find.text('The rig is offline, so there is no live reading'), findsOneWidget);
+    expect(find.textContaining('No place is at high risk'), findsNothing);
+    expect(find.text('LIVE'), findsNothing);
   });
 
   testWidgets('it names the risky places under a LIVE tag, and a tap opens the map', (tester) async {

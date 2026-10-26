@@ -924,4 +924,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String riskLevelOf(String n) {
     return 'Tahap $n daripada 4';
   }
+
+  @override
+  String get liveQuiet => 'Tiada tempat berisiko tinggi buat masa ini';
+
+  @override
+  String get liveQuietOffline =>
+      'Rig di luar talian, jadi tiada bacaan langsung';
+
+  @override
+  String get liveOffline => 'LUAR TALIAN';
 }

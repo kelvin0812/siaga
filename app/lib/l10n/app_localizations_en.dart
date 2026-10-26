@@ -921,4 +921,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String riskLevelOf(String n) {
     return 'Level $n of 4';
   }
+
+  @override
+  String get liveQuiet => 'No place is at high risk right now';
+
+  @override
+  String get liveQuietOffline =>
+      'The rig is offline, so there is no live reading';
+
+  @override
+  String get liveOffline => 'OFFLINE';
 }

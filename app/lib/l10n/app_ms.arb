@@ -285,5 +285,8 @@
   "riskLastHeard": "Rig terakhir menghantar data {ago}",
   "@riskLastHeard": {"placeholders": {"ago": {"type": "String"}}},
   "riskLevelOf": "Tahap {n} daripada 4",
-  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}}
+  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}},
+  "liveQuiet": "Tiada tempat berisiko tinggi buat masa ini",
+  "liveQuietOffline": "Rig di luar talian, jadi tiada bacaan langsung",
+  "liveOffline": "LUAR TALIAN"
 }
