@@ -77,8 +77,8 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
       child: Tooltip(
         message: l10n.merangAsk,
         child: SizedBox(
-          width: 76,
-          height: 76,
+          width: 64,
+          height: 64,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -86,8 +86,8 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
                 AnimatedBuilder(
                   animation: _pulse,
                   builder: (context, child) => Container(
-                    width: 64 + 12 * _pulse.value,
-                    height: 64 + 12 * _pulse.value,
+                    width: 54 + 10 * _pulse.value,
+                    height: 54 + 10 * _pulse.value,
                     decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ring.withValues(alpha: 0.6 * (1 - _pulse.value)), width: 3)),
                   ),
                 ),
@@ -100,9 +100,9 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
                   customBorder: const CircleBorder(),
                   onTap: () => showMerang(context, widget.facts, explainer: widget.explainer),
                   child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: Padding(padding: const EdgeInsets.all(5), child: MerangAvatar(mood: merangMoodFor(widget.facts), size: 54)),
+                    width: 54,
+                    height: 54,
+                    child: Padding(padding: const EdgeInsets.all(4), child: MerangAvatar(mood: merangMoodFor(widget.facts), size: 46)),
                   ),
                 ),
               ),

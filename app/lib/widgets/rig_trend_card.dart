@@ -68,14 +68,14 @@ class RigTrendCard extends StatelessWidget {
       ),
     );
     final chart = SizedBox(
-      height: dense ? 104 : 140,
+      height: dense ? 80 : 140,
       child: points.length < 2
           ? Center(child: Text(l10n.trendNoData, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)))
           : _chart(context, l10n),
     );
     if (dense) {
       return GlassCard(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
         radius: AppRadius.md,
         glowColor: color,
         glowAlpha: 0.10,
@@ -88,7 +88,7 @@ class RigTrendCard extends StatelessWidget {
             Text.rich(
               TextSpan(
                 text: latestText,
-                style: AppFonts.mono(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
+                style: AppFonts.mono(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
                 children: [
                   if (unit.isNotEmpty)
                     TextSpan(
@@ -104,7 +104,7 @@ class RigTrendCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(caption!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             ],
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             chart,
           ],
         ),

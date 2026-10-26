@@ -237,7 +237,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       coordinates: [point],
       // The card is about 430 px tall and sits above the nav bar, so the node goes in the clear space above the card
       // (and below the search bar), however tall the screen is.
-      padding: EdgeInsets.fromLTRB(40, 70, 40, cam.nonRotatedSize.height - math.max(cam.nonRotatedSize.height - 92 - 430 - 30, 110.0)),
+      padding: EdgeInsets.fromLTRB(40, 70, 40, cam.nonRotatedSize.height - math.max(cam.nonRotatedSize.height - 12 - 430 - 30, 110.0)),
       minZoom: zoom,
       maxZoom: zoom,
     ).fit(cam);
@@ -647,6 +647,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final focusAssembly = _focusKey != null && _focusKey!.startsWith('a:')
         ? _assemblyPoints.where((a) => 'a:${a.id}' == _focusKey).firstOrNull
         : null;
+    final dock = MediaQuery.paddingOf(context).bottom;
     final hasCard = (focusNode != null || focusAssembly != null) && selectedNode == null;
     final showRouteCard = routeActive && selectedNode == null && !hasCard;
 
@@ -674,8 +675,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         ),
       if (_myPosition != null) _Pin('me', ll.LatLng(_myPosition!.latitude, _myPosition!.longitude), 30, 52, true, 1),
     ];
-    // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend, the nav bar
-    // and the route card. A label that would sit under one of them moves or is left out.
+    // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend and the route
+    // card. The floating nav bar is no longer one of them, because the map stops above it. A label that would sit under
+    // one of them moves or is left out.
     var obstacles = <Rect>[];
     try {
       final size = _mapController.camera.nonRotatedSize;
@@ -684,9 +686,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         Rect.fromLTRB(12, 12, w - 12, 64),
         if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
         if (_rotation != 0) Rect.fromLTRB(w - 70, 70 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0), w - 12, 130 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0)),
-        if (!hasCard) Rect.fromLTRB(12, h - (_showPopulation ? 270 : 228), _showPopulation ? 235 : 187, h - 104),
-        Rect.fromLTRB(0, h - 92, w, h),
-        if (showRouteCard) Rect.fromLTRB(2, h - 207, w - 2, h - 92),
+        if (!hasCard) Rect.fromLTRB(12, h - (_showPopulation ? 190 : 148), _showPopulation ? 235 : 187, h - 24),
+        if (showRouteCard) Rect.fromLTRB(2, h - 127, w - 2, h - 12),
       ];
     } catch (_) {}
     final slots = _placeLabels(pins, obstacles);
@@ -700,7 +701,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             if (appState.isOffline) const _OfflineBanner(),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                // Stops above the floating nav bar (MediaQuery's bottom padding is the bar's height here) rather than
+                // running underneath it, so nothing of the map shows around or behind the bar.
+                padding: EdgeInsets.fromLTRB(10, 10, 10, dock + 8),
                 child: Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
@@ -825,14 +828,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         if (!hasCard)
           Positioned(
             left: 22,
-            bottom: showRouteCard ? 214 : 104,
+            bottom: dock + (showRouteCard ? 142 : 32),
             child: _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
           ),
         if (hasCard)
           Positioned(
             left: 12,
             right: 12,
-            bottom: 92,
+            bottom: dock + 20,
             child: Center(
               child: focusNode != null
                   ? _nodeCard(context, appState, focusNode)
@@ -843,8 +846,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           Positioned(
             left: 12,
             right: 12,
-            // Clears the floating nav dock (68px tall + its own 12px bottom margin, see main.dart's _FloatingNavBar).
-            bottom: 92,
+            // Sits just above the floating nav dock (see main.dart's _FloatingNavBar), which the map itself stops above.
+            bottom: dock + 20,
             child: _RouteSummary(
               plan: _plan,
               planning: _planning,
@@ -1419,7 +1422,7 @@ class _NodeInfoPanel extends StatelessWidget {
       return Positioned(
         top: 132,
         right: 22,
-        bottom: 100,
+        bottom: MediaQuery.paddingOf(context).bottom + 20,
         width: 420,
         child: Container(
           decoration: _decoration(context, side: true),
