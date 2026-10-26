@@ -737,7 +737,7 @@ abstract class AppLocalizations {
   /// No description provided for @rigMetricFlowCaption.
   ///
   /// In en, this message translates to:
-  /// **'Sensor pulses every 3 s'**
+  /// **'Sensor pulses every 5 s'**
   String get rigMetricFlowCaption;
 
   /// No description provided for @rigUnitPulses.
@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// No description provided for @howStep1.
   ///
   /// In en, this message translates to:
-  /// **'Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.'**
+  /// **'Sensors on the rig measure water level, flow, soil moisture and tilt every 5 seconds.'**
   String get howStep1;
 
   /// No description provided for @howStep2.
@@ -1541,7 +1541,7 @@ abstract class AppLocalizations {
   /// No description provided for @merangDataRig.
   ///
   /// In en, this message translates to:
-  /// **'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 3 seconds.'**
+  /// **'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 5 seconds.'**
   String get merangDataRig;
 
   /// No description provided for @merangDataAgo.
@@ -1765,6 +1765,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the live strip'**
   String get liveOpen;
+
+  /// No description provided for @mapLocationWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location is not available yet. Allow location in your browser, then tap the button again.'**
+  String get mapLocationWaiting;
 }
 
 class _AppLocalizationsDelegate

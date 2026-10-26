@@ -206,6 +206,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     });
   }
 
+  /// Flies back to the blue "You" dot, clear of any card that is open. Without a position yet it asks for permission and
+  /// says so, instead of doing nothing.
+  void _goToMe() {
+    final here = _myPosition;
+    if (here == null) {
+      unawaited(context.read<AppState>().locationService.requestPermissionAndStart());
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.mapLocationWaiting), behavior: SnackBarBehavior.floating));
+      return;
+    }
+    _flyTo(ll.LatLng(here.latitude, here.longitude));
+  }
+
   /// Turns the map back so north is up, smoothly, by the shorter way round.
   void _faceNorth() {
     final from = _rotation;
@@ -681,7 +695,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final legendOpen = _showLegend || (_showPopulation && _population != null);
     final legendH = _showPopulation && _population != null ? 166.0 : 124.0;
     final legendW = _showPopulation && _population != null ? 235.0 : 187.0;
-    final rightButtons = (origin != null && _assemblyPoints.isNotEmpty ? 1 : 0) + (_population != null ? 1 : 0) + 1 + (_rotation != 0 ? 1 : 0);
+    final rightButtons = (origin != null && _assemblyPoints.isNotEmpty ? 1 : 0) + (_population != null ? 1 : 0) + 2 + (_rotation != 0 ? 1 : 0);
     // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend and the route
     // card. The floating nav bar is no longer one of them, because the map stops above it. A label that would sit under
     // one of them moves or is left out.
@@ -833,6 +847,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   color: _kDensityColors[DensityClass.medium]!,
                   onTap: () => setState(() => _showPopulation = !_showPopulation),
                 ),
+              _MapIconButton(icon: Icons.my_location, label: l10n.myLocationTitle, active: false, color: AppColors.accent, onTap: _goToMe),
               if (_rotation != 0) _CompassButton(rotation: _rotation, label: l10n.mapFaceNorth, onTap: _faceNorth),
               _MapIconButton(icon: Icons.info_outline, label: l10n.mapKey, active: _showLegend, color: AppColors.accent, onTap: () => setState(() => _showLegend = !_showLegend), labelWhenActive: false),
               // The key opens right under the buttons, in the same column, so it can never sit on a card at the bottom.

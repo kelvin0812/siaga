@@ -106,7 +106,7 @@
   "rigMetricLevel": "Water level",
   "rigMetricLevelCaption": "Above normal river level",
   "rigMetricFlow": "Water flow",
-  "rigMetricFlowCaption": "Sensor pulses every 3 s",
+  "rigMetricFlowCaption": "Sensor pulses every 5 s",
   "rigUnitPulses": "pulses",
   "rigMetricSoil": "Soil moisture",
   "rigMetricSoilCaption": "Soil sensor signal",
@@ -134,7 +134,7 @@
   "trendNoData": "Waiting for readings to draw this chart",
   "trendNow": "now",
   "howTitle": "How SIAGA decides",
-  "howStep1": "Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.",
+  "howStep1": "Sensors on the rig measure water level, flow, soil moisture and tilt every 5 seconds.",
   "howStep2": "A machine-learning model, trained on this rig's own recorded runs, reads those four signals. Water level counts the most.",
   "howStep3": "It picks one of four levels: Normal, Watch, Warning or Evacuate. The siren on the rig runs the same model, so it and this app follow the same readings.",
   "mapLegendNode": "Sensor node",
@@ -249,7 +249,7 @@
   "merangNextEvacuate": "Leave now. Follow the route to the nearest assembly point and listen to official instructions.",
   "merangNextStale": "The data is old, so do not rely on it. Check the official channels.",
   "merangNextOfficial": "Always confirm with NADMA, MetMalaysia or JPS. SIAGA helps you decide; it is not an official warning.",
-  "merangDataRig": "These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 3 seconds.",
+  "merangDataRig": "These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 5 seconds.",
   "merangDataAgo": "The last reading was {ago} ago.",
   "@merangDataAgo": {"placeholders": {"ago": {"type": "String"}}},
   "merangDataSim": "This node is simulated for the demo, so there is no sensor behind it.",
@@ -290,5 +290,6 @@
   "liveQuietOffline": "The rig is offline, so there is no live reading",
   "liveOffline": "OFFLINE",
   "liveFold": "Fold the live strip",
-  "liveOpen": "Open the live strip"
+  "liveOpen": "Open the live strip",
+  "mapLocationWaiting": "Your location is not available yet. Allow location in your browser, then tap the button again."
 }

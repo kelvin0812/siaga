@@ -58,7 +58,7 @@ class RigController {
     required this.appState,
     BenchSensorService? service,
     Future<String> Function()? loadModelJson,
-    this.pollInterval = const Duration(seconds: 3),
+    this.pollInterval = const Duration(seconds: 5), // the rig sends a reading about every 5 seconds
     this.nodeId = kRigNodeId,
     this.nodeName = 'Bench rig (live)',
     // MMU Cyberjaya, where the competition demo runs.
@@ -81,7 +81,7 @@ class RigController {
 
   /// The charts show the last 10 minutes, measured back from the newest reading. This is a time window, not a row
   /// count: after the rig has been off for hours, older rows must not stretch the chart. [trendLength] only
-  /// bounds the memory used (10 minutes at 3 s apart is 200 readings).
+  /// bounds the memory used (10 minutes at 5 s apart is 120 readings).
   static const trendWindow = Duration(minutes: 10);
   static const trendLength = 250;
   final List<RigPoint> _trend = [];

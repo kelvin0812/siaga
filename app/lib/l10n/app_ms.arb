@@ -106,7 +106,7 @@
   "rigMetricLevel": "Paras air",
   "rigMetricLevelCaption": "Atas paras sungai biasa",
   "rigMetricFlow": "Aliran air",
-  "rigMetricFlowCaption": "Denyut sensor setiap 3 s",
+  "rigMetricFlowCaption": "Denyut sensor setiap 5 s",
   "rigUnitPulses": "denyut",
   "rigMetricSoil": "Kelembapan tanah",
   "rigMetricSoilCaption": "Isyarat sensor tanah",
@@ -134,7 +134,7 @@
   "trendNoData": "Menunggu bacaan untuk melukis carta ini",
   "trendNow": "kini",
   "howTitle": "Bagaimana SIAGA membuat keputusan",
-  "howStep1": "Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 3 saat.",
+  "howStep1": "Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 5 saat.",
   "howStep2": "Model pembelajaran mesin, dilatih menggunakan rekod larian rig ini sendiri, membaca empat isyarat itu. Paras air paling diutamakan.",
   "howStep3": "Ia memilih satu daripada empat tahap: Normal, Perhatian, Amaran atau Berpindah. Siren pada rig menjalankan model yang sama, jadi ia dan aplikasi ini mengikut bacaan yang sama.",
   "mapLegendNode": "Nod sensor",
@@ -249,7 +249,7 @@
   "merangNextEvacuate": "Berpindah sekarang. Ikut laluan ke tempat berkumpul terdekat dan dengar arahan rasmi.",
   "merangNextStale": "Data ini sudah lama, jadi jangan bergantung padanya. Semak saluran rasmi.",
   "merangNextOfficial": "Sentiasa sahkan dengan NADMA, MetMalaysia atau JPS. SIAGA membantu anda membuat keputusan; ia bukan amaran rasmi.",
-  "merangDataRig": "Nombor ini datang daripada rig ujian kami. Sensornya menghantar data kepada ESP32, yang menyimpan setiap bacaan ke jadual dalam talian kami (Supabase). Aplikasi menyemak baris baharu setiap 3 saat.",
+  "merangDataRig": "Nombor ini datang daripada rig ujian kami. Sensornya menghantar data kepada ESP32, yang menyimpan setiap bacaan ke jadual dalam talian kami (Supabase). Aplikasi menyemak baris baharu setiap 5 saat.",
   "merangDataAgo": "Bacaan terakhir ialah {ago} yang lalu.",
   "@merangDataAgo": {"placeholders": {"ago": {"type": "String"}}},
   "merangDataSim": "Nod ini disimulasikan untuk demo, jadi tiada sensor di belakangnya.",
@@ -290,5 +290,6 @@
   "liveQuietOffline": "Rig di luar talian, jadi tiada bacaan langsung",
   "liveOffline": "LUAR TALIAN",
   "liveFold": "Lipat jalur langsung",
-  "liveOpen": "Buka jalur langsung"
+  "liveOpen": "Buka jalur langsung",
+  "mapLocationWaiting": "Lokasi anda belum tersedia. Benarkan lokasi dalam pelayar anda, kemudian tekan butang itu sekali lagi."
 }

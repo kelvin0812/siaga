@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:siaga_app/core/api_client.dart';
@@ -155,6 +157,43 @@ void main() {
     }
     expect(controller.camera.rotation, closeTo(0, 0.01));
     expect(find.byTooltip('Face north'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the find-me button says so when there is no position yet', (tester) async {
+    await openDetails(tester, const Size(400, 860));
+    await tester.tap(find.byTooltip('My location'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('Your location is not available yet'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the find-me button brings the map back to the blue You dot', (tester) async {
+    await openDetails(tester, const Size(400, 860));
+    final controller = tester.widget<FlutterMap>(find.byType(FlutterMap).first).mapController!;
+    // a position far from where the map is looking
+    await appState.locationService.handlePosition(Position(
+      latitude: 2.9400,
+      longitude: 101.6600,
+      timestamp: DateTime.now(),
+      accuracy: 5,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    ));
+    await tester.pump(const Duration(milliseconds: 300));
+    controller.move(const LatLng(2.50, 101.20), 12); // wander off
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byTooltip('My location'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 150)); // the flight takes about 0.6 s
+    }
+    final c = controller.camera.center;
+    expect((c.latitude - 2.9400).abs(), lessThan(0.02));
+    expect((c.longitude - 101.6600).abs(), lessThan(0.02));
     expect(tester.takeException(), isNull);
   });
 }

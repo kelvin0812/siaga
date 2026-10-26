@@ -114,7 +114,7 @@ export function buildPrompt(p: Parsed): { system: string; user: string } {
           '- If asked whether to evacuate, stay, go or whether it is safe, say you cannot decide that; explain the current level and point to the app and NADMA, MetMalaysia, JPS.',
         ].join('\n')
       : p.question === 'data'
-      ? '- The question is where the data comes from. Real rig (isRigNode): sensors feed an ESP32, which saves each reading to an online table (Supabase); the app checks for new rows every 3 seconds. Demo node (isDemoNode): simulated, no sensor behind it. Otherwise: our sensor nodes through our backend.'
+      ? '- The question is where the data comes from. Real rig (isRigNode): sensors feed an ESP32, which saves each reading to an online table (Supabase); the app checks for new rows every 5 seconds. Demo node (isDemoNode): simulated, no sensor behind it. Otherwise: our sensor nodes through our backend.'
       : '- The question is why the level is what it is. Use state, heightCm and risePerMin. Say if the water is rising, steady or falling.',
   ].join('\n');
   const user = p.question === 'ask'

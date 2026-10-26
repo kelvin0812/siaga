@@ -341,7 +341,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rigMetricFlow => 'Water flow';
 
   @override
-  String get rigMetricFlowCaption => 'Sensor pulses every 3 s';
+  String get rigMetricFlowCaption => 'Sensor pulses every 5 s';
 
   @override
   String get rigUnitPulses => 'pulses';
@@ -433,7 +433,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howStep1 =>
-      'Sensors on the rig measure water level, flow, soil moisture and tilt every 3 seconds.';
+      'Sensors on the rig measure water level, flow, soil moisture and tilt every 5 seconds.';
 
   @override
   String get howStep2 =>
@@ -799,7 +799,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get merangDataRig =>
-      'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 3 seconds.';
+      'These numbers come from our bench rig. Its sensors feed an ESP32, which saves each reading to our online table (Supabase). The app checks for new rows every 5 seconds.';
 
   @override
   String merangDataAgo(String ago) {
@@ -937,4 +937,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveOpen => 'Open the live strip';
+
+  @override
+  String get mapLocationWaiting =>
+      'Your location is not available yet. Allow location in your browser, then tap the button again.';
 }

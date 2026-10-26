@@ -342,7 +342,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get rigMetricFlow => 'Aliran air';
 
   @override
-  String get rigMetricFlowCaption => 'Denyut sensor setiap 3 s';
+  String get rigMetricFlowCaption => 'Denyut sensor setiap 5 s';
 
   @override
   String get rigUnitPulses => 'denyut';
@@ -436,7 +436,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get howStep1 =>
-      'Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 3 saat.';
+      'Sensor pada rig mengukur paras air, aliran, kelembapan tanah dan kecondongan setiap 5 saat.';
 
   @override
   String get howStep2 =>
@@ -803,7 +803,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get merangDataRig =>
-      'Nombor ini datang daripada rig ujian kami. Sensornya menghantar data kepada ESP32, yang menyimpan setiap bacaan ke jadual dalam talian kami (Supabase). Aplikasi menyemak baris baharu setiap 3 saat.';
+      'Nombor ini datang daripada rig ujian kami. Sensornya menghantar data kepada ESP32, yang menyimpan setiap bacaan ke jadual dalam talian kami (Supabase). Aplikasi menyemak baris baharu setiap 5 saat.';
 
   @override
   String merangDataAgo(String ago) {
@@ -940,4 +940,8 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get liveOpen => 'Buka jalur langsung';
+
+  @override
+  String get mapLocationWaiting =>
+      'Lokasi anda belum tersedia. Benarkan lokasi dalam pelayar anda, kemudian tekan butang itu sekali lagi.';
 }
