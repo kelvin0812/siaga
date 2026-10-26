@@ -120,6 +120,13 @@ class _LiveBannerState extends State<LiveBanner> with SingleTickerProviderStateM
         child: Row(
           children: [
             SizedBox(height: 28, child: tagChip),
+            // A loudspeaker, so the strip reads as an announcement. Decorative: the words carry the meaning.
+            ExcludeSemantics(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Icon(Icons.campaign, size: 22, color: urgent ? const Color(0xFFFF6B6B) : tint),
+              ),
+            ),
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,

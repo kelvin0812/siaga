@@ -40,6 +40,7 @@ void main() {
     expect(find.text('LIVE'), findsOneWidget);
     expect(find.text('No place is at high risk right now'), findsWidgets); // the words keep rolling, so they come round again
     expect(find.text('Watched'), findsNothing);
+    expect(find.byIcon(Icons.campaign), findsOneWidget); // the loudspeaker
   });
 
   testWidgets('when the rig is offline it says so, never "all clear"', (tester) async {
