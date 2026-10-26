@@ -128,13 +128,14 @@ void main() {
       expect(locale.overrideLocale, isNull);
     });
 
-    testWidgets('the technical panels start folded and open on tap', (tester) async {
+    testWidgets('the rig readout starts folded and opens on tap, and there is no model evaluation any more', (tester) async {
       await pump(tester, const SettingsScreen());
-      expect(find.text('Bench Sensor Rig (Live)'), findsOneWidget);
-      expect(find.text('Run evaluation'), findsNothing);
-      await tester.tap(find.text('Risk Model Evaluation (Bench Data)'));
+      expect(find.text('Rig sensor readings'), findsOneWidget);
+      expect(find.textContaining('refresh every 5 seconds'), findsNothing);
+      expect(find.textContaining('Risk Model Evaluation'), findsNothing);
+      await tester.tap(find.text('Rig sensor readings'));
       await tester.pumpAndSettle();
-      expect(find.text('Run evaluation'), findsOneWidget);
+      expect(find.textContaining('refresh every 5 seconds'), findsOneWidget);
     });
 
     testWidgets('fits a small phone without overflowing', (tester) async {

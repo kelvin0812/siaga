@@ -18,18 +18,19 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Early warning for flash floods and landslides.">
+  <meta name="theme-color" content="#0A0F1E">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="siaga_app">
+  <meta name="apple-mobile-web-app-title" content="SIAGA">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>siaga_app</title>
+  <title>SIAGA</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -41,6 +42,30 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!-- Install support: keep the browser's install prompt for the app's own "Install app" button. It is set up before the
+       app starts, because the browser can fire the event very early. -->
+  <script>
+    (function () {
+      var deferred = null;
+      function changed() { if (typeof window.siagaOnInstallChange === 'function') window.siagaOnInstallChange(); }
+      window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; changed(); });
+      window.addEventListener('appinstalled', function () { deferred = null; changed(); });
+      window.siagaCanInstall = function () { return deferred !== null; };
+      window.siagaIsInstalled = function () {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      };
+      window.siagaIsIos = function () {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      };
+      window.siagaInstall = function () {
+        if (!deferred) return Promise.resolve('unavailable');
+        var d = deferred;
+        deferred = null;
+        d.prompt();
+        return d.userChoice.then(function (c) { changed(); return c.outcome; });
+      };
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

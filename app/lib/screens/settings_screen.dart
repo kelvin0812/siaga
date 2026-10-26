@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/api_client.dart';
 import '../core/app_state.dart';
 import '../core/bench_sensor_service.dart';
 import '../core/fcm_service.dart';
+import '../core/install_service.dart';
 import '../core/locale_provider.dart';
 import '../core/models.dart';
 import '../core/theme.dart';
@@ -17,7 +17,12 @@ import '../widgets/glass_card.dart';
 import '../widgets/risk_badge.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  /// Only for tests: a stand-in for the browser's install support.
+  final InstallService? installService;
+
+  /// Only for tests: a stand-in for the rig's online table.
+  final BenchSensorService? benchService;
+  const SettingsScreen({super.key, this.installService, this.benchService});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -25,11 +30,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   NotificationPermissionStatus? _notificationStatus;
+  late final InstallService _install = widget.installService ?? createInstallService();
 
   @override
   void initState() {
     super.initState();
     _refreshNotificationStatus();
+  }
+
+  @override
+  void dispose() {
+    if (widget.installService == null) _install.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshNotificationStatus() async {
@@ -65,6 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _NotificationTile(status: _notificationStatus, onEnable: _enableNotifications),
                   ),
                 ),
+                if (_install.supported)
+                  _Group(
+                    label: l10n.installTitle,
+                    child: GlassCard(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: _InstallCard(service: _install),
+                    ),
+                  ),
                 _Group(
                   label: l10n.settingsLanguage,
                   child: GlassCard(
@@ -91,9 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   hint: l10n.settingsDiagnosticsHint,
                   child: Column(
                     children: [
-                      _Collapsible(title: l10n.benchSensorTitle, icon: Icons.sensors, child: const _BenchSensorPanel()),
-                      const SizedBox(height: 12),
-                      _Collapsible(title: l10n.benchEvalTitle, icon: Icons.analytics_outlined, child: const _BenchEvalPanel()),
+                      _Collapsible(title: l10n.benchSensorTitle, icon: Icons.sensors, child: _BenchSensorPanel(service: widget.benchService)),
                     ],
                   ),
                 ),
@@ -145,6 +163,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 /// A titled block of the settings page; every group has the same label style and the same gap below it.
+/// Put SIAGA on the home screen: one button. Where the browser can show its own install dialog, that is what opens;
+/// otherwise (iPhone Safari, an in-app browser) the same button shows the steps.
+class _InstallCard extends StatelessWidget {
+  final InstallService service;
+  const _InstallCard({required this.service});
+
+  void _showSteps(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final steps = service.isIos ? [l10n.installIos1, l10n.installIos2, l10n.installIos3] : [l10n.installOther1, l10n.installOther2, l10n.installOther3];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      constraints: const BoxConstraints(maxWidth: 560),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg))),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.installHowTitle, style: AppFonts.heading(fontSize: 20)),
+              const SizedBox(height: 16),
+              for (var i = 0; i < steps.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.accent.withValues(alpha: 0.2), border: Border.all(color: AppColors.accent.withValues(alpha: 0.6))),
+                        child: Text('${i + 1}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: Padding(padding: const EdgeInsets.only(top: 2), child: Text(steps[i], style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.4)))),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 4),
+              SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.of(sheet).pop(), child: Text(l10n.installGotIt))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListenableBuilder(
+      listenable: service,
+      builder: (context, _) {
+        if (service.installed) {
+          return Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: AppColors.normal, size: 22),
+              const SizedBox(width: 10),
+              Expanded(child: Text(l10n.installDone, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15))),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.installBody, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14.5, height: 1.45)),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: () => service.canPrompt ? service.prompt() : _showSteps(context),
+              icon: const Icon(Icons.install_mobile, size: 20),
+              label: Text(l10n.installButton),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48), textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _Group extends StatelessWidget {
   final String label;
   final String? hint;
@@ -340,14 +441,15 @@ class _SectionLabel extends StatelessWidget {
 /// shouldn't share state with anything that drives an actual risk
 /// reading.
 class _BenchSensorPanel extends StatefulWidget {
-  const _BenchSensorPanel();
+  final BenchSensorService? service;
+  const _BenchSensorPanel({this.service});
 
   @override
   State<_BenchSensorPanel> createState() => _BenchSensorPanelState();
 }
 
 class _BenchSensorPanelState extends State<_BenchSensorPanel> {
-  final _service = BenchSensorService();
+  late final BenchSensorService _service = widget.service ?? BenchSensorService();
   Timer? _timer;
   BenchSensorReading? _latest;
   bool _loading = true;
@@ -397,48 +499,57 @@ class _BenchSensorPanelState extends State<_BenchSensorPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final r = _latest;
+    final live = r != null && DateTime.now().toUtc().difference(r.createdAt.toUtc()) < const Duration(seconds: 30);
+    final statusColor = r == null ? AppColors.textMuted : (live ? AppColors.normal : const Color(0xFFE8833A));
+    String fmt(double? v, [int digits = 2]) => v?.toStringAsFixed(digits) ?? '\u2014';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.benchSensorDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.4)),
+          Text(l10n.benchSensorDescription, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.45)),
           const SizedBox(height: 14),
           if (_loading)
             const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
-          else if (_latest == null)
+          else if (r == null)
             Text(
               _errored ? l10n.benchSensorError : l10n.benchSensorWaiting,
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
             )
           else ...[
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
+            Row(
               children: [
-                _BenchStat(label: 'Soil', value: _latest!.soil?.toString() ?? '—'),
-                _BenchStat(label: 'Distance', value: _latest!.dist != null ? '${_latest!.dist!.toStringAsFixed(1)} cm' : '—'),
-                _BenchStat(label: 'Flow', value: _latest!.flow?.toString() ?? '—'),
-                _BenchStat(
-                  label: 'Accel (x,y,z)',
-                  value: [_latest!.accelX, _latest!.accelY, _latest!.accelZ]
-                      .map((v) => v?.toStringAsFixed(2) ?? '—')
-                      .join(', '),
-                ),
-                _BenchStat(
-                  label: 'Gyro (x,y,z)',
-                  value: [_latest!.gyroX, _latest!.gyroY, _latest!.gyroZ]
-                      .map((v) => v?.toStringAsFixed(2) ?? '—')
-                      .join(', '),
+                Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, color: statusColor)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    live ? l10n.benchStatusLive : l10n.benchStatusAgo(_formatAgo(r.createdAt)),
+                    style: TextStyle(color: statusColor, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              '${l10n.benchSensorUpdated} ${_formatAgo(_latest!.createdAt)}${_errored ? ' — ${l10n.benchSensorError}' : ''}',
-              style: TextStyle(color: _errored ? AppColors.evacuate : AppColors.textMuted, fontSize: 12.5),
+            if (_errored) ...[
+              const SizedBox(height: 4),
+              Text(l10n.benchSensorError, style: const TextStyle(color: AppColors.evacuate, fontSize: 13)),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _BenchTile(icon: Icons.grass, label: l10n.benchTileSoil, value: r.soil?.toString() ?? '\u2014')),
+                const SizedBox(width: 10),
+                Expanded(child: _BenchTile(icon: Icons.straighten, label: l10n.benchTileDistance, value: fmt(r.dist, 1), unit: 'cm')),
+                const SizedBox(width: 10),
+                Expanded(child: _BenchTile(icon: Icons.water_drop_outlined, label: l10n.benchTileFlow, value: r.flow?.toString() ?? '\u2014', unit: l10n.rigUnitPulses)),
+              ],
             ),
+            const SizedBox(height: 10),
+            _BenchAxes(icon: Icons.open_with, label: l10n.benchTileAccel, unit: 'm/s\u00b2', x: fmt(r.accelX), y: fmt(r.accelY), z: fmt(r.accelZ)),
+            const SizedBox(height: 10),
+            _BenchAxes(icon: Icons.rotate_right, label: l10n.benchTileGyro, unit: 'rad/s', x: fmt(r.gyroX), y: fmt(r.gyroY), z: fmt(r.gyroZ)),
           ],
         ],
       ),
@@ -446,213 +557,89 @@ class _BenchSensorPanelState extends State<_BenchSensorPanel> {
   }
 }
 
-class _BenchStat extends StatelessWidget {
+/// One reading: what it is, the number, and its unit.
+class _BenchTile extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _BenchStat({required this.label, required this.value});
+  final String unit;
+  const _BenchTile({required this.icon, required this.label, required this.value, this.unit = ''});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceRaised,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.hairline),
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: _tileDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 3),
-          Text(value, style: AppFonts.mono(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Icon(icon, size: 18, color: AppColors.accent),
+          const SizedBox(height: 8),
+          Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.25, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value, style: AppFonts.mono(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          ),
+          Text(unit.isEmpty ? '\u00a0' : unit, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
         ],
       ),
     );
   }
 }
 
-/// Lets a resident run the bench rig's latest real reading through the
-/// ACTUAL trained Tier 2 model (backend POST /bench/evaluate — see
-/// bench_eval.py), filling in only the signals the rig genuinely can't
-/// sense (rainfall) or hasn't been calibrated for (water level, soil).
-/// Deliberately a manual "Run" button rather than live-updating on every
-/// slider drag -- this hits a real model inference on the backend each
-/// time, not a free client-side computation.
-class _BenchEvalPanel extends StatefulWidget {
-  const _BenchEvalPanel();
-
-  @override
-  State<_BenchEvalPanel> createState() => _BenchEvalPanelState();
-}
-
-class _BenchEvalPanelState extends State<_BenchEvalPanel> {
-  double _rainMm = 0;
-  bool _overrideHeight = false;
-  double _heightM = 1.2;
-  bool _overrideSoil = false;
-  double _soilPct = 40;
-
-  bool _running = false;
-  BenchEvalResult? _result;
-  bool _errored = false;
-
-  Future<void> _run() async {
-    final appState = context.read<AppState>();
-    setState(() {
-      _running = true;
-      _errored = false;
-    });
-    try {
-      final result = await appState.api.evaluateBench(
-        rainMm1h: _rainMm,
-        heightMOverride: _overrideHeight ? _heightM : null,
-        soilPctOverride: _overrideSoil ? _soilPct : null,
-      );
-      if (!mounted) return;
-      setState(() {
-        _result = result;
-        _running = false;
-      });
-    } on ApiException {
-      if (!mounted) return;
-      setState(() {
-        _errored = true;
-        _running = false;
-      });
-    }
-  }
+/// A reading with three axes (acceleration, rotation), side by side.
+class _BenchAxes extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String unit;
+  final String x, y, z;
+  const _BenchAxes({required this.icon, required this.label, required this.unit, required this.x, required this.y, required this.z});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    Widget axis(String name, String value) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value, style: AppFonts.mono(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              ),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: _tileDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.benchEvalDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.4)),
-          const SizedBox(height: 16),
-
-          Text('${l10n.benchEvalRainLabel}: ${_rainMm.round()} mm', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
-          Slider(
-            value: _rainMm,
-            min: 0,
-            max: 100,
-            divisions: 20,
-            activeColor: AppColors.accent,
-            onChanged: (v) => setState(() => _rainMm = v),
-          ),
-
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: Text(l10n.benchEvalHeightLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
-            value: _overrideHeight,
-            onChanged: (v) => setState(() => _overrideHeight = v),
-          ),
-          if (_overrideHeight) ...[
-            Text('${_heightM.toStringAsFixed(1)} m', style: AppFonts.mono(fontSize: 13, color: AppColors.textPrimary)),
-            Slider(
-              value: _heightM,
-              min: 0,
-              max: 5,
-              divisions: 50,
-              activeColor: AppColors.watch,
-              onChanged: (v) => setState(() => _heightM = v),
-            ),
-          ],
-
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: Text(l10n.benchEvalSoilLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
-            value: _overrideSoil,
-            onChanged: (v) => setState(() => _overrideSoil = v),
-          ),
-          if (_overrideSoil) ...[
-            Text('${_soilPct.round()}%', style: AppFonts.mono(fontSize: 13, color: AppColors.textPrimary)),
-            Slider(
-              value: _soilPct,
-              min: 0,
-              max: 100,
-              divisions: 20,
-              activeColor: AppColors.warning,
-              onChanged: (v) => setState(() => _soilPct = v),
-            ),
-          ],
-
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _running ? null : _run,
-              child: Text(_running ? l10n.benchEvalRunning : l10n.benchEvalRunButton),
-            ),
-          ),
-
-          if (_errored) ...[
-            const SizedBox(height: 12),
-            Text(l10n.benchEvalErrorMsg, style: const TextStyle(color: AppColors.evacuate, fontSize: 14)),
-          ],
-
-          if (_result != null) ...[
-            const SizedBox(height: 16),
-            const Divider(color: AppColors.hairline),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(l10n.benchEvalResultTitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                RiskBadge(state: _result!.state),
-              ],
-            ),
-            if (!_result!.isRealModel) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.watch.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: AppColors.watch.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, color: AppColors.watch, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(l10n.benchEvalStubWarning, style: const TextStyle(color: AppColors.watch, fontSize: 12.5, height: 1.35)),
-                    ),
-                  ],
-                ),
-              ),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Expanded(child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600))),
+              Text(unit, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
             ],
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _BenchStat(label: l10n.benchEvalProbabilityLabel, value: '${(_result!.tier2Probability * 100).toStringAsFixed(1)}%'),
-                _BenchStat(label: l10n.benchEvalCorroborationLabel, value: '${_result!.corroboratingChannels}'),
-                _BenchStat(label: 'Physical breach', value: _result!.physicalBreach ? 'YES' : 'no'),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(l10n.benchEvalReadingUsedLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(
-              _result!.readingUsed.entries.map((e) => '${e.key}=${e.value}').join(', '),
-              style: AppFonts.mono(fontSize: 12.5, color: AppColors.textSecondary),
-            ),
-          ],
+          ),
+          const SizedBox(height: 10),
+          Row(children: [axis('x', x), axis('y', y), axis('z', z)]),
         ],
       ),
     );
   }
 }
+
+final _tileDecoration = BoxDecoration(
+  color: AppColors.surfaceRaised,
+  borderRadius: BorderRadius.circular(AppRadius.md),
+  border: Border.all(color: AppColors.hairline),
+);
 
 class _NotificationTile extends StatelessWidget {
   final NotificationPermissionStatus? status;

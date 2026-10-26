@@ -213,47 +213,6 @@ class DemoReading {
   double get tiltYDeg => tiltY * 0.1;
 }
 
-/// Result of POST /bench/evaluate — the real trained Tier 2 model's
-/// output for a bench-rig reading plus the resident's overrides. Field
-/// names mirror backend/app/api.py's BenchEvaluateOut.
-class BenchEvalResult {
-  final double tier2Probability;
-  final int corroboratingChannels;
-  final bool physicalBreach;
-  final RiskState state;
-  final Map<String, dynamic> readingUsed;
-  final DateTime? benchReadingAt;
-  // Which Tier2Model implementation actually produced tier2Probability --
-  // "LightGBMTier2Model" (the real trained model) or "HeuristicTier2Stub"
-  // (a placeholder used when the real model can't load, e.g. Vercel's
-  // serverless runtime is missing lightgbm's native OpenMP dependency).
-  // Surfaced in the UI so a stub answer is never shown as if it were the real model's.
-  final String modelType;
-
-  const BenchEvalResult({
-    required this.tier2Probability,
-    required this.corroboratingChannels,
-    required this.physicalBreach,
-    required this.state,
-    required this.readingUsed,
-    required this.benchReadingAt,
-    required this.modelType,
-  });
-
-  bool get isRealModel => modelType == 'LightGBMTier2Model';
-
-  factory BenchEvalResult.fromJson(Map<String, dynamic> json) => BenchEvalResult(
-        tier2Probability: (json['tier2_probability'] as num).toDouble(),
-        corroboratingChannels: json['corroborating_channels'] as int,
-        physicalBreach: json['physical_breach'] as bool,
-        state: RiskState.fromApi(json['state'] as String),
-        readingUsed: json['reading_used'] as Map<String, dynamic>,
-        benchReadingAt: json['bench_reading_at'] != null ? DateTime.parse(json['bench_reading_at'] as String) : null,
-        modelType: json['model_type'] as String,
-      );
-}
-
-
 /// What the live rig mode shows: the phase the model reached, plus the readings it was based on.
 class RigReading {
   /// 1 (Normal) to 4 (Evacuate).

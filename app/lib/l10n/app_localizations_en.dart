@@ -255,11 +255,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Photo upload failed. Try again or remove the photo.';
 
   @override
-  String get benchSensorTitle => 'Bench Sensor Rig (Live)';
+  String get benchSensorTitle => 'Rig sensor readings';
 
   @override
   String get benchSensorDescription =>
-      'Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.';
+      'The raw numbers from the test rig, as they arrive. They refresh every 5 seconds.';
 
   @override
   String get benchSensorWaiting => 'Waiting for a reading...';
@@ -269,48 +269,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get benchSensorUpdated => 'Updated';
-
-  @override
-  String get benchEvalTitle => 'Risk Model Evaluation (Bench Data)';
-
-  @override
-  String get benchEvalDescription =>
-      'Runs the bench rig\'s real sensor readings through the actual trained model. Fill in what the rig can\'t sense, then run it — this is live inference against the real model, not a retrain.';
-
-  @override
-  String get benchEvalRainLabel => 'Simulated rainfall, last hour (mm)';
-
-  @override
-  String get benchEvalHeightLabel => 'Override water level';
-
-  @override
-  String get benchEvalSoilLabel => 'Override soil moisture';
-
-  @override
-  String get benchEvalRunButton => 'Run evaluation';
-
-  @override
-  String get benchEvalRunning => 'Running…';
-
-  @override
-  String get benchEvalErrorMsg =>
-      'Could not run evaluation. Check your connection and try again.';
-
-  @override
-  String get benchEvalResultTitle => 'Result';
-
-  @override
-  String get benchEvalProbabilityLabel => 'Tier 2 probability';
-
-  @override
-  String get benchEvalCorroborationLabel => 'Corroborating channels';
-
-  @override
-  String get benchEvalReadingUsedLabel => 'Reading fed to the model';
-
-  @override
-  String get benchEvalStubWarning =>
-      'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.';
 
   @override
   String get rigModeTitle => 'Live Rig (Phase Model)';
@@ -634,8 +592,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionDiagnostics => 'Diagnostics';
 
   @override
-  String get settingsDiagnosticsHint =>
-      'For the team: the rig\'s raw readings and a check of the model.';
+  String get settingsDiagnosticsHint => 'For the team: the rig’s raw readings.';
 
   @override
   String get simulatePhaseTitle => 'Simulate a phase';
@@ -941,4 +898,64 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mapLocationWaiting =>
       'Your location is not available yet. Allow location in your browser, then tap the button again.';
+
+  @override
+  String get installTitle => 'Install SIAGA';
+
+  @override
+  String get installBody =>
+      'Add it to your home screen. It opens like an app and starts faster.';
+
+  @override
+  String get installButton => 'Install app';
+
+  @override
+  String get installDone => 'SIAGA is installed on this device.';
+
+  @override
+  String get installHowTitle => 'Add SIAGA to your home screen';
+
+  @override
+  String get installGotIt => 'Got it';
+
+  @override
+  String get installIos1 => 'Tap the Share button at the bottom of Safari.';
+
+  @override
+  String get installIos2 => 'Scroll down and tap \"Add to Home Screen\".';
+
+  @override
+  String get installIos3 => 'Tap \"Add\". SIAGA appears on your home screen.';
+
+  @override
+  String get installOther1 => 'Open this page in Chrome.';
+
+  @override
+  String get installOther2 => 'Tap the menu (the three dots).';
+
+  @override
+  String get installOther3 => 'Tap \"Install app\" or \"Add to Home screen\".';
+
+  @override
+  String get benchTileSoil => 'Soil moisture';
+
+  @override
+  String get benchTileDistance => 'Distance to water';
+
+  @override
+  String get benchTileFlow => 'Water flow';
+
+  @override
+  String get benchTileAccel => 'Acceleration';
+
+  @override
+  String get benchTileGyro => 'Rotation';
+
+  @override
+  String get benchStatusLive => 'Receiving live data';
+
+  @override
+  String benchStatusAgo(String ago) {
+    return 'Last reading $ago';
+  }
 }

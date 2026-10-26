@@ -575,13 +575,13 @@ abstract class AppLocalizations {
   /// No description provided for @benchSensorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Bench Sensor Rig (Live)'**
+  /// **'Rig sensor readings'**
   String get benchSensorTitle;
 
   /// No description provided for @benchSensorDescription.
   ///
   /// In en, this message translates to:
-  /// **'Live readings from the ESP32/Pico test rig via Supabase — separate from the monitored river nodes above.'**
+  /// **'The raw numbers from the test rig, as they arrive. They refresh every 5 seconds.'**
   String get benchSensorDescription;
 
   /// No description provided for @benchSensorWaiting.
@@ -601,84 +601,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updated'**
   String get benchSensorUpdated;
-
-  /// No description provided for @benchEvalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Risk Model Evaluation (Bench Data)'**
-  String get benchEvalTitle;
-
-  /// No description provided for @benchEvalDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs the bench rig\'s real sensor readings through the actual trained model. Fill in what the rig can\'t sense, then run it — this is live inference against the real model, not a retrain.'**
-  String get benchEvalDescription;
-
-  /// No description provided for @benchEvalRainLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Simulated rainfall, last hour (mm)'**
-  String get benchEvalRainLabel;
-
-  /// No description provided for @benchEvalHeightLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Override water level'**
-  String get benchEvalHeightLabel;
-
-  /// No description provided for @benchEvalSoilLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Override soil moisture'**
-  String get benchEvalSoilLabel;
-
-  /// No description provided for @benchEvalRunButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Run evaluation'**
-  String get benchEvalRunButton;
-
-  /// No description provided for @benchEvalRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Running…'**
-  String get benchEvalRunning;
-
-  /// No description provided for @benchEvalErrorMsg.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not run evaluation. Check your connection and try again.'**
-  String get benchEvalErrorMsg;
-
-  /// No description provided for @benchEvalResultTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Result'**
-  String get benchEvalResultTitle;
-
-  /// No description provided for @benchEvalProbabilityLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tier 2 probability'**
-  String get benchEvalProbabilityLabel;
-
-  /// No description provided for @benchEvalCorroborationLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Corroborating channels'**
-  String get benchEvalCorroborationLabel;
-
-  /// No description provided for @benchEvalReadingUsedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reading fed to the model'**
-  String get benchEvalReadingUsedLabel;
-
-  /// No description provided for @benchEvalStubWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This ran on the heuristic placeholder, not the real trained model — the backend\'s server couldn\'t load it this time. The number above is illustrative only.'**
-  String get benchEvalStubWarning;
 
   /// No description provided for @rigModeTitle.
   ///
@@ -1277,7 +1199,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDiagnosticsHint.
   ///
   /// In en, this message translates to:
-  /// **'For the team: the rig\'s raw readings and a check of the model.'**
+  /// **'For the team: the rig’s raw readings.'**
   String get settingsDiagnosticsHint;
 
   /// No description provided for @simulatePhaseTitle.
@@ -1771,6 +1693,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your location is not available yet. Allow location in your browser, then tap the button again.'**
   String get mapLocationWaiting;
+
+  /// No description provided for @installTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install SIAGA'**
+  String get installTitle;
+
+  /// No description provided for @installBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add it to your home screen. It opens like an app and starts faster.'**
+  String get installBody;
+
+  /// No description provided for @installButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Install app'**
+  String get installButton;
+
+  /// No description provided for @installDone.
+  ///
+  /// In en, this message translates to:
+  /// **'SIAGA is installed on this device.'**
+  String get installDone;
+
+  /// No description provided for @installHowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add SIAGA to your home screen'**
+  String get installHowTitle;
+
+  /// No description provided for @installGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get installGotIt;
+
+  /// No description provided for @installIos1.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the Share button at the bottom of Safari.'**
+  String get installIos1;
+
+  /// No description provided for @installIos2.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll down and tap \"Add to Home Screen\".'**
+  String get installIos2;
+
+  /// No description provided for @installIos3.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Add\". SIAGA appears on your home screen.'**
+  String get installIos3;
+
+  /// No description provided for @installOther1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this page in Chrome.'**
+  String get installOther1;
+
+  /// No description provided for @installOther2.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (the three dots).'**
+  String get installOther2;
+
+  /// No description provided for @installOther3.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Install app\" or \"Add to Home screen\".'**
+  String get installOther3;
+
+  /// No description provided for @benchTileSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil moisture'**
+  String get benchTileSoil;
+
+  /// No description provided for @benchTileDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance to water'**
+  String get benchTileDistance;
+
+  /// No description provided for @benchTileFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Water flow'**
+  String get benchTileFlow;
+
+  /// No description provided for @benchTileAccel.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration'**
+  String get benchTileAccel;
+
+  /// No description provided for @benchTileGyro.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation'**
+  String get benchTileGyro;
+
+  /// No description provided for @benchStatusLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving live data'**
+  String get benchStatusLive;
+
+  /// No description provided for @benchStatusAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Last reading {ago}'**
+  String benchStatusAgo(String ago);
 }
 
 class _AppLocalizationsDelegate

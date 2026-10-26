@@ -256,11 +256,11 @@ class AppLocalizationsMs extends AppLocalizations {
       'Muat naik foto gagal. Cuba lagi atau buang foto.';
 
   @override
-  String get benchSensorTitle => 'Rig Sensor Bangku (Langsung)';
+  String get benchSensorTitle => 'Bacaan sensor rig';
 
   @override
   String get benchSensorDescription =>
-      'Bacaan langsung daripada rig ujian ESP32/Pico melalui Supabase — berasingan daripada nod sungai yang dipantau di atas.';
+      'Nombor mentah daripada rig ujian, seperti yang diterima. Ia dikemas kini setiap 5 saat.';
 
   @override
   String get benchSensorWaiting => 'Menunggu bacaan...';
@@ -270,48 +270,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get benchSensorUpdated => 'Dikemas kini';
-
-  @override
-  String get benchEvalTitle => 'Penilaian Model Risiko (Data Bangku)';
-
-  @override
-  String get benchEvalDescription =>
-      'Menjalankan bacaan sensor sebenar rig bangku melalui model terlatih sebenar. Isikan apa yang rig tidak dapat kesan, kemudian jalankan — ini adalah inferens langsung terhadap model sebenar, bukan latihan semula.';
-
-  @override
-  String get benchEvalRainLabel => 'Hujan simulasi, sejam lepas (mm)';
-
-  @override
-  String get benchEvalHeightLabel => 'Ganti paras air';
-
-  @override
-  String get benchEvalSoilLabel => 'Ganti kelembapan tanah';
-
-  @override
-  String get benchEvalRunButton => 'Jalankan penilaian';
-
-  @override
-  String get benchEvalRunning => 'Menjalankan…';
-
-  @override
-  String get benchEvalErrorMsg =>
-      'Tidak dapat menjalankan penilaian. Semak sambungan anda dan cuba lagi.';
-
-  @override
-  String get benchEvalResultTitle => 'Keputusan';
-
-  @override
-  String get benchEvalProbabilityLabel => 'Kebarangkalian Tier 2';
-
-  @override
-  String get benchEvalCorroborationLabel => 'Saluran pengesahan';
-
-  @override
-  String get benchEvalReadingUsedLabel => 'Bacaan yang dihantar ke model';
-
-  @override
-  String get benchEvalStubWarning =>
-      'Ini dijalankan pada model ganti heuristik, bukan model terlatih sebenar — pelayan bahagian belakang tidak dapat memuatkannya kali ini. Nombor di atas hanya untuk ilustrasi.';
 
   @override
   String get rigModeTitle => 'Rig Langsung (Model Fasa)';
@@ -637,8 +595,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsSectionDiagnostics => 'Diagnostik';
 
   @override
-  String get settingsDiagnosticsHint =>
-      'Untuk pasukan: bacaan mentah rig dan semakan model.';
+  String get settingsDiagnosticsHint => 'Untuk pasukan: bacaan mentah rig.';
 
   @override
   String get simulatePhaseTitle => 'Simulasi fasa';
@@ -944,4 +901,66 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get mapLocationWaiting =>
       'Lokasi anda belum tersedia. Benarkan lokasi dalam pelayar anda, kemudian tekan butang itu sekali lagi.';
+
+  @override
+  String get installTitle => 'Pasang SIAGA';
+
+  @override
+  String get installBody =>
+      'Tambah ke skrin utama anda. Ia dibuka seperti aplikasi dan bermula lebih pantas.';
+
+  @override
+  String get installButton => 'Pasang aplikasi';
+
+  @override
+  String get installDone => 'SIAGA sudah dipasang pada peranti ini.';
+
+  @override
+  String get installHowTitle => 'Tambah SIAGA ke skrin utama';
+
+  @override
+  String get installGotIt => 'Faham';
+
+  @override
+  String get installIos1 => 'Ketik butang Kongsi di bahagian bawah Safari.';
+
+  @override
+  String get installIos2 => 'Tatal ke bawah dan ketik \"Add to Home Screen\".';
+
+  @override
+  String get installIos3 =>
+      'Ketik \"Add\". SIAGA muncul pada skrin utama anda.';
+
+  @override
+  String get installOther1 => 'Buka halaman ini dalam Chrome.';
+
+  @override
+  String get installOther2 => 'Ketik menu (tiga titik).';
+
+  @override
+  String get installOther3 =>
+      'Ketik \"Install app\" atau \"Add to Home screen\".';
+
+  @override
+  String get benchTileSoil => 'Kelembapan tanah';
+
+  @override
+  String get benchTileDistance => 'Jarak ke air';
+
+  @override
+  String get benchTileFlow => 'Aliran air';
+
+  @override
+  String get benchTileAccel => 'Pecutan';
+
+  @override
+  String get benchTileGyro => 'Putaran';
+
+  @override
+  String get benchStatusLive => 'Menerima data langsung';
+
+  @override
+  String benchStatusAgo(String ago) {
+    return 'Bacaan terakhir $ago';
+  }
 }
