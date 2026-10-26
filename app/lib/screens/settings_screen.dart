@@ -321,12 +321,11 @@ class _SectionLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
-        text.toUpperCase(),
+        text,
         style: const TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.0,
         ),
       ),
     );
@@ -465,7 +464,7 @@ class _BenchStat extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 3),
           Text(value, style: AppFonts.mono(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
         ],
@@ -605,7 +604,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Text(l10n.benchEvalResultTitle.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                Text(l10n.benchEvalResultTitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w700)),
                 const Spacer(),
                 RiskBadge(state: _result!.state),
               ],
@@ -645,7 +644,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
             Text(l10n.benchEvalReadingUsedLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              _result!.readingUsed.entries.map((e) => '${e.key}=${e.value}').join('  ·  '),
+              _result!.readingUsed.entries.map((e) => '${e.key}=${e.value}').join(', '),
               style: AppFonts.mono(fontSize: 12.5, color: AppColors.textSecondary),
             ),
           ],

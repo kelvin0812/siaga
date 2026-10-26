@@ -142,7 +142,7 @@ void main() {
     await tapMarker(tester, 'Lake bank (demo)');
     expect(find.text('Keep an eye on it'), findsOneWidget); // its Watch level
     expect(find.textContaining('Simulated for the demonstration'), findsOneWidget);
-    expect(find.text('DEMO NODE'), findsWidgets);
+    expect(find.text('Demo node'), findsWidgets);
     expect(find.textContaining('people within 1 km'), findsOneWidget);
     expect(find.text('Show in My Risk'), findsOneWidget);
     await tester.tap(find.text('Show in My Risk'));

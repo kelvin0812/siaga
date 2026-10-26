@@ -896,7 +896,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapFaceNorth => 'Face north';
 
   @override
-  String get riskNoLive => 'NO LIVE DATA';
+  String get riskNoLive => 'No live data';
 
   @override
   String riskLastKnown(String level) {
@@ -908,4 +908,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapKey => 'Map key';
+
+  @override
+  String get liveTag => 'LIVE';
+
+  @override
+  String riskLastHeard(String ago) {
+    return 'Last heard from the rig $ago';
+  }
+
+  @override
+  String riskLevelOf(String n) {
+    return 'Level $n of 4';
+  }
 }

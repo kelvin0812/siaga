@@ -276,9 +276,14 @@
   "merangStuck1": "Do not walk, swim or drive through floodwater. Move to the highest floor of a strong building, away from rivers, drains and slopes.",
   "merangStuck2": "Call 999 and tell them where you are. Keep your phone charged and wait for help.",
   "mapFaceNorth": "Face north",
-  "riskNoLive": "NO LIVE DATA",
+  "riskNoLive": "No live data",
   "riskLastKnown": "Last known: {level}",
   "@riskLastKnown": {"placeholders": {"level": {"type": "String"}}},
   "riskTrendsStale": "The last readings before the rig went quiet",
-  "mapKey": "Map key"
+  "mapKey": "Map key",
+  "liveTag": "LIVE",
+  "riskLastHeard": "Last heard from the rig {ago}",
+  "@riskLastHeard": {"placeholders": {"ago": {"type": "String"}}},
+  "riskLevelOf": "Level {n} of 4",
+  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}}
 }

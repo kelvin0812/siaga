@@ -25,6 +25,7 @@ import 'screens/map_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/risk_screen.dart';
 import 'screens/settings_screen.dart';
+import 'widgets/live_banner.dart';
 import 'widgets/merang_sheet.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -169,11 +170,23 @@ class _HomeShellState extends State<_HomeShell> {
     }
     return Scaffold(
       extendBody: true,
-      appBar: AppBar(title: const _Brand()),
-      body: IndexedStack(index: _index, children: _screens),
-      // Merang, on every page: one tap away whenever you want something explained.
-      floatingActionButton: MerangButton(facts: ExplainFacts.from(app, focusedNodeFor(app)), explainer: _merang),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      appBar: AppBar(
+        title: const _Brand(),
+        // Merang, top right on every page: one tap away, and it never sits on a chart, a card or a text box.
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: MerangButton(compact: true, facts: ExplainFacts.from(app, focusedNodeFor(app)), explainer: _merang),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Only there while some place is at Warning or Evacuate.
+          LiveBanner(nodes: app.nodes, onTap: () => context.read<AppState>().openTab(0)),
+          Expanded(child: IndexedStack(index: _index, children: _screens)),
+        ],
+      ),
       bottomNavigationBar: _FloatingNavBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

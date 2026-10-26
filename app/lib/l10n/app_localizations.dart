@@ -1697,7 +1697,7 @@ abstract class AppLocalizations {
   /// No description provided for @riskNoLive.
   ///
   /// In en, this message translates to:
-  /// **'NO LIVE DATA'**
+  /// **'No live data'**
   String get riskNoLive;
 
   /// No description provided for @riskLastKnown.
@@ -1717,6 +1717,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Map key'**
   String get mapKey;
+
+  /// No description provided for @liveTag.
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE'**
+  String get liveTag;
+
+  /// No description provided for @riskLastHeard.
+  ///
+  /// In en, this message translates to:
+  /// **'Last heard from the rig {ago}'**
+  String riskLastHeard(String ago);
+
+  /// No description provided for @riskLevelOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {n} of 4'**
+  String riskLevelOf(String n);
 }
 
 class _AppLocalizationsDelegate

@@ -90,7 +90,7 @@ void main() {
     await show(tester);
     expect(find.text('Data from'), findsOneWidget);
     expect(find.text('Bench rig (live)'), findsOneWidget);
-    expect(find.text('WATER LEVEL'), findsOneWidget); // the live rig's sensor tiles are showing
+    expect(find.text('Water level'), findsOneWidget); // the live rig's sensor tiles are showing
     expect(tester.takeException(), isNull);
   });
 
@@ -120,7 +120,7 @@ void main() {
     expect(appState.lockedNodeId, 991);
     expect(find.text('Choose a node'), findsNothing); // the list closed
     // a demo node has no sensors, so no tiles are drawn for it and the panel says so
-    expect(find.text('WATER LEVEL'), findsNothing);
+    expect(find.text('Water level'), findsNothing);
     expect(find.text('Demo node'), findsWidgets);
     expect(find.textContaining('has no sensors'), findsOneWidget);
 
@@ -128,7 +128,7 @@ void main() {
     await tester.tap(find.text('Show the live rig'));
     await tester.pumpAndSettle();
     expect(appState.lockedNodeId, isNull);
-    expect(find.text('WATER LEVEL'), findsOneWidget);
+    expect(find.text('Water level'), findsOneWidget);
   });
 
   testWidgets('the status panel gives one plain line per level, and a way to the map when it matters', (tester) async {
@@ -171,10 +171,10 @@ void main() {
   testWidgets('old data never wears a green NORMAL: the word is neutral and the status line says how old it is', (tester) async {
     rigState(phase: 1, age: const Duration(days: 1));
     await show(tester);
-    expect(find.text('NO LIVE DATA'), findsOneWidget);
+    expect(find.text('No live data'), findsOneWidget);
     expect(find.text('NORMAL'), findsNothing); // the calm word is not shown for a reading nobody can vouch for
-    expect(find.textContaining('Rig offline'), findsWidgets);
-    expect(find.textContaining('last data 1d ago'), findsWidgets);
+    expect(find.textContaining('Last heard from the rig 1d ago'), findsWidgets);
+    expect(find.textContaining('·'), findsNothing); // plain words, no dot separators
     expect(find.text('Last known: Normal'), findsOneWidget);
     expect(find.text('The last readings before the rig went quiet'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -184,6 +184,6 @@ void main() {
     rigState(phase: 1);
     await show(tester);
     expect(find.text('NORMAL'), findsOneWidget);
-    expect(find.text('NO LIVE DATA'), findsNothing);
+    expect(find.text('No live data'), findsNothing);
   });
 }

@@ -61,10 +61,10 @@ class RigTrendCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final titleText = Expanded(
       child: Text(
-        title.toUpperCase(),
+        title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
     final chart = SizedBox(

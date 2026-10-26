@@ -899,7 +899,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get mapFaceNorth => 'Hadap utara';
 
   @override
-  String get riskNoLive => 'TIADA DATA LANGSUNG';
+  String get riskNoLive => 'Tiada data langsung';
 
   @override
   String riskLastKnown(String level) {
@@ -911,4 +911,17 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get mapKey => 'Kunci peta';
+
+  @override
+  String get liveTag => 'LANGSUNG';
+
+  @override
+  String riskLastHeard(String ago) {
+    return 'Rig terakhir menghantar data $ago';
+  }
+
+  @override
+  String riskLevelOf(String n) {
+    return 'Tahap $n daripada 4';
+  }
 }

@@ -38,7 +38,7 @@ void main() {
       unit: 'cm',
     )));
     await tester.pump();
-    expect(find.text('WATER LEVEL'), findsOneWidget);
+    expect(find.text('Water level'), findsOneWidget);
     expect(find.text('8.9 cm'), findsOneWidget);
     expect(find.text('Waiting for readings to draw this chart'), findsNothing);
     expect(tester.takeException(), isNull);

@@ -679,9 +679,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       if (_myPosition != null) _Pin('me', ll.LatLng(_myPosition!.latitude, _myPosition!.longitude), 30, 52, true, 1),
     ];
     final legendOpen = _showLegend || (_showPopulation && _population != null);
-    final legendH = 46.0 + (legendOpen ? 8 + (_showPopulation && _population != null ? 166 : 124) : 0);
-    final legendW = legendOpen ? (_showPopulation && _population != null ? 235.0 : 187.0) : 60.0;
-    final rightButtons = (origin != null && _assemblyPoints.isNotEmpty ? 1 : 0) + (_population != null ? 1 : 0) + (_rotation != 0 ? 1 : 0);
+    final legendH = _showPopulation && _population != null ? 166.0 : 124.0;
+    final legendW = _showPopulation && _population != null ? 235.0 : 187.0;
+    final rightButtons = (origin != null && _assemblyPoints.isNotEmpty ? 1 : 0) + (_population != null ? 1 : 0) + 1 + (_rotation != 0 ? 1 : 0);
     // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend and the route
     // card. The floating nav bar is no longer one of them, because the map stops above it. A label that would sit under
     // one of them moves or is left out.
@@ -693,8 +693,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         Rect.fromLTRB(12, 12, w - 12, 64),
         // the column of round buttons on the right (a lit button also shows its name, so leave room for it)
         if (rightButtons > 0) Rect.fromLTRB(w - (_showEvacRoute ? 220 : 70), 70, w - 12, 70 + rightButtons * 54.0),
-        // the key's button, and the key itself while it is open
-        if (!hasCard) Rect.fromLTRB(12, h - (showRouteCard ? 134 : 24) - legendH, 12 + legendW, h - (showRouteCard ? 134 : 24)),
+        // the key, while it is open, beside the column of buttons
+        if (legendOpen) Rect.fromLTRB(w - 12 - legendW, 70 + rightButtons * 54.0, w - 12, 70 + rightButtons * 54.0 + legendH),
         if (showRouteCard) Rect.fromLTRB(2, h - 127, w - 2, h - 12),
       ];
     } catch (_) {}
@@ -834,23 +834,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   onTap: () => setState(() => _showPopulation = !_showPopulation),
                 ),
               if (_rotation != 0) _CompassButton(rotation: _rotation, label: l10n.mapFaceNorth, onTap: _faceNorth),
+              _MapIconButton(icon: Icons.info_outline, label: l10n.mapKey, active: _showLegend, color: AppColors.accent, onTap: () => setState(() => _showLegend = !_showLegend), labelWhenActive: false),
+              // The key opens right under the buttons, in the same column, so it can never sit on a card at the bottom.
+              if (legendOpen) _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
             ].expand((w) => [w, const SizedBox(height: 8)]).toList(),
           ),
         ),
-        if (!hasCard)
-          Positioned(
-            left: 22,
-            bottom: dock + (showRouteCard ? 142 : 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (legendOpen) _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
-                if (legendOpen) const SizedBox(height: 8),
-                _MapIconButton(icon: Icons.info_outline, label: l10n.mapKey, active: _showLegend, color: AppColors.accent, onTap: () => setState(() => _showLegend = !_showLegend), labelWhenActive: false),
-              ],
-            ),
-          ),
         if (hasCard)
           Positioned(
             left: 12,
@@ -1216,7 +1205,7 @@ class _RouteSummary extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.routeShortest.toUpperCase(),
+                      l10n.routeShortest,
                       style: const TextStyle(color: AppColors.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.6),
                     ),
                     const SizedBox(height: 2),
@@ -1304,7 +1293,7 @@ class _MarkerBox extends StatelessWidget {
                   children: [
                     if (kind != null)
                       Text(
-                        kind!.toUpperCase(),
+                        kind!,
                         style: TextStyle(color: accent, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.8),
                       ),
                     Text(
@@ -1547,7 +1536,7 @@ class _NodeInfoPanel extends StatelessWidget {
                 const Icon(Icons.sensors, size: 14, color: AppColors.normal),
                 const SizedBox(width: 5),
                 Text(
-                  l10n.nodeKindSensor.toUpperCase(),
+                  l10n.nodeKindSensor,
                   style: const TextStyle(color: AppColors.normal, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
                 ),
               ],
@@ -1676,7 +1665,7 @@ class _ReadingTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              label.toUpperCase(),
+              label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, height: 1.2),
@@ -1915,8 +1904,8 @@ class _PlaceCard extends StatelessWidget {
                             Icon(kindIcon, size: 14, color: accent),
                             const SizedBox(width: 6),
                             Text(
-                              kind.toUpperCase(),
-                              style: TextStyle(color: accent, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
+                              kind,
+                              style: TextStyle(color: accent, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 0.7),
                             ),
                           ],
                         ),

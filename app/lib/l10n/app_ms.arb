@@ -276,9 +276,14 @@
   "merangStuck1": "Jangan berjalan, berenang atau memandu melalui air banjir. Naik ke tingkat paling tinggi bangunan yang kukuh, jauh dari sungai, parit dan cerun.",
   "merangStuck2": "Hubungi 999 dan beritahu mereka di mana anda berada. Pastikan telefon anda dicas dan tunggu bantuan.",
   "mapFaceNorth": "Hadap utara",
-  "riskNoLive": "TIADA DATA LANGSUNG",
+  "riskNoLive": "Tiada data langsung",
   "riskLastKnown": "Terakhir diketahui: {level}",
   "@riskLastKnown": {"placeholders": {"level": {"type": "String"}}},
   "riskTrendsStale": "Bacaan terakhir sebelum rig senyap",
-  "mapKey": "Kunci peta"
+  "mapKey": "Kunci peta",
+  "liveTag": "LANGSUNG",
+  "riskLastHeard": "Rig terakhir menghantar data {ago}",
+  "@riskLastHeard": {"placeholders": {"ago": {"type": "String"}}},
+  "riskLevelOf": "Tahap {n} daripada 4",
+  "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}}
 }

@@ -360,8 +360,8 @@ class _SectionTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title.toUpperCase(),
-          style: AppFonts.heading(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 2.0),
+          title,
+          style: AppFonts.heading(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: 0),
         ),
         const SizedBox(height: 4),
         Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
@@ -434,8 +434,8 @@ class _LevelHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.myRiskTitle.toUpperCase(),
-                      style: AppFonts.heading(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 1.8),
+                      l10n.myRiskTitle,
+                      style: AppFonts.heading(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary, letterSpacing: 0.1),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -448,11 +448,11 @@ class _LevelHero extends StatelessWidget {
                     Wrap(
                       spacing: 14,
                       children: [
-                        Text('LVL ${state.index + 1}/4', style: AppFonts.mono(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(l10n.riskLevelOf('${state.index + 1}'), style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary)),
                         if (score != null)
                           Text(
-                            '${scoreLabel.toUpperCase()} ${(score! * 100).round()}%',
-                            style: AppFonts.mono(fontSize: 12, color: AppColors.textSecondary),
+                            '$scoreLabel ${(score! * 100).round()}%',
+                            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
                           ),
                       ],
                     ),
@@ -549,8 +549,8 @@ class _StaleHero extends StatelessWidget {
   }
 }
 
-/// A small status line over the tiles: a green dot while the rig is sending, an orange one when it has gone quiet,
-/// so nobody mistakes old numbers for live ones.
+/// A plain status line: green while the rig is sending, orange when it has gone quiet, in words, so nobody mistakes
+/// old numbers for live ones.
 class _LiveStatus extends StatelessWidget {
   final RigReading? reading;
   final AppLocalizations l10n;
@@ -565,27 +565,11 @@ class _LiveStatus extends StatelessWidget {
     final text = r == null
         ? l10n.rigWaiting
         : forced
-            ? '${l10n.rigStatusSimulated}  ·  ${l10n.simulatingNow('${r.phase}')}'
+            ? l10n.simulatingNow('${r.phase}')
             : live
-            ? '${l10n.rigStatusLive}  ·  ${l10n.benchSensorUpdated} ${_formatAgo(r.rowTime)}'
-            : '${l10n.rigStatusOffline}  ·  ${l10n.rigLastData} ${_formatAgo(r.rowTime)}';
-    return Row(
-      children: [
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color, boxShadow: live ? appGlow(color, alpha: 0.6, blur: 8) : null),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            text,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
-    );
+                ? '${l10n.rigStatusLive}, ${l10n.benchSensorUpdated.toLowerCase()} ${_formatAgo(r.rowTime)}'
+                : l10n.riskLastHeard(_formatAgo(r.rowTime));
+    return Text(text, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600));
   }
 }
 
@@ -664,7 +648,7 @@ class _NodeBar extends StatelessWidget {
                       ),
                       if (n != null)
                         Text(
-                          '$kind  ·  ${n.lat.toStringAsFixed(4)}, ${n.lon.toStringAsFixed(4)}${automatic ? '  ·  ${l10n.riskSelectorAuto}' : ''}',
+                          '$kind${automatic ? ', ${l10n.riskSelectorAuto}' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
@@ -799,7 +783,7 @@ class _NodePickerState extends State<_NodePicker> {
       icon: n.simulated ? Icons.science_outlined : Icons.sensors,
       color: color,
       title: n.name,
-      subtitle: n.lastSeen != null ? '$kind  ·  ${_formatAgo(n.lastSeen!)}' : kind,
+      subtitle: n.lastSeen != null ? '$kind, ${_formatAgo(n.lastSeen!)}' : kind,
       trailing: riskStateLabel(context, n.state),
       selected: widget.automaticSelected ? false : n.id == widget.selectedId,
       onTap: () => widget.onPick(n.id),

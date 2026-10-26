@@ -27,9 +27,6 @@ class CommandBackground extends StatelessWidget {
             ),
           ),
         ),
-        Positioned.fill(
-          child: CustomPaint(painter: _DotGridPainter()),
-        ),
         Positioned(top: -90, right: -70, child: _Blob(color: glow, size: 260)),
         Positioned(bottom: -120, left: -90, child: _Blob(color: AppColors.accent, size: 320)),
         child,
@@ -51,28 +48,9 @@ class _Blob extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color.withValues(alpha: 0.18), Colors.transparent]),
+          gradient: RadialGradient(colors: [color.withValues(alpha: 0.11), Colors.transparent]),
         ),
       ),
     );
   }
-}
-
-class _DotGridPainter extends CustomPainter {
-  const _DotGridPainter();
-
-  static const _spacing = 26.0;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.035);
-    for (var y = 0.0; y < size.height; y += _spacing) {
-      for (var x = 0.0; x < size.width; x += _spacing) {
-        canvas.drawCircle(Offset(x, y), 1.0, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DotGridPainter oldDelegate) => false;
 }

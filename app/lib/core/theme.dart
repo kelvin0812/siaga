@@ -97,7 +97,7 @@ class AppFonts {
 /// element's own accent colour instead.
 List<BoxShadow> appGlow(Color color, {double alpha = 0.35, double blur = 28}) {
   return [
-    BoxShadow(color: color.withValues(alpha: alpha), blurRadius: blur, spreadRadius: -6, offset: const Offset(0, 10)),
+    BoxShadow(color: color.withValues(alpha: alpha * 0.55), blurRadius: blur, spreadRadius: -6, offset: const Offset(0, 10)),
   ];
 }
 

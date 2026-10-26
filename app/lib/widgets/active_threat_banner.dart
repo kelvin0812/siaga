@@ -87,8 +87,8 @@ class _ActiveThreatBannerState extends State<ActiveThreatBanner> with SingleTick
               ),
               const SizedBox(width: 10),
               Text(
-                'ACTIVE THREAT · ${label.toUpperCase()}',
-                style: AppFonts.mono(fontSize: 12, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.8),
+                'Active threat: $label',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color),
               ),
             ],
           ),

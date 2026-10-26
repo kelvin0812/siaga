@@ -74,9 +74,9 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
       _pulse.stop();
     }
     final ring = widget.facts.stale ? AppColors.textMuted : riskStateColor(widget.facts.state);
-    final box = widget.compact ? 46.0 : 64.0;
-    final circle = widget.compact ? 40.0 : 54.0;
-    final face = widget.compact ? 34.0 : 46.0;
+    final box = widget.compact ? 50.0 : 64.0;
+    final circle = widget.compact ? 44.0 : 54.0;
+    final face = widget.compact ? 38.0 : 46.0;
     final pad = widget.compact ? 3.0 : 4.0;
     final swell = widget.compact ? 6.0 : 10.0;
     return Semantics(

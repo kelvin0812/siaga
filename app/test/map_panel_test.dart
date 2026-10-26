@@ -107,8 +107,8 @@ void main() {
     await openDetails(tester, const Size(1280, 860));
     expect(find.byType(DraggableScrollableSheet), findsNothing);
     // everything is in view without dragging: the four readings and the trend chart
-    expect(find.text('WATER LEVEL'), findsWidgets);
-    expect(find.text('SLOPE TILT'), findsWidgets);
+    expect(find.text('Water level'), findsWidgets);
+    expect(find.text('Slope tilt'), findsWidgets);
     expect(find.textContaining('GPS location'), findsOneWidget);
     // the panel is a tall rectangle on the right
     final panel = find.ancestor(of: find.textContaining('GPS location'), matching: find.byType(Container)).last;
