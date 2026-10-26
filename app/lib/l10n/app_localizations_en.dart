@@ -931,4 +931,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveOffline => 'OFFLINE';
+
+  @override
+  String get liveFold => 'Fold the live strip';
+
+  @override
+  String get liveOpen => 'Open the live strip';
 }

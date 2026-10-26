@@ -5,9 +5,11 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import 'risk_badge.dart';
 
-/// A news-style strip under the title bar. When some place is at Warning or Evacuate it names those places, scrolling
-/// slowly. Otherwise it is a calm one-line "nothing at high risk" (or, when the rig has gone quiet, an honest "offline":
-/// it never says all is well on old data). Tap it to open the map. With "reduce motion" on, it stands still.
+/// A news-style pill under the title bar, as wide as the map below it, with words that keep rolling. When some place is
+/// at Warning or Evacuate it names those places; otherwise it says nothing is at high risk, or (when the rig has gone
+/// quiet) that there is no live reading, because it never says all is well on old data. Tap the words to open the map;
+/// tap the arrow to fold it down to just its tag, and again to open it. A new place at Warning or Evacuate opens it
+/// again by itself. With "reduce motion" on, the words stand still.
 class LiveBanner extends StatefulWidget {
   final List<SiagaNode> nodes;
   final VoidCallback? onTap;
@@ -28,12 +30,15 @@ class LiveBanner extends StatefulWidget {
 }
 
 class _LiveBannerState extends State<LiveBanner> with SingleTickerProviderStateMixin {
-  static const _pixelsPerSecond = 46.0;
+  static const _pixelsPerSecond = 42.0;
   static const _tagRed = Color(0xFFD6373F);
+  static const _offlineOrange = Color(0xFFE8833A);
   final _scroll = ScrollController();
   late final Ticker _ticker = createTicker((elapsed) {
     if (_scroll.hasClients) _scroll.jumpTo(elapsed.inMicroseconds / 1e6 * _pixelsPerSecond);
   });
+  bool _folded = false;
+  int _seenRisky = 0;
 
   @override
   void dispose() {
@@ -42,104 +47,132 @@ class _LiveBannerState extends State<LiveBanner> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  /// The calm line: nothing is at Warning or Evacuate (or the rig is offline, which is said plainly, not as "all clear").
-  Widget _quiet(BuildContext context, AppLocalizations l10n) {
-    final offline = widget.rigOffline;
-    final tint = offline ? const Color(0xFFE8833A) : AppColors.normal;
-    final text = offline ? l10n.liveQuietOffline : l10n.liveQuiet;
-    final tag = offline ? l10n.liveOffline : l10n.liveTag;
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      button: widget.onTap != null,
-      label: '$tag. $text',
-      child: Material(
-        color: Color.alphaBlend(tint.withValues(alpha: 0.12), AppColors.surface),
-        child: InkWell(
-          onTap: widget.onTap,
-          child: SizedBox(
-            height: 34,
-            child: Row(
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  color: offline ? const Color(0xFF7A4A22) : const Color(0xFF1F7A55),
-                  child: ExcludeSemantics(child: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 1))),
-                ),
-                Expanded(
-                  child: ExcludeSemantics(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5, fontWeight: FontWeight.w500)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final risky = LiveBanner.atRisk(widget.nodes);
-    final calm = MediaQuery.of(context).disableAnimations;
-    if (risky.isEmpty || calm) {
-      if (_ticker.isActive) _ticker.stop();
-    } else if (!_ticker.isActive) {
-      _ticker.start();
-    }
     final l10n = AppLocalizations.of(context)!;
-    if (risky.isEmpty) return _quiet(context, l10n);
+    final risky = LiveBanner.atRisk(widget.nodes);
+    // Folding away is for calm moments: when more places reach Warning or Evacuate than before, it opens by itself.
+    if (risky.length > _seenRisky) _folded = false;
+    _seenRisky = risky.length;
 
-    final worst = riskStateColor(risky.first.state);
-    final spoken = risky.map((n) => '${riskStateLabel(context, n.state)}: ${n.name}').join('. ');
+    final offline = widget.rigOffline && risky.isEmpty;
+    final urgent = risky.isNotEmpty;
+    final Color tagColor = urgent ? _tagRed : (offline ? const Color(0xFF7A4A22) : const Color(0xFF1F7A55));
+    final Color tint = urgent ? riskStateColor(risky.first.state) : (offline ? _offlineOrange : AppColors.normal);
+    final tag = urgent ? l10n.liveTag : (offline ? l10n.liveOffline : l10n.liveTag);
+    final words = urgent
+        ? risky.map((n) => '${riskStateLabel(context, n.state)}: ${n.name}').join('. ')
+        : (offline ? l10n.liveQuietOffline : l10n.liveQuiet);
+
+    final calm = MediaQuery.of(context).disableAnimations;
+    final rolls = !_folded && !calm;
+    if (rolls && !_ticker.isActive) {
+      _ticker.start();
+    } else if (!rolls && _ticker.isActive) {
+      _ticker.stop();
+    }
+
+    final tagChip = Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 11),
+      decoration: BoxDecoration(color: tagColor, borderRadius: BorderRadius.circular(999)),
+      child: ExcludeSemantics(
+        child: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+      ),
+    );
+
+    // its own node for screen readers, so its name is not read as part of the strip's line
+    Widget toggle() => Semantics(
+          container: true,
+          button: true,
+          label: _folded ? l10n.liveOpen : l10n.liveFold,
+          child: Tooltip(
+            message: _folded ? l10n.liveOpen : l10n.liveFold,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => setState(() => _folded = !_folded),
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(_folded ? Icons.chevron_right : Icons.expand_less, size: 20, color: AppColors.textSecondary),
+              ),
+            ),
+          ),
+        );
+
+    final Widget bar;
+    if (_folded) {
+      // Just the tag and the arrow, tucked to the left.
+      bar = Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.only(left: 3, right: 2),
+          decoration: _pill(tint),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [SizedBox(height: 28, child: tagChip), toggle()]),
+        ),
+      );
+    } else {
+      bar = Container(
+        height: 34,
+        padding: const EdgeInsets.only(left: 3),
+        decoration: _pill(tint),
+        child: Row(
+          children: [
+            SizedBox(height: 28, child: tagChip),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onTap,
+                child: ExcludeSemantics(
+                  child: ClipRect(
+                    child: calm
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(words, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scroll,
+                            scrollDirection: Axis.horizontal,
+                            physics: const NeverScrollableScrollPhysics(),
+                            // The same words come round again and again, with a gap between, so there is always something moving.
+                            itemBuilder: (context, i) => _Rolling(text: words, accent: urgent ? tint : null),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            toggle(),
+          ],
+        ),
+      );
+    }
+
     return Semantics(
       container: true,
       liveRegion: true,
-      button: widget.onTap != null,
-      label: '${l10n.liveTag}. $spoken',
-      child: Material(
-        color: Color.alphaBlend(worst.withValues(alpha: 0.22), AppColors.surface),
-        child: InkWell(
-          onTap: widget.onTap,
-          child: SizedBox(
-            height: 38,
-            child: Row(
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  color: _tagRed,
-                  child: ExcludeSemantics(child: Text(l10n.liveTag, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 1))),
-                ),
-                Expanded(
-                  child: ExcludeSemantics(
-                    child: ClipRect(
-                      child: ListView.builder(
-                        controller: _scroll,
-                        scrollDirection: Axis.horizontal,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, i) => _Headline(node: risky[i % risky.length]),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      label: '$tag. $words',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
+        child: bar,
       ),
     );
   }
+
+  BoxDecoration _pill(Color tint) => BoxDecoration(
+        color: Color.alphaBlend(tint.withValues(alpha: 0.16), AppColors.surface),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tint.withValues(alpha: 0.35)),
+      );
 }
 
-class _Headline extends StatelessWidget {
-  final SiagaNode node;
-  const _Headline({required this.node});
+class _Rolling extends StatelessWidget {
+  final String text;
+  final Color? accent;
+  const _Rolling({required this.text, this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -147,16 +180,12 @@ class _Headline extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(width: 22),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: riskStateColor(node.state), borderRadius: BorderRadius.circular(5)),
-            child: Text(riskStateLabel(context, node.state), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
-          ),
-          const SizedBox(width: 8),
-          Text(node.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(width: 22),
-          Container(width: 1, height: 14, color: Colors.white24),
+          const SizedBox(width: 26),
+          if (accent != null) ...[
+            Container(width: 7, height: 7, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+          ],
+          Text(text, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
         ],
       ),
     );

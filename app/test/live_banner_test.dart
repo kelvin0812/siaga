@@ -38,8 +38,7 @@ void main() {
   testWidgets('with every place Normal or Watch it is one calm line, not a scrolling list', (tester) async {
     await show(tester, [_node(1, 'Calm', RiskState.normal), _node(2, 'Watched', RiskState.watch)]);
     expect(find.text('LIVE'), findsOneWidget);
-    expect(find.text('No place is at high risk right now'), findsOneWidget);
-    expect(find.byType(ListView), findsNothing);
+    expect(find.text('No place is at high risk right now'), findsWidgets); // the words keep rolling, so they come round again
     expect(find.text('Watched'), findsNothing);
   });
 
@@ -56,7 +55,7 @@ void main() {
       ),
     );
     expect(find.text('OFFLINE'), findsOneWidget);
-    expect(find.text('The rig is offline, so there is no live reading'), findsOneWidget);
+    expect(find.text('The rig is offline, so there is no live reading'), findsWidgets);
     expect(find.textContaining('No place is at high risk'), findsNothing);
     expect(find.text('LIVE'), findsNothing);
   });
@@ -65,10 +64,9 @@ void main() {
     var taps = 0;
     await show(tester, [_node(1, 'Lake bank (demo)', RiskState.warning), _node(2, 'Calm place', RiskState.normal)], onTap: () => taps++);
     expect(find.text('LIVE'), findsOneWidget);
-    expect(find.text('Lake bank (demo)'), findsWidgets);
-    expect(find.text('Warning'), findsWidgets);
-    expect(find.text('Calm place'), findsNothing);
-    await tester.tap(find.text('LIVE'));
+    expect(find.textContaining('Warning: Lake bank (demo)'), findsWidgets);
+    expect(find.textContaining('Calm place'), findsNothing);
+    await tester.tap(find.textContaining('Warning: Lake bank (demo)').first);
     expect(taps, 1);
     expect(tester.takeException(), isNull);
   });
@@ -82,10 +80,8 @@ void main() {
     expect(controller.offset, greaterThan(before + 40)); // it moved
 
     await show(tester, [_node(1, 'Lake bank (demo)', RiskState.warning)], reduceMotion: true);
-    final still = tester.widget<ListView>(find.byType(ListView)).controller!;
-    final at = still.offset;
-    await tester.pump(const Duration(seconds: 2));
-    expect(still.offset, at); // no motion
+    expect(find.byType(ListView), findsNothing); // with reduce motion nothing rolls: the words just stand there
+    expect(find.textContaining('Warning: Lake bank (demo)'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -94,5 +90,37 @@ void main() {
     final handle = tester.ensureSemantics();
     expect(find.bySemanticsLabel(RegExp(r'^LIVE\. Evacuate: Lake bank \(demo\)\. Warning: Road$')), findsOneWidget);
     handle.dispose();
+  });
+
+  testWidgets('the arrow folds it down to just the tag, and opens it again', (tester) async {
+    await show(tester, [_node(1, 'Calm', RiskState.normal)]);
+    expect(find.text('No place is at high risk right now'), findsWidgets);
+    await tester.tap(find.byTooltip('Fold the live strip'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('LIVE'), findsOneWidget); // the tag stays
+    expect(find.text('No place is at high risk right now'), findsNothing);
+    expect(find.byType(ListView), findsNothing); // and nothing rolls while it is folded
+    await tester.tap(find.byTooltip('Open the live strip'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('No place is at high risk right now'), findsWidgets);
+  });
+
+  testWidgets('a place reaching Warning opens a folded strip by itself', (tester) async {
+    final calm = [_node(1, 'Lake bank (demo)', RiskState.normal)];
+    await show(tester, calm);
+    await tester.tap(find.byTooltip('Fold the live strip'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byTooltip('Open the live strip'), findsOneWidget);
+    await show(tester, [_node(1, 'Lake bank (demo)', RiskState.warning)]);
+    expect(find.byTooltip('Fold the live strip'), findsOneWidget); // open again
+    expect(find.textContaining('Warning: Lake bank (demo)'), findsWidgets);
+  });
+
+  testWidgets('the words keep rolling even when nothing is at risk', (tester) async {
+    await show(tester, [_node(1, 'Calm', RiskState.normal)]);
+    final controller = tester.widget<ListView>(find.byType(ListView)).controller!;
+    final before = controller.offset;
+    await tester.pump(const Duration(seconds: 2));
+    expect(controller.offset, greaterThan(before + 30));
   });
 }

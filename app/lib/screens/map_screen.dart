@@ -1125,8 +1125,8 @@ const _kDensityFill = <DensityClass, double>{
 /// The air around the map: it sits well inside the screen, clear of the title bar and the bottom bar, so the page does not
 /// feel packed edge to edge. The buttons, search bar and cards sit a fixed distance inside it.
 const double _kMapMargin = 18;
-const double _kMapTop = 14;
-const double _kMapBottom = 14;
+const double _kMapTop = 20;
+const double _kMapBottom = 22;
 
 const _kRouteColor = Color(0xFFFF3B30);
 const _kSafeColor = Color(0xFF2EE59D);

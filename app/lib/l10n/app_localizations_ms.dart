@@ -934,4 +934,10 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get liveOffline => 'LUAR TALIAN';
+
+  @override
+  String get liveFold => 'Lipat jalur langsung';
+
+  @override
+  String get liveOpen => 'Buka jalur langsung';
 }

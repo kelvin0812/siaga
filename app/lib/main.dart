@@ -171,6 +171,14 @@ class _HomeShellState extends State<_HomeShell> {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
+        // A solid header band with a thin line and a soft shadow along its bottom edge, so the title row reads as its own
+        // area and the strip and the map start clearly below it.
+        backgroundColor: const Color(0xFF0E1527),
+        scrolledUnderElevation: 0,
+        elevation: 6,
+        shadowColor: Colors.black87,
+        shape: const Border(bottom: BorderSide(color: Color(0x26FFFFFF))),
+        titleSpacing: 18,
         title: const _Brand(),
         // Merang, top right on every page: one tap away, and it never sits on a chart, a card or a text box.
         actions: [

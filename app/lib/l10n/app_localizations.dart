@@ -1753,6 +1753,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OFFLINE'**
   String get liveOffline;
+
+  /// No description provided for @liveFold.
+  ///
+  /// In en, this message translates to:
+  /// **'Fold the live strip'**
+  String get liveFold;
+
+  /// No description provided for @liveOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the live strip'**
+  String get liveOpen;
 }
 
 class _AppLocalizationsDelegate

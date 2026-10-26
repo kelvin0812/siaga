@@ -288,5 +288,7 @@
   "@riskLevelOf": {"placeholders": {"n": {"type": "String"}}},
   "liveQuiet": "Tiada tempat berisiko tinggi buat masa ini",
   "liveQuietOffline": "Rig di luar talian, jadi tiada bacaan langsung",
-  "liveOffline": "LUAR TALIAN"
+  "liveOffline": "LUAR TALIAN",
+  "liveFold": "Lipat jalur langsung",
+  "liveOpen": "Buka jalur langsung"
 }
