@@ -133,7 +133,7 @@ void main() {
     expect(merangMoodFor(const ExplainFacts(state: RiskState.normal)), MerangMood.calm);
     expect(merangMoodFor(const ExplainFacts(state: RiskState.watch)), MerangMood.watch);
     expect(merangMoodFor(const ExplainFacts(state: RiskState.warning)), MerangMood.alert);
-    expect(merangMoodFor(const ExplainFacts(state: RiskState.evacuate)), MerangMood.alert);
+    expect(merangMoodFor(const ExplainFacts(state: RiskState.evacuate)), MerangMood.evacuate); // its own face, with a siren
     expect(merangMoodFor(const ExplainFacts(state: RiskState.evacuate, stale: true)), MerangMood.sleepy); // old data: not shouting
   });
 

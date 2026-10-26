@@ -3,17 +3,39 @@ import 'app_state.dart';
 import 'models.dart';
 import 'rig_controller.dart' show kRigNodeId;
 
-/// What Merang can be asked.
-enum MerangQuestion { why, next, data, how }
+/// What Merang can be asked. The last four are about getting to safety: their answers are fixed wording, never a model's.
+enum MerangQuestion { why, next, data, how, tips, where, bring, stuck }
 
 /// What a typed question is really about.
-enum MerangIntent { safety, how, data, why, other }
+enum MerangIntent { safety, how, data, why, tips, where, bring, stuck, other }
 
-/// Works out what a typed question is about, in English and Bahasa Malaysia. Questions about what to DO or whether it is
-/// SAFE are recognised first, and always get the fixed "what should I do" wording, never a model's opinion.
+/// The question chips, in the order they are shown. When the level is Warning or higher the ones about what to do come
+/// first, so the most useful answer is under the thumb.
+List<MerangQuestion> merangChipOrder(ExplainFacts f) {
+  final urgent = !f.stale && f.state.index >= RiskState.warning.index;
+  return urgent
+      ? const [MerangQuestion.next, MerangQuestion.where, MerangQuestion.bring, MerangQuestion.stuck, MerangQuestion.tips, MerangQuestion.why, MerangQuestion.data, MerangQuestion.how]
+      : const [MerangQuestion.why, MerangQuestion.next, MerangQuestion.tips, MerangQuestion.where, MerangQuestion.bring, MerangQuestion.stuck, MerangQuestion.data, MerangQuestion.how];
+}
+
+/// Works out what a typed question is about, in English and Bahasa Malaysia. The specific "where / what to bring / what
+/// if I cannot leave / tips" questions are matched first. Then questions about what to DO or whether it is SAFE, which
+/// always get the fixed "what should I do" wording, never a model's opinion.
 MerangIntent intentFor(String text) {
   final t = text.toLowerCase();
   bool has(String pattern) => RegExp(pattern).hasMatch(t);
+  if (has(r'can.?t (leave|get out|move|go|evacuate)|cannot (leave|get out|move|go|evacuate)|unable to (leave|go)|\bstuck\b|trapped|no (car|transport|way out)|road (is |was )?(flooded|blocked|closed)|flooded road|tidak (boleh|dapat) (keluar|pergi|berpindah)|terperangkap|tersekat|jalan (banjir|tutup|ditutup)')) {
+    return MerangIntent.stuck;
+  }
+  if (has(r'assembly|where (do|should|can|must|is|are|to)\b.*\b(go|run|evacuat|safe|shelter|assembly|route)|where to go|nearest (safe|shelter|place|point)|evacuation (route|point|centre|center)|\broute\b|\bshelter\b|tempat berkumpul|tempat selamat|pusat pemindahan|ke mana|di mana.*(selamat|berkumpul|pusat|tempat)|laluan')) {
+    return MerangIntent.where;
+  }
+  if (has(r'\bbring\b|\bpack\b|take with me|what (should|do|can) i (take|grab)|emergency (kit|bag)|go bag|\bbawa\b|apa.*(bawa|ambil)|beg kecemasan')) {
+    return MerangIntent.bring;
+  }
+  if (has(r'\btips?\b|survival|prepare|preparation|stay safe|\bsurvive\b|petua|bersedia|persediaan')) {
+    return MerangIntent.tips;
+  }
   if (has(r'evacuat|\bleave\b|\bgo now\b|should i (go|stay|move|run|leave)|\bsafe\b|\bsafety\b|danger|what (should|do|can) i do|what to do|\bmove out\b|\brun\b|berpindah|pindah|keluar|selamat|bahaya|apa (yang )?(patut|perlu|harus) (saya )?(buat|lakukan)|patut saya|perlu saya')) {
     return MerangIntent.safety;
   }
@@ -31,6 +53,10 @@ MerangQuestion? questionForIntent(MerangIntent i) => switch (i) {
       MerangIntent.how => MerangQuestion.how,
       MerangIntent.data => MerangQuestion.data,
       MerangIntent.why => MerangQuestion.why,
+      MerangIntent.tips => MerangQuestion.tips,
+      MerangIntent.where => MerangQuestion.where,
+      MerangIntent.bring => MerangQuestion.bring,
+      MerangIntent.stuck => MerangQuestion.stuck,
       MerangIntent.other => null,
     };
 
@@ -165,6 +191,15 @@ class LocalExplainer implements Explainer {
         return [l10n.merangDataOther];
       case MerangQuestion.how:
         return [l10n.merangHow];
+      // Getting to safety: general guidance in fixed wording, always ending with the reminder to confirm officially.
+      case MerangQuestion.tips:
+        return [l10n.merangTips1, l10n.merangTips2, l10n.merangTips3, l10n.merangTips4, l10n.merangNextOfficial];
+      case MerangQuestion.where:
+        return [l10n.merangWhere1, l10n.merangWhere2, l10n.merangNextOfficial];
+      case MerangQuestion.bring:
+        return [l10n.merangBring1, l10n.merangBring2, l10n.merangNextOfficial];
+      case MerangQuestion.stuck:
+        return [l10n.merangStuck1, l10n.merangStuck2, l10n.merangNextOfficial];
     }
   }
 

@@ -7,15 +7,17 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import 'risk_badge.dart';
 
-/// Merang, the otter. Its face follows the situation, so a glance tells you the mood of the river.
-enum MerangMood { calm, watch, alert, sleepy }
+/// Merang, the otter. Its face follows the situation, so a glance tells you the mood of the river: calm, worried, alarmed,
+/// shouting with a siren on its head (Evacuate), or fast asleep when the data is old.
+enum MerangMood { calm, watch, alert, evacuate, sleepy }
 
 MerangMood merangMoodFor(ExplainFacts f) {
   if (f.stale) return MerangMood.sleepy;
   return switch (f.state) {
     RiskState.normal => MerangMood.calm,
     RiskState.watch => MerangMood.watch,
-    RiskState.warning || RiskState.evacuate => MerangMood.alert,
+    RiskState.warning => MerangMood.alert,
+    RiskState.evacuate => MerangMood.evacuate,
   };
 }
 
@@ -166,10 +168,12 @@ class _MerangSheetState extends State<MerangSheet> {
     final l10n = AppLocalizations.of(context)!;
     final phase = riskStateLabel(context, widget.facts.state);
     // A greeting, then the question people most want answered, so the sheet is useful the moment it appears.
+    // At Evacuate the first question is "what should I do?", because that is what someone in that moment needs.
+    final first = !widget.facts.stale && widget.facts.state == RiskState.evacuate ? MerangQuestion.next : MerangQuestion.why;
     _messages.add(_Msg(true, l10n.merangHello));
-    _messages.add(_Msg(false, l10n.merangQWhy(phase)));
+    _messages.add(_Msg(false, _label(first, l10n, phase)));
     _typing = true;
-    _deliver(() => widget.explainer.ask(MerangQuestion.why, widget.facts, l10n, phase));
+    _deliver(() => widget.explainer.ask(first, widget.facts, l10n, phase));
   }
 
   @override
@@ -185,6 +189,10 @@ class _MerangSheetState extends State<MerangSheet> {
         MerangQuestion.next => l10n.merangQNext,
         MerangQuestion.data => l10n.merangQData,
         MerangQuestion.how => l10n.merangQHow,
+        MerangQuestion.tips => l10n.merangQTips,
+        MerangQuestion.where => l10n.merangQWhere,
+        MerangQuestion.bring => l10n.merangQBring,
+        MerangQuestion.stuck => l10n.merangQStuck,
       };
 
   Future<void> _ask(MerangQuestion q) async {
@@ -243,6 +251,7 @@ class _MerangSheetState extends State<MerangSheet> {
     // With the keyboard up there is little room, so the header shrinks and the small print waits.
     final compact = MediaQuery.of(context).viewInsets.bottom > 0;
     final canSend = !_typing && _input.text.trim().isNotEmpty;
+    final chips = merangChipOrder(widget.facts);
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -294,14 +303,14 @@ class _MerangSheetState extends State<MerangSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    for (final q in MerangQuestion.values) ...[
+                    for (final q in chips) ...[
                       ActionChip(
                         label: Text(_label(q, l10n, phase), style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
                         backgroundColor: AppColors.surfaceRaised,
                         side: BorderSide(color: AppColors.accent.withValues(alpha: 0.45)),
                         onPressed: _typing ? null : () => _ask(q),
                       ),
-                      if (q != MerangQuestion.values.last) const SizedBox(width: 8),
+                      if (q != chips.last) const SizedBox(width: 8),
                     ],
                   ],
                 ),

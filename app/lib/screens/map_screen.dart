@@ -68,6 +68,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   /// Drives the motion along the route: arrows flowing towards the destination and a pulse travelling the line.
   late final AnimationController _flow;
 
+  /// Swings the map back to north when the compass is tapped.
+  late final AnimationController _turn;
+
+  /// How far the map is turned, in degrees (0 = north is up, kept between -180 and 180).
+  double _rotation = 0;
+
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -77,6 +83,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _fly = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
     _flow = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200));
     final appState = context.read<AppState>();
     final locationService = appState.locationService;
@@ -110,6 +117,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   void dispose() {
     _flow.dispose();
     _fly.dispose();
+    _turn.dispose();
     _sheetController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -175,6 +183,43 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       _selectedNodeId = null;
     });
     _flyTo(ll.LatLng(point.lat, point.lon));
+  }
+
+  /// Keeps what the screen shows in step with the camera: label placement follows the zoom and the turn, and the compass
+  /// appears while the map is turned.
+  void _syncCamera(MapCamera camera) {
+    // Normalised to -180..180 so the compass needle and "back to north" always take the short way round.
+    final turned = ((camera.rotation + 180) % 360 + 360) % 360 - 180;
+    final zoomed = (camera.zoom - _zoom).abs() >= 0.25;
+    // Labels are placed for the map as it is on screen, so a turn of a few degrees re-places them.
+    final rotated = (turned - _rotation).abs() >= 3 || (turned.abs() < 0.5 && _rotation != 0);
+    if (!zoomed && !rotated) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _zoom = camera.zoom;
+        _rotation = turned.abs() < 0.5 ? 0 : turned;
+      });
+    });
+  }
+
+  /// Turns the map back so north is up, smoothly, by the shorter way round.
+  void _faceNorth() {
+    final from = _rotation;
+    if (from == 0) return;
+    void step() {
+      final t = Curves.easeInOutCubic.transform(_turn.value);
+      _mapController.rotate(from * (1 - t));
+    }
+
+    _turn
+      ..removeListener(step)
+      ..addListener(step);
+    _turn.forward(from: 0).whenComplete(() {
+      _turn.removeListener(step);
+      _mapController.rotate(0);
+      if (mounted) setState(() => _rotation = 0);
+    });
   }
 
   /// Zooms in a little (to about street level, never closer than needed) and puts the point in the upper part of the
@@ -638,6 +683,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       obstacles = [
         Rect.fromLTRB(12, 12, w - 12, 64),
         if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
+        if (_rotation != 0) Rect.fromLTRB(w - 70, 70 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0), w - 12, 130 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0)),
         if (!hasCard) Rect.fromLTRB(12, h - (_showPopulation ? 270 : 228), _showPopulation ? 235 : 187, h - 104),
         Rect.fromLTRB(0, h - 92, w, h),
         if (showRouteCard) Rect.fromLTRB(2, h - 207, w - 2, h - 92),
@@ -666,13 +712,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: 13,
-                  onPositionChanged: (camera, _) {
-                    if ((camera.zoom - _zoom).abs() >= 0.25) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) setState(() => _zoom = camera.zoom);
-                      });
-                    }
-                  },
+                  // A two-finger gesture is either a pinch to zoom or a twist to turn, not both at once, and a twist needs a
+                  // clear turn before it starts: otherwise a pinch with a slightly crooked hand spins the map.
+                  interactionOptions: const InteractionOptions(enableMultiFingerGestureRace: true, rotationThreshold: 28),
+                  onPositionChanged: (camera, _) => _syncCamera(camera),
+                  // A pure turn does not count as a "position change" in flutter_map, so listen to every map event.
+                  onMapEvent: (event) => _syncCamera(event.camera),
                 ),
                 children: [
                   TileLayer(
@@ -681,7 +726,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ),
                   if (_showPopulation && _popPolygons.isNotEmpty) PolygonLayer(polygons: _popPolygons),
                   if (routeActive && _plan != null) _RouteLayer(points: _plan!.points, from: origin, flow: _flow),
+                  // rotate: markers and their name tags stay upright when the map is turned, instead of tilting with it.
                   MarkerLayer(
+                    rotate: true,
                     markers: [
                       ...nodes.map(
                         (node) => Marker(
@@ -768,6 +815,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               label: l10n.popToggle,
               onTap: () => setState(() => _showPopulation = !_showPopulation),
             ),
+          ),
+        if (_rotation != 0)
+          Positioned(
+            top: (appState.isOffline ? 44 : 12) + 68 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0),
+            right: 22,
+            child: _CompassButton(rotation: _rotation, label: l10n.mapFaceNorth, onTap: _faceNorth),
           ),
         if (!hasCard)
           Positioned(
@@ -937,6 +990,59 @@ class _MapSearchBar extends StatelessWidget {
 /// off by default so the map isn't cluttered with a route line when
 /// nothing is wrong; Section 6.4 asks for cached routes to be available,
 /// not necessarily always drawn.
+/// A round compass, shown only while the map is turned. Its red needle always points to north; tap it to turn the map
+/// back so north is up.
+class _CompassButton extends StatelessWidget {
+  final double rotation;
+  final String label;
+  final VoidCallback onTap;
+  const _CompassButton({required this.rotation, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: Colors.black.withValues(alpha: 0.68),
+          shape: const CircleBorder(side: BorderSide(color: Colors.white24)),
+          elevation: 4,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              width: 46,
+              height: 46,
+              child: Transform.rotate(angle: -rotation * math.pi / 180, child: const CustomPaint(painter: _NeedlePainter())),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NeedlePainter extends CustomPainter {
+  const _NeedlePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final half = size.height * 0.30;
+    final w = size.width * 0.13;
+    canvas.drawPath(Path()..moveTo(c.dx, c.dy - half)..lineTo(c.dx + w, c.dy)..lineTo(c.dx - w, c.dy)..close(), Paint()..color = const Color(0xFFFF4D5E));
+    canvas.drawPath(Path()..moveTo(c.dx, c.dy + half)..lineTo(c.dx + w, c.dy)..lineTo(c.dx - w, c.dy)..close(), Paint()..color = Colors.white70);
+    canvas.drawCircle(c, 2.2, Paint()..color = Colors.black87);
+    final tp = TextPainter(text: const TextSpan(text: 'N', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)), textDirection: TextDirection.ltr)..layout();
+    tp.paint(canvas, Offset(c.dx - tp.width / 2, 3));
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeedlePainter oldDelegate) => false;
+}
+
 class _EvacRouteToggle extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;

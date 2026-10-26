@@ -839,4 +839,59 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get merangTypedNote =>
       'Typed questions are sent to Google Gemini to be answered. Please do not type personal details.';
+
+  @override
+  String get merangQTips => 'Survival tips';
+
+  @override
+  String get merangQWhere => 'Where do I go?';
+
+  @override
+  String get merangQBring => 'What should I bring?';
+
+  @override
+  String get merangQStuck => 'What if I can’t leave?';
+
+  @override
+  String get merangTips1 =>
+      'Learn your way to higher ground before the water rises. Open the Map tab and find your nearest assembly point.';
+
+  @override
+  String get merangTips2 =>
+      'Never walk, swim or drive through floodwater. Even 15 cm of moving water can knock you off your feet.';
+
+  @override
+  String get merangTips3 =>
+      'Stay away from riverbanks, drains and steep slopes. After heavy rain, new cracks, leaning trees or muddy water running off a slope can mean a landslide.';
+
+  @override
+  String get merangTips4 =>
+      'If water enters your home, switch off the electricity at the main switch and do not touch wet electrical items. Keep your phone charged and your notifications on.';
+
+  @override
+  String get merangWhere1 =>
+      'Go to the nearest assembly point. Open the Map tab and tap View evacuation route to see the shortest way and the time on foot.';
+
+  @override
+  String get merangWhere2 =>
+      'The route starts from your area, never your exact position. With no signal you still get a straight line, or the route you saved earlier.';
+
+  @override
+  String get merangBring1 =>
+      'Only what you can grab in a minute: your phone and charger, ID, any medicine, some water and a torch.';
+
+  @override
+  String get merangBring2 =>
+      'Put documents in a waterproof bag if you have one. Go together with family and neighbours, and do not go back for belongings.';
+
+  @override
+  String get merangStuck1 =>
+      'Do not walk, swim or drive through floodwater. Move to the highest floor of a strong building, away from rivers, drains and slopes.';
+
+  @override
+  String get merangStuck2 =>
+      'Call 999 and tell them where you are. Keep your phone charged and wait for help.';
+
+  @override
+  String get mapFaceNorth => 'Face north';
 }

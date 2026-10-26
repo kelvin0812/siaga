@@ -842,4 +842,59 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get merangTypedNote =>
       'Soalan yang ditaip dihantar kepada Google Gemini untuk dijawab. Sila jangan taip butiran peribadi.';
+
+  @override
+  String get merangQTips => 'Petua keselamatan';
+
+  @override
+  String get merangQWhere => 'Ke mana saya patut pergi?';
+
+  @override
+  String get merangQBring => 'Apa yang patut saya bawa?';
+
+  @override
+  String get merangQStuck => 'Bagaimana jika saya tidak boleh keluar?';
+
+  @override
+  String get merangTips1 =>
+      'Kenali laluan ke tempat tinggi sebelum air naik. Buka tab Peta dan cari tempat berkumpul yang terdekat.';
+
+  @override
+  String get merangTips2 =>
+      'Jangan berjalan, berenang atau memandu melalui air banjir. Air deras setinggi 15 cm pun boleh menjatuhkan anda.';
+
+  @override
+  String get merangTips3 =>
+      'Jauhi tebing sungai, parit dan cerun curam. Selepas hujan lebat, rekahan baharu, pokok condong atau air keruh yang mengalir dari cerun boleh menandakan tanah runtuh.';
+
+  @override
+  String get merangTips4 =>
+      'Jika air masuk ke rumah, matikan elektrik di suis utama dan jangan sentuh peralatan elektrik yang basah. Pastikan telefon dicas dan notifikasi dihidupkan.';
+
+  @override
+  String get merangWhere1 =>
+      'Pergi ke tempat berkumpul yang paling dekat. Buka tab Peta dan ketik Lihat laluan pemindahan untuk melihat laluan terpendek dan masa berjalan kaki.';
+
+  @override
+  String get merangWhere2 =>
+      'Laluan bermula dari kawasan anda, bukan kedudukan tepat anda. Tanpa isyarat, anda masih mendapat garis lurus, atau laluan yang anda simpan tadi.';
+
+  @override
+  String get merangBring1 =>
+      'Hanya yang sempat anda ambil dalam seminit: telefon dan pengecas, kad pengenalan, ubat, sedikit air dan lampu suluh.';
+
+  @override
+  String get merangBring2 =>
+      'Letakkan dokumen dalam beg kalis air jika ada. Pergi bersama keluarga dan jiran, dan jangan patah balik untuk mengambil barang.';
+
+  @override
+  String get merangStuck1 =>
+      'Jangan berjalan, berenang atau memandu melalui air banjir. Naik ke tingkat paling tinggi bangunan yang kukuh, jauh dari sungai, parit dan cerun.';
+
+  @override
+  String get merangStuck2 =>
+      'Hubungi 999 dan beritahu mereka di mana anda berada. Pastikan telefon anda dicas dan tunggu bantuan.';
+
+  @override
+  String get mapFaceNorth => 'Hadap utara';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -124,6 +125,36 @@ void main() {
     final sheet = tester.getRect(find.byType(DraggableScrollableSheet));
     final panel = tester.getRect(find.ancestor(of: find.textContaining('GPS location'), matching: find.byType(Container)).last);
     expect(panel.height, greaterThan(sheet.height * 0.55)); // opens well past the old 42%
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('turning the map does not tilt the markers or their name tags', (tester) async {
+    await openDetails(tester, const Size(400, 860));
+    final map = tester.widget<FlutterMap>(find.byType(FlutterMap).first);
+    map.mapController!.rotate(45);
+    await tester.pump(const Duration(milliseconds: 300));
+    final marker = tester.renderObject(find.byTooltip('Bench rig (live)').first);
+    final m = marker.getTransformTo(null).storage;
+    // on screen the marker is upright: no rotation left in its transform (it would be about 0.71 if it turned with the map)
+    expect(m[1].abs(), lessThan(0.01));
+    expect(m[0], closeTo(1, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a compass appears only while the map is turned, and tapping it brings north back up', (tester) async {
+    await openDetails(tester, const Size(400, 860));
+    expect(find.byTooltip('Face north'), findsNothing); // north is up: nothing to correct
+    final controller = tester.widget<FlutterMap>(find.byType(FlutterMap).first).mapController!;
+    controller.rotate(70);
+    await tester.pump(const Duration(milliseconds: 300)); // the map turns, and the screen is told after that frame
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byTooltip('Face north'), findsOneWidget);
+    await tester.tap(find.byTooltip('Face north'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 150)); // the swing takes about 0.4 s
+    }
+    expect(controller.camera.rotation, closeTo(0, 0.01));
+    expect(find.byTooltip('Face north'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

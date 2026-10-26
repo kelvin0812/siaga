@@ -1603,6 +1603,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Typed questions are sent to Google Gemini to be answered. Please do not type personal details.'**
   String get merangTypedNote;
+
+  /// No description provided for @merangQTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival tips'**
+  String get merangQTips;
+
+  /// No description provided for @merangQWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where do I go?'**
+  String get merangQWhere;
+
+  /// No description provided for @merangQBring.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I bring?'**
+  String get merangQBring;
+
+  /// No description provided for @merangQStuck.
+  ///
+  /// In en, this message translates to:
+  /// **'What if I can’t leave?'**
+  String get merangQStuck;
+
+  /// No description provided for @merangTips1.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn your way to higher ground before the water rises. Open the Map tab and find your nearest assembly point.'**
+  String get merangTips1;
+
+  /// No description provided for @merangTips2.
+  ///
+  /// In en, this message translates to:
+  /// **'Never walk, swim or drive through floodwater. Even 15 cm of moving water can knock you off your feet.'**
+  String get merangTips2;
+
+  /// No description provided for @merangTips3.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay away from riverbanks, drains and steep slopes. After heavy rain, new cracks, leaning trees or muddy water running off a slope can mean a landslide.'**
+  String get merangTips3;
+
+  /// No description provided for @merangTips4.
+  ///
+  /// In en, this message translates to:
+  /// **'If water enters your home, switch off the electricity at the main switch and do not touch wet electrical items. Keep your phone charged and your notifications on.'**
+  String get merangTips4;
+
+  /// No description provided for @merangWhere1.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to the nearest assembly point. Open the Map tab and tap View evacuation route to see the shortest way and the time on foot.'**
+  String get merangWhere1;
+
+  /// No description provided for @merangWhere2.
+  ///
+  /// In en, this message translates to:
+  /// **'The route starts from your area, never your exact position. With no signal you still get a straight line, or the route you saved earlier.'**
+  String get merangWhere2;
+
+  /// No description provided for @merangBring1.
+  ///
+  /// In en, this message translates to:
+  /// **'Only what you can grab in a minute: your phone and charger, ID, any medicine, some water and a torch.'**
+  String get merangBring1;
+
+  /// No description provided for @merangBring2.
+  ///
+  /// In en, this message translates to:
+  /// **'Put documents in a waterproof bag if you have one. Go together with family and neighbours, and do not go back for belongings.'**
+  String get merangBring2;
+
+  /// No description provided for @merangStuck1.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not walk, swim or drive through floodwater. Move to the highest floor of a strong building, away from rivers, drains and slopes.'**
+  String get merangStuck1;
+
+  /// No description provided for @merangStuck2.
+  ///
+  /// In en, this message translates to:
+  /// **'Call 999 and tell them where you are. Keep your phone charged and wait for help.'**
+  String get merangStuck2;
+
+  /// No description provided for @mapFaceNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'Face north'**
+  String get mapFaceNorth;
 }
 
 class _AppLocalizationsDelegate
