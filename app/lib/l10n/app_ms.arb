@@ -275,5 +275,11 @@
   "merangBring2": "Letakkan dokumen dalam beg kalis air jika ada. Pergi bersama keluarga dan jiran, dan jangan patah balik untuk mengambil barang.",
   "merangStuck1": "Jangan berjalan, berenang atau memandu melalui air banjir. Naik ke tingkat paling tinggi bangunan yang kukuh, jauh dari sungai, parit dan cerun.",
   "merangStuck2": "Hubungi 999 dan beritahu mereka di mana anda berada. Pastikan telefon anda dicas dan tunggu bantuan.",
-  "mapFaceNorth": "Hadap utara"
+  "mapFaceNorth": "Hadap utara",
+  "riskNoLive": "TIADA DATA LANGSUNG",
+  "riskLastKnown": "Terakhir diketahui: {level}",
+  "@riskLastKnown": {"placeholders": {"level": {"type": "String"}}},
+  "riskStaleHelp": "Tiada bacaan terkini, jadi SIAGA tidak dapat menyatakan keadaan sekarang. Semak NADMA, MetMalaysia dan JPS.",
+  "riskTrendsStale": "Bacaan terakhir sebelum rig senyap",
+  "mapKey": "Kunci peta"
 }

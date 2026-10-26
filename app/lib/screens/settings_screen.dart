@@ -130,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        Text(l10n.settingsAboutCredits, style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, height: 1.4)),
+                        Text(l10n.settingsAboutCredits, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.4)),
                       ],
                     ),
                   ),
@@ -164,7 +164,7 @@ class _Group extends StatelessWidget {
             const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: Text(hint!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.35)),
+              child: Text(hint!, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.35)),
             ),
           ],
           const SizedBox(height: 10),
@@ -404,7 +404,7 @@ class _BenchSensorPanelState extends State<_BenchSensorPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.benchSensorDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.4)),
+          Text(l10n.benchSensorDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.4)),
           const SizedBox(height: 14),
           if (_loading)
             const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
@@ -438,7 +438,7 @@ class _BenchSensorPanelState extends State<_BenchSensorPanel> {
             const SizedBox(height: 10),
             Text(
               '${l10n.benchSensorUpdated} ${_formatAgo(_latest!.createdAt)}${_errored ? ' — ${l10n.benchSensorError}' : ''}',
-              style: TextStyle(color: _errored ? AppColors.evacuate : AppColors.textMuted, fontSize: 11.5),
+              style: TextStyle(color: _errored ? AppColors.evacuate : AppColors.textMuted, fontSize: 12.5),
             ),
           ],
         ],
@@ -534,7 +534,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.benchEvalDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.4)),
+          Text(l10n.benchEvalDescription, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.4)),
           const SizedBox(height: 16),
 
           Text('${l10n.benchEvalRainLabel}: ${_rainMm.round()} mm', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
@@ -596,7 +596,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
 
           if (_errored) ...[
             const SizedBox(height: 12),
-            Text(l10n.benchEvalErrorMsg, style: const TextStyle(color: AppColors.evacuate, fontSize: 12.5)),
+            Text(l10n.benchEvalErrorMsg, style: const TextStyle(color: AppColors.evacuate, fontSize: 14)),
           ],
 
           if (_result != null) ...[
@@ -625,7 +625,7 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
                     const Icon(Icons.warning_amber_rounded, color: AppColors.watch, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(l10n.benchEvalStubWarning, style: const TextStyle(color: AppColors.watch, fontSize: 11.5, height: 1.35)),
+                      child: Text(l10n.benchEvalStubWarning, style: const TextStyle(color: AppColors.watch, fontSize: 12.5, height: 1.35)),
                     ),
                   ],
                 ),
@@ -642,11 +642,11 @@ class _BenchEvalPanelState extends State<_BenchEvalPanel> {
               ],
             ),
             const SizedBox(height: 10),
-            Text(l10n.benchEvalReadingUsedLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(l10n.benchEvalReadingUsedLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
               _result!.readingUsed.entries.map((e) => '${e.key}=${e.value}').join('  ·  '),
-              style: AppFonts.mono(fontSize: 11.5, color: AppColors.textSecondary),
+              style: AppFonts.mono(fontSize: 12.5, color: AppColors.textSecondary),
             ),
           ],
         ],
@@ -806,7 +806,7 @@ class _RigStatusLine extends StatelessWidget {
               style: const TextStyle(fontSize: 14),
             ),
           ),
-          Text(status, style: TextStyle(color: color, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          Text(status, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -836,7 +836,7 @@ class _PhaseSimulator extends StatelessWidget {
       children: [
         Text(l10n.simulatePhaseTitle, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5)),
         const SizedBox(height: 4),
-        Text(l10n.simulatePhaseHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.35)),
+        Text(l10n.simulatePhaseHint, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.35)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -873,7 +873,7 @@ class _PhaseSimulator extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.simulatingNow('$forced'),
-                  style: const TextStyle(color: AppColors.accent, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
+                  style: const TextStyle(color: AppColors.accent, fontSize: 14, fontWeight: FontWeight.w600, height: 1.35),
                 ),
               ),
             ],

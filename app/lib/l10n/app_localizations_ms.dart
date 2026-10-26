@@ -897,4 +897,22 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get mapFaceNorth => 'Hadap utara';
+
+  @override
+  String get riskNoLive => 'TIADA DATA LANGSUNG';
+
+  @override
+  String riskLastKnown(String level) {
+    return 'Terakhir diketahui: $level';
+  }
+
+  @override
+  String get riskStaleHelp =>
+      'Tiada bacaan terkini, jadi SIAGA tidak dapat menyatakan keadaan sekarang. Semak NADMA, MetMalaysia dan JPS.';
+
+  @override
+  String get riskTrendsStale => 'Bacaan terakhir sebelum rig senyap';
+
+  @override
+  String get mapKey => 'Kunci peta';
 }

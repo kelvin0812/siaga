@@ -99,7 +99,7 @@ void main() {
   testWidgets('turning the route on draws the animated route and its card, and turning it off removes them', (tester) async {
     await pumpMap(tester);
     expect(routePainter(), findsNothing);
-    await tester.tap(find.text('View evacuation route'));
+    await tester.tap(find.byTooltip('View evacuation route'));
     // With no network the router cannot be reached, so the route falls back to a straight line and says so.
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 500));
@@ -113,14 +113,14 @@ void main() {
     expect(routePainter(), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text('View evacuation route'));
+    await tester.tap(find.byTooltip('View evacuation route'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(routePainter(), findsNothing);
   });
 
   testWidgets('with reduced motion the route is still drawn, just without the animation running', (tester) async {
     await pumpMap(tester, reduceMotion: true);
-    await tester.tap(find.text('View evacuation route'));
+    await tester.tap(find.byTooltip('View evacuation route'));
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }

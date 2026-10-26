@@ -167,4 +167,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Four sensors on the rig'), findsOneWidget);
   });
+
+  testWidgets('old data never wears a green NORMAL: the warning leads and the word is neutral', (tester) async {
+    rigState(phase: 1, age: const Duration(days: 1));
+    await show(tester);
+    expect(find.text('NO LIVE DATA'), findsOneWidget);
+    expect(find.text('NORMAL'), findsNothing); // the calm word is not shown for a reading nobody can vouch for
+    expect(find.textContaining('Rig offline'), findsWidgets);
+    expect(find.textContaining('SIAGA cannot say how things look right now'), findsWidgets);
+    expect(find.text('Last known: Normal'), findsOneWidget);
+    // the warning sits above the word: it comes first on the page
+    final warning = tester.getTopLeft(find.textContaining('There is no fresh reading')).dy;
+    final word = tester.getTopLeft(find.text('NO LIVE DATA')).dy;
+    expect(warning, lessThan(word));
+    expect(find.text('The last readings before the rig went quiet'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('fresh data still shows the level in the big word', (tester) async {
+    rigState(phase: 1);
+    await show(tester);
+    expect(find.text('NORMAL'), findsOneWidget);
+    expect(find.text('NO LIVE DATA'), findsNothing);
+  });
 }

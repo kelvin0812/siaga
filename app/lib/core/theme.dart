@@ -14,8 +14,10 @@ class AppColors {
   static const surfaceRaised = Color(0xFF1A2338);
   static const hairline = Color(0x1AFFFFFF); // white @ 10% — soft "frosted glass" edge, not a hard line
   static const textPrimary = Color(0xFFF3F5FA);
-  static const textSecondary = Color(0xFF97A2B8);
-  static const textMuted = Color(0xFF616E85);
+  // Outdoor, in sunlight, in a hurry: secondary text must stay readable. On the dark surfaces (about #0A0F1E to #121A2E)
+  // secondary is about 10:1 and muted about 7:1, both above the 4.5:1 that WCAG AA asks for.
+  static const textSecondary = Color(0xFFB8C4D6);
+  static const textMuted = Color(0xFF9AA9BF);
 
   /// Electric blue — the "tech" accent for non-hazard chrome (nav, links,
   /// the device-location marker). Deliberately distinct from the hazard

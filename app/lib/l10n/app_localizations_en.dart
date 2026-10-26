@@ -894,4 +894,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapFaceNorth => 'Face north';
+
+  @override
+  String get riskNoLive => 'NO LIVE DATA';
+
+  @override
+  String riskLastKnown(String level) {
+    return 'Last known: $level';
+  }
+
+  @override
+  String get riskStaleHelp =>
+      'There is no fresh reading, so SIAGA cannot say how things look right now. Check NADMA, MetMalaysia and JPS.';
+
+  @override
+  String get riskTrendsStale => 'The last readings before the rig went quiet';
+
+  @override
+  String get mapKey => 'Map key';
 }

@@ -1693,6 +1693,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Face north'**
   String get mapFaceNorth;
+
+  /// No description provided for @riskNoLive.
+  ///
+  /// In en, this message translates to:
+  /// **'NO LIVE DATA'**
+  String get riskNoLive;
+
+  /// No description provided for @riskLastKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Last known: {level}'**
+  String riskLastKnown(String level);
+
+  /// No description provided for @riskStaleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no fresh reading, so SIAGA cannot say how things look right now. Check NADMA, MetMalaysia and JPS.'**
+  String get riskStaleHelp;
+
+  /// No description provided for @riskTrendsStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The last readings before the rig went quiet'**
+  String get riskTrendsStale;
+
+  /// No description provided for @mapKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Map key'**
+  String get mapKey;
 }
 
 class _AppLocalizationsDelegate

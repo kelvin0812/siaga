@@ -77,6 +77,8 @@ class _RiskScreenState extends State<RiskScreen> {
 
     // The first screenful: which node this is, where it stands, then every real sensor with its number and its last
     // 10 minutes.
+    // Old data is not "Normal": it is "no live data", and the page says so before it says anything else.
+    final stale = isRigNode && rig != null && rig.isStale && !rig.simulated;
     final top = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -100,6 +102,8 @@ class _RiskScreenState extends State<RiskScreen> {
               ],
             ),
           )
+        else if (stale)
+          _StaleHero(state: riskState, rig: rig, l10n: l10n)
         else
           _LevelHero(
             state: riskState,
@@ -111,9 +115,9 @@ class _RiskScreenState extends State<RiskScreen> {
           ),
         if (isRigNode || !appState.rigMode || waitingForRig) ...[
           const SizedBox(height: 20),
-          _SectionTitle(title: l10n.riskTrendsTitle, subtitle: l10n.riskTrendsSubtitle),
+          _SectionTitle(title: l10n.riskTrendsTitle, subtitle: stale ? l10n.riskTrendsStale : l10n.riskTrendsSubtitle),
           const SizedBox(height: 12),
-          _SensorGrid(appState: appState, l10n: l10n),
+          Opacity(opacity: stale ? 0.6 : 1, child: _SensorGrid(appState: appState, l10n: l10n)),
         ],
       ],
     );
@@ -470,6 +474,106 @@ class _LevelHero extends StatelessWidget {
 }
 
 String _formatAgo(DateTime time) => formatAgoShort(time);
+
+const _kStaleColor = Color(0xFFE8833A);
+
+/// What My Risk shows instead of the level when the rig has gone quiet. The green "NORMAL" is a claim about the river,
+/// and old data cannot back it up, so the warning comes first, the word is neutral, and the last known level is small
+/// and dimmed. (The app still never raises an alert from old data.)
+class _StaleHero extends StatelessWidget {
+  final RiskState state;
+  final RigReading rig;
+  final AppLocalizations l10n;
+  const _StaleHero({required this.state, required this.rig, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      radius: AppRadius.lg,
+      glowColor: _kStaleColor,
+      glowAlpha: 0.10,
+      glowBlur: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+            decoration: BoxDecoration(
+              color: _kStaleColor.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kStaleColor.withValues(alpha: 0.7), width: 1.5),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.sensors_off, color: _kStaleColor, size: 24)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${l10n.rigStatusOffline}  ·  ${l10n.rigLastData} ${_formatAgo(rig.rowTime)}',
+                        style: const TextStyle(color: Color(0xFFFFB27A), fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(l10n.riskStaleHelp, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13.5, height: 1.4)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: 0,
+                        strokeWidth: 5,
+                        backgroundColor: Colors.white.withValues(alpha: 0.12),
+                        valueColor: const AlwaysStoppedAnimation(AppColors.textMuted),
+                      ),
+                    ),
+                    const Icon(Icons.sensors_off, color: AppColors.textMuted, size: 26),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.riskNoLive,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.heading(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.4),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.riskLastKnown(riskStateLabel(context, state)),
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Opacity(opacity: 0.35, child: _ThreatStepper(current: state)),
+        ],
+      ),
+    );
+  }
+}
 
 /// A small status line over the tiles: a green dot while the rig is sending, an orange one when it has gone quiet,
 /// so nobody mistakes old numbers for live ones.

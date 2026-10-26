@@ -103,7 +103,7 @@ void main() {
     expect(find.byType(PolygonLayer), findsNothing);
     expect(find.text('People per km²'), findsNothing);
 
-    await tester.tap(find.text('Population'));
+    await tester.tap(find.byTooltip('Population'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(PolygonLayer), findsOneWidget);
     expect(find.text('People per km²'), findsOneWidget);
@@ -113,9 +113,12 @@ void main() {
     expect(find.textContaining('Kontur'), findsOneWidget); // the data's source is credited on screen
     expect(find.text('Sensor node'), findsNothing); // the marker legend gives way, to keep the screen clean
 
-    await tester.tap(find.text('Population'));
+    await tester.tap(find.byTooltip('Population'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(PolygonLayer), findsNothing);
+    expect(find.text('Sensor node'), findsNothing); // the key is folded away until asked for
+    await tester.tap(find.byTooltip('Map key'));
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Sensor node'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

@@ -44,7 +44,10 @@ class MerangAvatar extends StatelessWidget {
 class MerangButton extends StatefulWidget {
   final ExplainFacts facts;
   final AsyncExplainer explainer;
-  const MerangButton({super.key, required this.facts, this.explainer = const LocalAsyncExplainer()});
+
+  /// The small version for the header bar, where it covers nothing.
+  final bool compact;
+  const MerangButton({super.key, required this.facts, this.explainer = const LocalAsyncExplainer(), this.compact = false});
 
   @override
   State<MerangButton> createState() => _MerangButtonState();
@@ -71,14 +74,19 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
       _pulse.stop();
     }
     final ring = widget.facts.stale ? AppColors.textMuted : riskStateColor(widget.facts.state);
+    final box = widget.compact ? 46.0 : 64.0;
+    final circle = widget.compact ? 40.0 : 54.0;
+    final face = widget.compact ? 34.0 : 46.0;
+    final pad = widget.compact ? 3.0 : 4.0;
+    final swell = widget.compact ? 6.0 : 10.0;
     return Semantics(
       button: true,
       label: l10n.merangAsk,
       child: Tooltip(
         message: l10n.merangAsk,
         child: SizedBox(
-          width: 64,
-          height: 64,
+          width: box,
+          height: box,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -86,8 +94,8 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
                 AnimatedBuilder(
                   animation: _pulse,
                   builder: (context, child) => Container(
-                    width: 54 + 10 * _pulse.value,
-                    height: 54 + 10 * _pulse.value,
+                    width: circle + swell * _pulse.value,
+                    height: circle + swell * _pulse.value,
                     decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ring.withValues(alpha: 0.6 * (1 - _pulse.value)), width: 3)),
                   ),
                 ),
@@ -100,9 +108,9 @@ class _MerangButtonState extends State<MerangButton> with SingleTickerProviderSt
                   customBorder: const CircleBorder(),
                   onTap: () => showMerang(context, widget.facts, explainer: widget.explainer),
                   child: SizedBox(
-                    width: 54,
-                    height: 54,
-                    child: Padding(padding: const EdgeInsets.all(4), child: MerangAvatar(mood: merangMoodFor(widget.facts), size: 46)),
+                    width: circle,
+                    height: circle,
+                    child: Padding(padding: EdgeInsets.all(pad), child: MerangAvatar(mood: merangMoodFor(widget.facts), size: face)),
                   ),
                 ),
               ),

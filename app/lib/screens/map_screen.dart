@@ -61,6 +61,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   List<Polygon> _popPolygons = const [];
   bool _showPopulation = false;
 
+  /// The key to the icons, folded away until asked for, so it is not on the map all the time.
+  bool _showLegend = false;
+
   /// Eases the camera towards a tapped marker, a little at a time, instead of jumping.
   late final AnimationController _fly;
   VoidCallback? _flyListener;
@@ -675,6 +678,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         ),
       if (_myPosition != null) _Pin('me', ll.LatLng(_myPosition!.latitude, _myPosition!.longitude), 30, 52, true, 1),
     ];
+    final legendOpen = _showLegend || (_showPopulation && _population != null);
+    final legendH = 46.0 + (legendOpen ? 8 + (_showPopulation && _population != null ? 166 : 124) : 0);
+    final legendW = legendOpen ? (_showPopulation && _population != null ? 235.0 : 187.0) : 60.0;
+    final rightButtons = (origin != null && _assemblyPoints.isNotEmpty ? 1 : 0) + (_population != null ? 1 : 0) + (_rotation != 0 ? 1 : 0);
     // The overlays on the map, in the map's own coordinates: the search bar, the route button, the legend and the route
     // card. The floating nav bar is no longer one of them, because the map stops above it. A label that would sit under
     // one of them moves or is left out.
@@ -684,9 +691,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       final w = size.width, h = size.height;
       obstacles = [
         Rect.fromLTRB(12, 12, w - 12, 64),
-        if (origin != null && _assemblyPoints.isNotEmpty) Rect.fromLTRB(w - 227, 70, w - 12, 118),
-        if (_rotation != 0) Rect.fromLTRB(w - 70, 70 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0), w - 12, 130 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0)),
-        if (!hasCard) Rect.fromLTRB(12, h - (_showPopulation ? 190 : 148), _showPopulation ? 235 : 187, h - 24),
+        // the column of round buttons on the right (a lit button also shows its name, so leave room for it)
+        if (rightButtons > 0) Rect.fromLTRB(w - (_showEvacRoute ? 220 : 70), 70, w - 12, 70 + rightButtons * 54.0),
+        // the key's button, and the key itself while it is open
+        if (!hasCard) Rect.fromLTRB(12, h - (showRouteCard ? 134 : 24) - legendH, 12 + legendW, h - (showRouteCard ? 134 : 24)),
         if (showRouteCard) Rect.fromLTRB(2, h - 127, w - 2, h - 12),
       ];
     } catch (_) {}
@@ -800,36 +808,48 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             onResultTap: _selectSearchResult,
           ),
         ),
-        if (origin != null && _assemblyPoints.isNotEmpty)
-          Positioned(
-            top: (appState.isOffline ? 44 : 12) + 68,
-            right: 22,
-            child: _EvacRouteToggle(
-              active: _showEvacRoute,
-              onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
-            ),
+        // Round icon buttons in one column, not wide text pills: the route, the population layer and (only while the map is
+        // turned) the compass. A button shows its name only while it is switched on; the rest is in its tooltip.
+        Positioned(
+          top: (appState.isOffline ? 44 : 12) + 68,
+          right: 22,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (origin != null && _assemblyPoints.isNotEmpty)
+                _MapIconButton(
+                  icon: _showEvacRoute ? Icons.directions_run : Icons.directions_outlined,
+                  label: l10n.evacuateViewRoute,
+                  active: _showEvacRoute,
+                  color: _kRouteColor,
+                  onTap: () => setState(() => _showEvacRoute = !_showEvacRoute),
+                ),
+              if (_population != null)
+                _MapIconButton(
+                  icon: Icons.groups_2_outlined,
+                  label: l10n.popToggle,
+                  active: _showPopulation,
+                  color: _kDensityColors[DensityClass.medium]!,
+                  onTap: () => setState(() => _showPopulation = !_showPopulation),
+                ),
+              if (_rotation != 0) _CompassButton(rotation: _rotation, label: l10n.mapFaceNorth, onTap: _faceNorth),
+            ].expand((w) => [w, const SizedBox(height: 8)]).toList(),
           ),
-        if (_population != null)
-          Positioned(
-            top: (appState.isOffline ? 44 : 12) + 68 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0),
-            right: 22,
-            child: _PopulationToggle(
-              active: _showPopulation,
-              label: l10n.popToggle,
-              onTap: () => setState(() => _showPopulation = !_showPopulation),
-            ),
-          ),
-        if (_rotation != 0)
-          Positioned(
-            top: (appState.isOffline ? 44 : 12) + 68 + (origin != null && _assemblyPoints.isNotEmpty ? 50 : 0) + (_population != null ? 50 : 0),
-            right: 22,
-            child: _CompassButton(rotation: _rotation, label: l10n.mapFaceNorth, onTap: _faceNorth),
-          ),
+        ),
         if (!hasCard)
           Positioned(
             left: 22,
             bottom: dock + (showRouteCard ? 142 : 32),
-            child: _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (legendOpen) _showPopulation && _population != null ? _PopulationLegend(grid: _population!) : const _MapLegend(),
+                if (legendOpen) const SizedBox(height: 8),
+                _MapIconButton(icon: Icons.info_outline, label: l10n.mapKey, active: _showLegend, color: AppColors.accent, onTap: () => setState(() => _showLegend = !_showLegend), labelWhenActive: false),
+              ],
+            ),
           ),
         if (hasCard)
           Positioned(
@@ -993,6 +1013,57 @@ class _MapSearchBar extends StatelessWidget {
 /// off by default so the map isn't cluttered with a route line when
 /// nothing is wrong; Section 6.4 asks for cached routes to be available,
 /// not necessarily always drawn.
+/// A round map button with just an icon. While it is switched on it grows into a pill that also says what it is.
+class _MapIconButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+  final bool labelWhenActive;
+  const _MapIconButton({required this.icon, required this.label, required this.active, required this.color, required this.onTap, this.labelWhenActive = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final showLabel = active && labelWhenActive;
+    return Semantics(
+      button: true,
+      toggled: active,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: active ? color : Colors.black.withValues(alpha: 0.72),
+          shape: StadiumBorder(side: BorderSide(color: active ? Colors.white30 : Colors.white24)),
+          elevation: 4,
+          shadowColor: active ? color : Colors.black,
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 46, minHeight: 46),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: showLabel ? 14 : 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: Colors.white, size: 22),
+                    if (showLabel) ...[
+                      const SizedBox(width: 8),
+                      Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A round compass, shown only while the map is turned. Its red needle always points to north; tap it to turn the map
 /// back so north is up.
 class _CompassButton extends StatelessWidget {
@@ -1044,43 +1115,6 @@ class _NeedlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _NeedlePainter oldDelegate) => false;
-}
-
-class _EvacRouteToggle extends StatelessWidget {
-  final bool active;
-  final VoidCallback onTap;
-  const _EvacRouteToggle({required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? _kRouteColor : Colors.black.withValues(alpha: 0.68),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: active ? appGlow(_kRouteColor, alpha: 0.55, blur: 16) : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(active ? Icons.directions_run : Icons.directions_outlined, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                l10n.evacuateViewRoute,
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 const _kAssemblyColor = Color(0xFF8B7CFF);
@@ -2156,44 +2190,6 @@ class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMi
 
         return Center(child: Stack(alignment: Alignment.center, children: [ring(0), ring(0.5)]));
       },
-    );
-  }
-}
-
-/// Switches the population layer on and off. It sits under the route button and takes the layer's own colour when on.
-class _PopulationToggle extends StatelessWidget {
-  final bool active;
-  final String label;
-  final VoidCallback onTap;
-  const _PopulationToggle({required this.active, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: BoxDecoration(
-            color: active ? _kDensityColors[DensityClass.medium] : Colors.black.withValues(alpha: 0.68),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: active
-                ? appGlow(_kDensityColors[DensityClass.medium]!, alpha: 0.5, blur: 14)
-                : const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.groups_2_outlined, color: Colors.white, size: 17),
-              const SizedBox(width: 6),
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
