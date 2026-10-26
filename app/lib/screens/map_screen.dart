@@ -711,7 +711,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               child: Padding(
                 // Stops above the floating nav bar (MediaQuery's bottom padding is the bar's height here) rather than
                 // running underneath it, so nothing of the map shows around or behind the bar.
-                padding: EdgeInsets.fromLTRB(10, 10, 10, dock + 8),
+                padding: EdgeInsets.fromLTRB(_kMapMargin, _kMapTop, _kMapMargin, dock + _kMapBottom),
                 child: Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
@@ -798,9 +798,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ],
         ),
         Positioned(
-          top: (appState.isOffline ? 44 : 12) + 10,
-          left: 22,
-          right: 22,
+          top: (appState.isOffline ? 48 : _kMapTop) + 12,
+          left: _kMapMargin + 12,
+          right: _kMapMargin + 12,
           child: _MapSearchBar(
             controller: _searchController,
             focusNode: _searchFocusNode,
@@ -811,8 +811,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         // Round icon buttons in one column, not wide text pills: the route, the population layer and (only while the map is
         // turned) the compass. A button shows its name only while it is switched on; the rest is in its tooltip.
         Positioned(
-          top: (appState.isOffline ? 44 : 12) + 68,
-          right: 22,
+          top: (appState.isOffline ? 48 : _kMapTop) + 66,
+          right: _kMapMargin + 12,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
@@ -842,9 +842,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         ),
         if (hasCard)
           Positioned(
-            left: 12,
-            right: 12,
-            bottom: dock + 20,
+            left: _kMapMargin + 2,
+            right: _kMapMargin + 2,
+            bottom: dock + _kMapBottom + 12,
             child: Center(
               child: focusNode != null
                   ? _nodeCard(context, appState, focusNode)
@@ -853,10 +853,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
         if (showRouteCard)
           Positioned(
-            left: 12,
-            right: 12,
+            left: _kMapMargin + 2,
+            right: _kMapMargin + 2,
             // Sits just above the floating nav dock (see main.dart's _FloatingNavBar), which the map itself stops above.
-            bottom: dock + 20,
+            bottom: dock + _kMapBottom + 12,
             child: _RouteSummary(
               plan: _plan,
               planning: _planning,
@@ -1122,6 +1122,12 @@ const _kDensityFill = <DensityClass, double>{
 };
 
 /// The evacuation route is drawn in an emergency red, and the place it leads to in a safe green.
+/// The air around the map: it sits well inside the screen, clear of the title bar and the bottom bar, so the page does not
+/// feel packed edge to edge. The buttons, search bar and cards sit a fixed distance inside it.
+const double _kMapMargin = 18;
+const double _kMapTop = 14;
+const double _kMapBottom = 14;
+
 const _kRouteColor = Color(0xFFFF3B30);
 const _kSafeColor = Color(0xFF2EE59D);
 const double _kMarkerW = 150;
@@ -1444,8 +1450,8 @@ class _NodeInfoPanel extends StatelessWidget {
       // A tall box beside the map: below the search bar, above the nav bar, nothing to drag.
       return Positioned(
         top: 132,
-        right: 22,
-        bottom: MediaQuery.paddingOf(context).bottom + 20,
+        right: _kMapMargin + 12,
+        bottom: MediaQuery.paddingOf(context).bottom + _kMapBottom + 12,
         width: 420,
         child: Container(
           decoration: _decoration(context, side: true),

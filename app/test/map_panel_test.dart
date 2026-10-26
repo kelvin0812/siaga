@@ -115,7 +115,7 @@ void main() {
     final rect = tester.getRect(panel);
     expect(rect.width, 420);
     expect(rect.height, greaterThan(rect.width)); // vertical, not a wide strip
-    expect(rect.right, closeTo(1280 - 22, 1));
+    expect(rect.right, closeTo(1280 - 30, 1));
     expect(tester.takeException(), isNull);
   });
 
